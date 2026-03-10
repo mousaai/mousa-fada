@@ -1,6 +1,9 @@
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, projects, analyses, InsertProject, InsertAnalysis } from "../drizzle/schema";
+import {
+  InsertUser, users, projects, analyses, designElements, perspectives, chatSessions,
+  InsertProject, InsertAnalysis, InsertDesignElement, InsertPerspective, InsertChatSession
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -54,8 +57,9 @@ export async function getUserByOpenId(openId: string) {
 export async function createProject(data: InsertProject) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(projects).values(data);
-  return result;
+  await db.insert(projects).values(data);
+  const result = await db.select().from(projects).where(eq(projects.userId, data.userId)).orderBy(desc(projects.createdAt)).limit(1);
+  return result[0];
 }
 
 export async function getUserProjects(userId: number) {
@@ -87,8 +91,9 @@ export async function deleteProject(id: number, userId: number) {
 export async function createAnalysis(data: InsertAnalysis) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(analyses).values(data);
-  return result;
+  await db.insert(analyses).values(data);
+  const result = await db.select().from(analyses).where(eq(analyses.userId, data.userId)).orderBy(desc(analyses.createdAt)).limit(1);
+  return result[0];
 }
 
 export async function getProjectAnalyses(projectId: number, userId: number) {
@@ -108,4 +113,87 @@ export async function getUserAnalyses(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.select().from(analyses).where(eq(analyses.userId, userId)).orderBy(desc(analyses.createdAt)).limit(20);
+}
+
+// ===== استعلامات عناصر التصميم =====
+export async function createDesignElement(data: InsertDesignElement) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(designElements).values(data);
+  const result = await db.select().from(designElements)
+    .where(and(eq(designElements.projectId, data.projectId), eq(designElements.userId, data.userId)))
+    .orderBy(desc(designElements.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getProjectDesignElements(projectId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(designElements)
+    .where(and(eq(designElements.projectId, projectId), eq(designElements.userId, userId)))
+    .orderBy(designElements.sortOrder, designElements.createdAt);
+}
+
+export async function updateDesignElement(id: number, userId: number, data: Partial<InsertDesignElement>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(designElements).set(data).where(and(eq(designElements.id, id), eq(designElements.userId, userId)));
+}
+
+export async function deleteDesignElement(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(designElements).where(and(eq(designElements.id, id), eq(designElements.userId, userId)));
+}
+
+// ===== استعلامات المناظير =====
+export async function createPerspective(data: InsertPerspective) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(perspectives).values(data);
+  const result = await db.select().from(perspectives)
+    .where(and(eq(perspectives.projectId, data.projectId), eq(perspectives.userId, data.userId)))
+    .orderBy(desc(perspectives.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getProjectPerspectives(projectId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(perspectives)
+    .where(and(eq(perspectives.projectId, projectId), eq(perspectives.userId, userId)))
+    .orderBy(desc(perspectives.createdAt));
+}
+
+// ===== استعلامات جلسات المحادثة =====
+export async function createChatSession(data: InsertChatSession) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(chatSessions).values(data);
+  const result = await db.select().from(chatSessions)
+    .where(eq(chatSessions.userId, data.userId))
+    .orderBy(desc(chatSessions.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function updateChatSession(id: number, userId: number, data: Partial<InsertChatSession>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(chatSessions).set(data).where(and(eq(chatSessions.id, id), eq(chatSessions.userId, userId)));
+}
+
+export async function getChatSession(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(chatSessions)
+    .where(and(eq(chatSessions.id, id), eq(chatSessions.userId, userId))).limit(1);
+  return result[0] ?? null;
+}
+
+export async function getUserChatSessions(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(chatSessions)
+    .where(eq(chatSessions.userId, userId))
+    .orderBy(desc(chatSessions.createdAt)).limit(10);
 }

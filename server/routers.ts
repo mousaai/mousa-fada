@@ -3,74 +3,94 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { invokeLLM, type Message } from "./_core/llm";
+import { invokeLLM, type Message, type ImageContent, type TextContent } from "./_core/llm";
+import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
 import {
   createProject, getUserProjects, getProjectById, updateProject, deleteProject,
-  createAnalysis, getProjectAnalyses, getAnalysisById, getUserAnalyses
+  createAnalysis, getProjectAnalyses, getAnalysisById, getUserAnalyses,
+  createDesignElement, getProjectDesignElements, updateDesignElement, deleteDesignElement,
+  createPerspective, getProjectPerspectives,
+  createChatSession, updateChatSession, getChatSession, getUserChatSessions
 } from "./db";
 import { nanoid } from "nanoid";
 
-// ===== مساعد الذكاء الاصطناعي للتصميم الداخلي =====
+// ===== أنماط التصميم العالمية =====
+const GLOBAL_STYLES: Record<string, { name: string; description: string; keywords: string }> = {
+  modern: { name: "عصري حديث", description: "خطوط نظيفة، مواد معاصرة، ألوان محايدة", keywords: "minimalist, clean lines, contemporary" },
+  gulf: { name: "خليجي عربي أصيل", description: "زخارف إسلامية، مشربيات، ألوان دافئة ذهبية", keywords: "Islamic patterns, mashrabiya, arabesque" },
+  classic: { name: "كلاسيكي فاخر", description: "أعمدة، زخارف، أقمشة فاخرة، ألوان ملكية", keywords: "classical columns, ornate details, luxury fabrics" },
+  minimal: { name: "مينيمال بسيط", description: "أقل هو أكثر، مساحات بيضاء، وظيفية", keywords: "less is more, white space, functional" },
+  japanese: { name: "ياباني زن", description: "الهدوء، الطبيعة، الخشب، الحجارة، الوابي-سابي", keywords: "zen, wabi-sabi, natural materials, harmony" },
+  scandinavian: { name: "سكندنافي", description: "دفء، بساطة، وظيفية، ألوان فاتحة", keywords: "hygge, functional, light colors, natural wood" },
+  mediterranean: { name: "متوسطي", description: "أزرق، أبيض، فسيفساء، أقواس، نباتات", keywords: "blue white, mosaic, arches, terracotta" },
+  industrial: { name: "صناعي", description: "معدن، خرسانة، طوب مكشوف، خشب خام", keywords: "exposed brick, metal, concrete, raw materials" },
+  bohemian: { name: "بوهيمي", description: "ألوان زاهية، نسيج متنوع، نباتات، فن", keywords: "eclectic, colorful, layered textiles, plants" },
+  art_deco: { name: "آرت ديكو", description: "هندسي، ذهبي، فاخر، أنيق", keywords: "geometric, gold, glamorous, symmetry" },
+  farmhouse: { name: "ريفي مزرعة", description: "خشب، أبيض، بساطة، دفء ريفي", keywords: "rustic, shiplap, neutral, cozy farmhouse" },
+  tropical: { name: "استوائي", description: "نباتات خضراء، ألوان زاهية، خيزران، رطان", keywords: "tropical plants, rattan, vibrant colors" },
+  moroccan: { name: "مغربي", description: "فسيفساء ملونة، قناطر، زليج، نحاس", keywords: "zellige tiles, arches, lanterns, colorful mosaic" },
+  indian: { name: "هندي", description: "ألوان غنية، نسيج مطرز، أنماط زاهية", keywords: "rich colors, embroidered textiles, mandala patterns" },
+  chinese: { name: "صيني كلاسيكي", description: "أحمر، ذهبي، خشب داكن، رموز تقليدية", keywords: "red gold, lacquer, traditional motifs, feng shui" },
+  contemporary: { name: "معاصر مختلط", description: "مزيج من الأنماط الحديثة بأسلوب عصري", keywords: "mixed styles, current trends, versatile" },
+  luxury: { name: "فاخر بريميوم", description: "مواد فاخرة، تفاصيل دقيقة، لمسات ذهبية", keywords: "premium materials, gold accents, bespoke" },
+  coastal: { name: "ساحلي بحري", description: "أزرق، أبيض، رمل، أصداف، خشب مشمس", keywords: "beach, nautical, blue white, driftwood" },
+  eclectic: { name: "انتقائي متنوع", description: "مزيج جريء من العصور والأنماط", keywords: "mixed periods, bold combinations, unique" },
+  neoclassical: { name: "نيوكلاسيكي", description: "كلاسيكي بلمسة عصرية، أناقة متوازنة", keywords: "updated classical, elegant proportions, refined" },
+};
+
+// ===== مساعد: تحليل التصميم الداخلي =====
 async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType: string, area: number) {
-  const styleNames: Record<string, string> = {
-    modern: "عصري حديث",
-    gulf: "خليجي عربي أصيل",
-    classic: "كلاسيكي فاخر",
-    minimal: "مينيمال بسيط"
-  };
+  const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
 
-  const systemPrompt = `أنتِ م. سارة، خبيرة التصميم الداخلي والمعماري المتخصصة في التصميم الخليجي والعربي. 
-تحللين الصور والمخططات المعمارية وتقدمين توصيات تصميم داخلي احترافية.
-ردودك دائماً باللغة العربية الفصحى بأسلوب احترافي وأنيق.
-تقدمين مقترحات عملية وواقعية تناسب السوق الخليجي.`;
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعماري العالمية المتخصصة.
+خبرتك تشمل جميع أنماط التصميم العالمية: الخليجي، الياباني، الهندي، الصيني، الأوروبي، وغيرها.
+تحللين الصور والمخططات المعمارية وتقدمين توصيات تصميم داخلي احترافية على أعلى مستوى عالمي.
+ردودك دائماً باللغة العربية الفصحى بأسلوب احترافي ومتقدم.`;
 
-  const userPrompt = `حللي هذه الصورة/المخطط وقدمي توصيات تصميم داخلي شاملة.
+  const userPrompt = `حللي هذه الصورة/المخطط وقدمي توصيات تصميم داخلي شاملة على مستوى عالمي.
 
 المعطيات:
-- نمط التصميم المطلوب: ${styleNames[style] || style}
+- نمط التصميم: ${styleInfo.name} (${styleInfo.description})
 - نوع الفضاء: ${spaceType}
 - المساحة: ${area} متر مربع
 
-المطلوب منك تقديم تقرير JSON منظم يحتوي على:
+قدمي تقرير JSON شامل:
 {
-  "overview": "وصف عام للفضاء وتقييمه",
-  "styleDescription": "وصف تفصيلي لكيفية تطبيق النمط المختار",
-  "colorPalette": [
-    {"name": "اسم اللون", "hex": "#XXXXXX", "usage": "استخدامه في الفضاء", "percentage": 30}
-  ],
-  "materials": [
-    {"name": "اسم المادة", "type": "نوعها", "description": "وصفها وأماكن استخدامها", "priceRange": "رخيص/متوسط/فاخر"}
-  ],
-  "furniture": [
-    {"name": "اسم القطعة", "description": "وصفها", "quantity": 1, "priceMin": 500, "priceMax": 2000, "priority": "أساسي/اختياري"}
-  ],
-  "lighting": "توصيات الإضاءة التفصيلية",
-  "flooring": "توصيات الأرضيات",
-  "walls": "توصيات الجدران والديكور",
-  "ceiling": "توصيات الأسقف",
-  "recommendations": ["توصية 1", "توصية 2", "توصية 3"],
+  "overview": "وصف عام للفضاء وتقييمه الحالي",
+  "styleDescription": "كيفية تطبيق نمط ${styleInfo.name} بأسلوب احترافي",
+  "colorPalette": [{"name": "اسم اللون", "hex": "#XXXXXX", "usage": "استخدامه", "percentage": 30}],
+  "materials": [{"name": "المادة", "type": "النوع", "description": "الوصف", "priceRange": "رخيص/متوسط/فاخر", "supplier": "مصدر مقترح"}],
+  "furniture": [{"name": "القطعة", "description": "الوصف", "quantity": 1, "priceMin": 500, "priceMax": 2000, "priority": "أساسي/اختياري", "style": "النمط"}],
+  "flooring": {"material": "المادة", "pattern": "النمط", "color": "اللون", "pricePerSqm": 150, "notes": "ملاحظات"},
+  "walls": {"treatment": "المعالجة", "color": "اللون", "texture": "الملمس", "accent": "جدار مميز", "notes": "ملاحظات"},
+  "ceiling": {"height": "الارتفاع", "treatment": "المعالجة", "lighting": "الإضاءة", "notes": "ملاحظات"},
+  "windows": {"type": "النوع", "treatment": "المعالجة", "curtains": "الستائر", "notes": "ملاحظات"},
+  "lighting": {"ambient": "إضاءة عامة", "task": "إضاءة وظيفية", "accent": "إضاءة تزيينية", "fixtures": ["تركيبة 1"]},
+  "recommendations": ["توصية 1", "توصية 2", "توصية 3", "توصية 4", "توصية 5"],
   "costEstimate": {
     "furniture": {"min": 5000, "max": 15000},
     "materials": {"min": 3000, "max": 8000},
+    "flooring": {"min": 2000, "max": 6000},
+    "lighting": {"min": 1000, "max": 3000},
+    "curtains": {"min": 1500, "max": 4000},
     "labor": {"min": 2000, "max": 5000},
-    "total": {"min": 10000, "max": 28000}
+    "total": {"min": 14500, "max": 41000}
   },
-  "timelineWeeks": 8
+  "timelineWeeks": 8,
+  "professionalTips": ["نصيحة احترافية 1", "نصيحة 2"]
 }`;
-
-  const userMsg: Message = {
-    role: "user",
-    content: [
-      { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
-      { type: "text", text: userPrompt }
-    ]
-  };
 
   const response = await invokeLLM({
     messages: [
       { role: "system", content: systemPrompt },
-      userMsg,
+      {
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: imageUrl, detail: "high" } } as ImageContent,
+          { type: "text", text: userPrompt } as TextContent
+        ]
+      },
     ],
     response_format: { type: "json_object" }
   });
@@ -84,6 +104,238 @@ async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType:
   }
 }
 
+// ===== مساعد: تحليل المخطط المعماري =====
+async function analyzeFloorPlan(imageUrl: string) {
+  const systemPrompt = `أنتِ م. سارة، مهندسة معمارية متخصصة في قراءة وتحليل المخططات المعمارية.
+تستطيعين قراءة أي مخطط معماري وتحديد الغرف والأبعاد والمساحات بدقة عالية.
+ردودك باللغة العربية.`;
+
+  const userPrompt = `حللي هذا المخطط المعماري واستخرجي جميع التفاصيل التالية بدقة:
+
+{
+  "projectType": "فيلا/شقة/مكتب/محل",
+  "totalArea": 0,
+  "rooms": [
+    {
+      "name": "اسم الغرفة",
+      "type": "living/bedroom/kitchen/bathroom/corridor/other",
+      "width": 0,
+      "length": 0,
+      "area": 0,
+      "windows": 0,
+      "doors": 0,
+      "notes": "ملاحظات خاصة"
+    }
+  ],
+  "floors": 1,
+  "orientation": "الاتجاه الرئيسي للمبنى",
+  "specialFeatures": ["ميزة خاصة 1", "ميزة 2"],
+  "structuralNotes": "ملاحظات إنشائية",
+  "designOpportunities": ["فرصة تصميمية 1", "فرصة 2"],
+  "challenges": ["تحدي 1", "تحدي 2"],
+  "recommendedStyle": "النمط الأنسب للمخطط",
+  "estimatedTotalCost": {"min": 50000, "max": 150000}
+}
+
+استخرج الأبعاد بالمتر إن أمكن. إذا لم تظهر الأبعاد بوضوح، قدّر بناءً على النسب المرئية.`;
+
+  const response = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          { type: "image_url", image_url: { url: imageUrl, detail: "high" } } as ImageContent,
+          { type: "text", text: userPrompt } as TextContent
+        ]
+      },
+    ],
+    response_format: { type: "json_object" }
+  });
+
+  const rawContent = response.choices[0]?.message?.content;
+  const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent) || "{}";
+  try {
+    return JSON.parse(content);
+  } catch {
+    return { rooms: [], totalArea: 0, projectType: "غير محدد" };
+  }
+}
+
+// ===== مساعد: تصميم عنصر معماري =====
+async function designElement(
+  elementType: string,
+  roomName: string,
+  roomArea: number,
+  style: string,
+  projectContext: string,
+  referenceImageUrl?: string
+) {
+  const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
+  const elementNames: Record<string, string> = {
+    flooring: "الأرضيات",
+    walls: "الجدران",
+    ceiling: "الأسقف",
+    windows: "النوافذ والستائر",
+    doors: "الأبواب",
+    lighting: "الإضاءة",
+    furniture: "الأثاث",
+    perspective: "المنظور الكامل"
+  };
+
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي العالمية.
+تصممين عناصر التصميم الداخلي بأعلى المعايير العالمية.
+متخصصة في نمط ${styleInfo.name}: ${styleInfo.description}.
+ردودك باللغة العربية مع مواصفات دقيقة وعملية.`;
+
+  const userPrompt = `صممي ${elementNames[elementType] || elementType} لـ ${roomName} بمساحة ${roomArea} م².
+
+سياق المشروع: ${projectContext}
+نمط التصميم: ${styleInfo.name} - ${styleInfo.description}
+
+قدمي مواصفات تفصيلية احترافية بصيغة JSON:
+{
+  "elementType": "${elementType}",
+  "roomName": "${roomName}",
+  "designConcept": "مفهوم التصميم الإبداعي",
+  "specifications": {
+    "primaryMaterial": "المادة الرئيسية",
+    "secondaryMaterial": "المادة الثانوية",
+    "primaryColor": "#XXXXXX",
+    "secondaryColor": "#XXXXXX",
+    "pattern": "النمط أو الملمس",
+    "finish": "نوع التشطيب",
+    "dimensions": "الأبعاد التفصيلية",
+    "installation": "طريقة التركيب"
+  },
+  "products": [
+    {
+      "name": "اسم المنتج",
+      "brand": "الماركة",
+      "model": "الموديل",
+      "priceMin": 100,
+      "priceMax": 300,
+      "unit": "م²/قطعة/متر",
+      "quantity": 10,
+      "supplier": "مصدر التوريد"
+    }
+  ],
+  "colorPalette": [{"hex": "#XXXXXX", "name": "اسم اللون", "role": "دور اللون"}],
+  "installationSteps": ["خطوة 1", "خطوة 2", "خطوة 3"],
+  "maintenanceTips": ["نصيحة صيانة 1", "نصيحة 2"],
+  "totalCostMin": 1000,
+  "totalCostMax": 5000,
+  "unit": "م²",
+  "quantity": ${roomArea},
+  "professionalNotes": "ملاحظات احترافية مهمة",
+  "alternativeOptions": [
+    {"name": "بديل اقتصادي", "description": "وصف", "costMin": 500, "costMax": 2000},
+    {"name": "بديل فاخر", "description": "وصف", "costMin": 3000, "costMax": 8000}
+  ]
+}`;
+
+  const messages: Message[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  if (referenceImageUrl) {
+    messages.push({
+      role: "user",
+      content: [
+        { type: "image_url", image_url: { url: referenceImageUrl, detail: "high" } } as ImageContent,
+        { type: "text", text: userPrompt } as TextContent
+      ]
+    });
+  } else {
+    messages.push({ role: "user", content: userPrompt });
+  }
+
+  const response = await invokeLLM({
+    messages,
+    response_format: { type: "json_object" }
+  });
+
+  const rawContent = response.choices[0]?.message?.content;
+  const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent) || "{}";
+  try {
+    return JSON.parse(content);
+  } catch {
+    return { designConcept: content, specifications: {}, products: [] };
+  }
+}
+
+// ===== مساعد: المحادثة الذكية =====
+async function sarahChat(
+  messages: Array<{ role: string; content: string }>,
+  sessionType: string,
+  projectContext?: string
+) {
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعماري العالمية المتميزة.
+
+شخصيتك:
+- محترفة، ودودة، وذكية
+- متخصصة في جميع أنماط التصميم العالمية (خليجي، ياباني، هندي، صيني، أوروبي، أمريكي، وغيرها)
+- تتحدثين بالعربية الفصحى بأسلوب احترافي وأنيق
+- تطرحين أسئلة ذكية لفهم احتياجات العميل
+- تقدمين توصيات عملية وقابلة للتنفيذ
+- تعرفين أحدث اتجاهات التصميم العالمية
+
+${sessionType === 'floor_plan' ? `
+مهمتك الآن: مساعدة العميل في تحليل مخططه المعماري.
+اطلبي منه رفع صورة المخطط أو وصف الغرف والأبعاد.
+بعد الحصول على المعلومات، قدمي تحليلاً شاملاً.
+` : sessionType === 'camera_scan' ? `
+مهمتك الآن: توجيه العميل لتصوير فضاءه بشكل صحيح.
+اطلبي منه تصوير: الجدران الأربعة، السقف، الأرضية، والزوايا.
+بعد رؤية الصور، قدمي توصيات التصميم.
+` : sessionType === 'element_design' ? `
+مهمتك الآن: تصميم عنصر معماري محدد بالتفصيل.
+اسألي عن: نوع العنصر، الغرفة، المساحة، النمط المطلوب، الميزانية.
+` : `
+مهمتك: الاستشارة العامة في التصميم الداخلي.
+اسألي عن احتياجات العميل وقدمي توصيات مناسبة.
+`}
+
+${projectContext ? `سياق المشروع الحالي: ${projectContext}` : ''}
+
+قواعد المحادثة:
+- لا تكرري الأسئلة التي أجاب عليها العميل
+- إذا أجاب العميل على سؤال مستقبلي، لا تعيدي السؤال
+- اجمعي المعلومات بشكل طبيعي وسلس
+- عند اكتمال المعلومات، قدمي التصميم أو التوصية مباشرة`;
+
+  const response = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
+    ],
+  });
+
+  return response.choices[0]?.message?.content || "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.";
+}
+
+// ===== مساعد: توليد منظور =====
+async function generatePerspective(
+  roomName: string,
+  style: string,
+  elements: Record<string, unknown>,
+  area: number
+) {
+  const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
+
+  const prompt = `Professional interior design perspective render, ${styleInfo.keywords}, 
+${roomName}, ${area} square meters, 
+flooring: ${(elements.flooring as Record<string, unknown>)?.material || 'marble'}, 
+walls: ${(elements.walls as Record<string, unknown>)?.color || 'white'}, 
+style: ${styleInfo.name}, 
+photorealistic, 8K quality, architectural visualization, luxury interior design, 
+warm lighting, high-end materials, professional photography`;
+
+  const { url } = await generateImage({ prompt });
+  return url;
+}
+
+// ===== الراوتر الرئيسي =====
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -114,9 +366,7 @@ export const appRouter = router({
 
   // ===== المشاريع =====
   projects: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return getUserProjects(ctx.user.id);
-    }),
+    list: protectedProcedure.query(async ({ ctx }) => getUserProjects(ctx.user.id)),
 
     get: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -130,22 +380,22 @@ export const appRouter = router({
       .input(z.object({
         name: z.string().min(1),
         description: z.string().optional(),
-        designStyle: z.enum(["modern", "gulf", "classic", "minimal"]).default("modern"),
+        projectType: z.enum(["new", "renovation", "partial"]).default("new"),
+        designStyle: z.string().default("modern"),
         spaceType: z.string().optional(),
         area: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await createProject({
+        return createProject({
           userId: ctx.user.id,
           name: input.name,
           description: input.description ?? null,
+          projectType: input.projectType,
           designStyle: input.designStyle,
           spaceType: input.spaceType ?? null,
           area: input.area ?? null,
           status: "draft",
         });
-        const projects = await getUserProjects(ctx.user.id);
-        return projects[0];
       }),
 
     update: protectedProcedure
@@ -153,14 +403,18 @@ export const appRouter = router({
         id: z.number(),
         name: z.string().optional(),
         description: z.string().optional(),
-        designStyle: z.enum(["modern", "gulf", "classic", "minimal"]).optional(),
+        designStyle: z.string().optional(),
         spaceType: z.string().optional(),
         area: z.number().optional(),
-        status: z.enum(["draft", "analyzed", "completed"]).optional(),
+        status: z.enum(["draft", "analyzed", "designing", "completed"]).optional(),
+        floorPlanUrl: z.string().optional(),
+        floorPlanKey: z.string().optional(),
+        floorPlanData: z.unknown().optional(),
+        designElements: z.unknown().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { id, ...data } = input;
-        await updateProject(id, ctx.user.id, data);
+        await updateProject(id, ctx.user.id, data as Parameters<typeof updateProject>[2]);
         return { success: true };
       }),
 
@@ -170,6 +424,15 @@ export const appRouter = router({
         await deleteProject(input.id, ctx.user.id);
         return { success: true };
       }),
+
+    getStyles: publicProcedure.query(() => {
+      return Object.entries(GLOBAL_STYLES).map(([key, val]) => ({
+        key,
+        name: val.name,
+        description: val.description,
+        keywords: val.keywords,
+      }));
+    }),
   }),
 
   // ===== التحليلات =====
@@ -179,20 +442,12 @@ export const appRouter = router({
         projectId: z.number(),
         imageUrl: z.string(),
         imageKey: z.string().optional(),
-        designStyle: z.enum(["modern", "gulf", "classic", "minimal"]).default("modern"),
+        designStyle: z.string().default("modern"),
         spaceType: z.string().default("غرفة معيشة"),
         area: z.number().default(30),
       }))
       .mutation(async ({ ctx, input }) => {
-        // تحليل الصورة بالذكاء الاصطناعي
-        const result = await analyzeInteriorDesign(
-          input.imageUrl,
-          input.designStyle,
-          input.spaceType,
-          input.area
-        );
-
-        // حفظ التحليل في قاعدة البيانات
+        const result = await analyzeInteriorDesign(input.imageUrl, input.designStyle, input.spaceType, input.area);
         await createAnalysis({
           projectId: input.projectId,
           userId: ctx.user.id,
@@ -209,20 +464,31 @@ export const appRouter = router({
           totalCostMin: result.costEstimate?.total?.min || null,
           totalCostMax: result.costEstimate?.total?.max || null,
         });
-
-        // تحديث حالة المشروع
         await updateProject(input.projectId, ctx.user.id, { status: "analyzed" });
-
-        // إرجاع آخر تحليل
         const allAnalyses = await getProjectAnalyses(input.projectId, ctx.user.id);
         return allAnalyses[0];
       }),
 
+    analyzeFloorPlan: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        imageUrl: z.string(),
+        imageKey: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await analyzeFloorPlan(input.imageUrl);
+        await updateProject(input.projectId, ctx.user.id, {
+          floorPlanUrl: input.imageUrl,
+          floorPlanKey: input.imageKey ?? null,
+          floorPlanData: result,
+          status: "analyzed",
+        });
+        return result;
+      }),
+
     getByProject: protectedProcedure
       .input(z.object({ projectId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        return getProjectAnalyses(input.projectId, ctx.user.id);
-      }),
+      .query(async ({ ctx, input }) => getProjectAnalyses(input.projectId, ctx.user.id)),
 
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -232,9 +498,146 @@ export const appRouter = router({
         return analysis;
       }),
 
-    recent: protectedProcedure.query(async ({ ctx }) => {
-      return getUserAnalyses(ctx.user.id);
-    }),
+    recent: protectedProcedure.query(async ({ ctx }) => getUserAnalyses(ctx.user.id)),
+  }),
+
+  // ===== عناصر التصميم =====
+  designElements: router({
+    design: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        elementType: z.enum(["flooring", "walls", "ceiling", "windows", "doors", "lighting", "furniture", "perspective"]),
+        roomName: z.string(),
+        roomArea: z.number().default(20),
+        designStyle: z.string().default("modern"),
+        projectContext: z.string().default(""),
+        referenceImageUrl: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await designElement(
+          input.elementType,
+          input.roomName,
+          input.roomArea,
+          input.designStyle,
+          input.projectContext,
+          input.referenceImageUrl
+        );
+
+        const element = await createDesignElement({
+          projectId: input.projectId,
+          userId: ctx.user.id,
+          elementType: input.elementType,
+          roomName: input.roomName,
+          roomArea: input.roomArea,
+          specifications: result,
+          costMin: result.totalCostMin || null,
+          costMax: result.totalCostMax || null,
+          unit: result.unit || "م²",
+          quantity: result.quantity || input.roomArea,
+          isCompleted: false,
+          sortOrder: 0,
+        });
+
+        await updateProject(input.projectId, ctx.user.id, { status: "designing" });
+        return { element, design: result };
+      }),
+
+    getByProject: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => getProjectDesignElements(input.projectId, ctx.user.id)),
+
+    markComplete: protectedProcedure
+      .input(z.object({ id: z.number(), isCompleted: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        await updateDesignElement(input.id, ctx.user.id, { isCompleted: input.isCompleted });
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteDesignElement(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // ===== المناظير =====
+  perspectives: router({
+    generate: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        roomName: z.string(),
+        designStyle: z.string().default("modern"),
+        elements: z.record(z.string(), z.unknown()).default({}),
+        area: z.number().default(20),
+        perspectiveType: z.enum(["3d_render", "floor_plan", "elevation", "section", "detail"]).default("3d_render"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const imageUrl = await generatePerspective(input.roomName, input.designStyle, input.elements, input.area);
+        const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
+        const perspective = await createPerspective({
+          projectId: input.projectId,
+          userId: ctx.user.id,
+          roomName: input.roomName,
+          perspectiveType: input.perspectiveType,
+          imageUrl,
+          designStyle: input.designStyle,
+          description: `منظور ${input.roomName} بنمط ${styleInfo.name}`,
+        });
+        return perspective;
+      }),
+
+    getByProject: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => getProjectPerspectives(input.projectId, ctx.user.id)),
+  }),
+
+  // ===== المحادثة الذكية =====
+  chat: router({
+    send: protectedProcedure
+      .input(z.object({
+        sessionId: z.number().optional(),
+        projectId: z.number().optional(),
+        message: z.string(),
+        sessionType: z.enum(["general", "floor_plan", "camera_scan", "element_design"]).default("general"),
+        imageUrl: z.string().optional(),
+        projectContext: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        let session = input.sessionId ? await getChatSession(input.sessionId, ctx.user.id) : null;
+
+        const currentMessages: Array<{ role: string; content: string }> = session
+          ? (session.messages as Array<{ role: string; content: string }>)
+          : [];
+
+        const userMessage = input.imageUrl
+          ? `[صورة مرفقة: ${input.imageUrl}]\n${input.message}`
+          : input.message;
+
+        currentMessages.push({ role: "user", content: userMessage });
+
+        const reply = await sarahChat(currentMessages, input.sessionType, input.projectContext);
+        currentMessages.push({ role: "assistant", content: reply as string });
+
+        if (session) {
+          await updateChatSession(session.id, ctx.user.id, { messages: currentMessages });
+        } else {
+          session = await createChatSession({
+            projectId: input.projectId ?? null,
+            userId: ctx.user.id,
+            messages: currentMessages,
+            sessionType: input.sessionType,
+          });
+        }
+
+        return { sessionId: session?.id, reply, messages: currentMessages };
+      }),
+
+    getSession: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => getChatSession(input.id, ctx.user.id)),
+
+    getSessions: protectedProcedure.query(async ({ ctx }) => getUserChatSessions(ctx.user.id)),
   }),
 
   // ===== حساب التكاليف =====
@@ -242,14 +645,15 @@ export const appRouter = router({
     calculate: protectedProcedure
       .input(z.object({
         area: z.number(),
-        designStyle: z.enum(["modern", "gulf", "classic", "minimal"]),
+        designStyle: z.string(),
         spaceType: z.string(),
         quality: z.enum(["budget", "mid", "luxury"]).default("mid"),
       }))
-      .mutation(async ({ ctx, input }) => {
-        const prompt = `أنتِ م. سارة خبيرة التصميم الداخلي. احسبي تقدير تكلفة تصميم داخلي للمعطيات التالية:
+      .mutation(async ({ ctx: _ctx, input }) => {
+        const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
+        const prompt = `أنتِ م. سارة خبيرة التصميم الداخلي. احسبي تقدير تكلفة تصميم داخلي:
 - المساحة: ${input.area} متر مربع
-- نمط التصميم: ${input.designStyle}
+- نمط التصميم: ${styleInfo.name}
 - نوع الفضاء: ${input.spaceType}
 - مستوى الجودة: ${input.quality === 'budget' ? 'اقتصادي' : input.quality === 'mid' ? 'متوسط' : 'فاخر'}
 
@@ -258,29 +662,30 @@ export const appRouter = router({
   "breakdown": [
     {"category": "الأثاث", "min": 5000, "max": 15000, "notes": "ملاحظات"},
     {"category": "المواد والتشطيبات", "min": 3000, "max": 8000, "notes": "ملاحظات"},
+    {"category": "الأرضيات", "min": 2000, "max": 6000, "notes": "ملاحظات"},
     {"category": "الإضاءة", "min": 1000, "max": 3000, "notes": "ملاحظات"},
-    {"category": "العمالة والتركيب", "min": 2000, "max": 5000, "notes": "ملاحظات"},
     {"category": "الستائر والمفروشات", "min": 1500, "max": 4000, "notes": "ملاحظات"},
-    {"category": "الديكور والإكسسوار", "min": 500, "max": 2000, "notes": "ملاحظات"}
+    {"category": "الديكور والإكسسوار", "min": 500, "max": 2000, "notes": "ملاحظات"},
+    {"category": "العمالة والتركيب", "min": 2000, "max": 5000, "notes": "ملاحظات"}
   ],
-  "total": {"min": 13000, "max": 37000},
-  "pricePerSqm": {"min": 400, "max": 1200},
+  "total": {"min": 15000, "max": 43000},
+  "pricePerSqm": {"min": 500, "max": 1400},
   "timeline": "8-12 أسبوع",
-  "tips": ["نصيحة للتوفير 1", "نصيحة 2"]
+  "tips": ["نصيحة للتوفير 1", "نصيحة 2", "نصيحة 3"]
 }`;
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك دائماً باللغة العربية." },
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك باللغة العربية." },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
         });
 
-        const rawContent2 = response.choices[0]?.message?.content;
-        const content2 = typeof rawContent2 === 'string' ? rawContent2 : JSON.stringify(rawContent2) || "{}";
+        const rawContent = response.choices[0]?.message?.content;
+        const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent) || "{}";
         try {
-          return JSON.parse(content2);
+          return JSON.parse(content);
         } catch {
           return { breakdown: [], total: { min: 0, max: 0 }, tips: [] };
         }

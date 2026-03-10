@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import {
   Sparkles, Upload, Palette, Calculator, FolderOpen,
-  Star, ArrowLeft, CheckCircle2, Layers, Lightbulb, Home
+  Star, ArrowLeft, CheckCircle2, Layers, Lightbulb, Home,
+  MessageCircle, Wand2, Eye
 } from "lucide-react";
 
 const DESIGN_STYLES = [
@@ -101,7 +102,11 @@ export default function HomePage() {
               <button onClick={() => navigate("/analyze")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">تحليل التصميم</button>
               <button onClick={() => navigate("/costs")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">حساب التكاليف</button>
               {isAuthenticated && (
-                <button onClick={() => navigate("/projects")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">مشاريعي</button>
+                <>
+                  <button onClick={() => navigate("/projects")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">مشاريعي</button>
+                  <button onClick={() => navigate("/studio")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">استوديو التصميم</button>
+                  <button onClick={() => navigate("/chat")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">م. سارة</button>
+                </>
               )}
             </div>
 
@@ -156,7 +161,7 @@ export default function HomePage() {
                 م. سارة خبيرتك الشخصية في التصميم الداخلي. ارفع صورة فضاءك وسأقدم لك توصيات احترافية للألوان والمواد والأثاث بأسلوب يناسب ذوقك وميزانيتك.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start flex-wrap">
                 <Button
                   onClick={handleStart}
                   size="lg"
@@ -166,13 +171,21 @@ export default function HomePage() {
                   ابدأ التحليل مجاناً
                 </Button>
                 <Button
-                  onClick={() => navigate("/costs")}
+                  onClick={() => isAuthenticated ? navigate("/studio") : (window.location.href = getLoginUrl())}
+                  size="lg"
+                  className="bg-stone-800 text-white px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all font-bold hover:bg-stone-700"
+                >
+                  <Wand2 className="w-5 h-5 ml-2" />
+                  استوديو التصميم
+                </Button>
+                <Button
+                  onClick={() => isAuthenticated ? navigate("/chat") : (window.location.href = getLoginUrl())}
                   variant="outline"
                   size="lg"
                   className="border-amber-300 text-amber-800 hover:bg-amber-50 px-8 py-4 text-lg rounded-xl font-medium"
                 >
-                  <Calculator className="w-5 h-5 ml-2" />
-                  احسب التكاليف
+                  <MessageCircle className="w-5 h-5 ml-2" />
+                  تحدث مع م. سارة
                 </Button>
               </div>
 
@@ -180,7 +193,7 @@ export default function HomePage() {
               <div className="flex gap-8 mt-10 justify-center lg:justify-start">
                 {[
                   { num: "+500", label: "مشروع مكتمل" },
-                  { num: "4", label: "أنماط تصميم" },
+                  { num: "+20", label: "نمط تصميم عالمي" },
                   { num: "98%", label: "رضا العملاء" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
@@ -266,6 +279,22 @@ export default function HomePage() {
             <Badge className="mb-4 bg-amber-100 text-amber-800 border-amber-200">أنماط التصميم</Badge>
             <h2 className="text-3xl font-black text-stone-800 mb-3">اختر نمطك المفضل</h2>
             <p className="text-stone-500 max-w-lg mx-auto">أربعة أنماط تصميم متميزة تناسب جميع الأذواق والفضاءات</p>
+          </div>
+
+          {/* أزرار الوصول السريع */}
+          <div className="flex flex-wrap gap-3 justify-center mb-8">
+            <Button onClick={() => isAuthenticated ? navigate("/studio") : (window.location.href = getLoginUrl())} className="gold-gradient text-white rounded-xl">
+              <Wand2 className="w-4 h-4 ml-2" />
+              استوديو التصميم المعماري
+            </Button>
+            <Button onClick={() => isAuthenticated ? navigate("/chat") : (window.location.href = getLoginUrl())} variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-50 rounded-xl">
+              <MessageCircle className="w-4 h-4 ml-2" />
+              محادثة م. سارة
+            </Button>
+            <Button onClick={() => navigate("/analyze")} variant="outline" className="border-stone-300 text-stone-700 hover:bg-stone-50 rounded-xl">
+              <Eye className="w-4 h-4 ml-2" />
+              تحليل الصور
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

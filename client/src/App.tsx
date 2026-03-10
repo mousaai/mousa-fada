@@ -8,6 +8,9 @@ import Home from "./pages/Home";
 import Analyze from "./pages/Analyze";
 import Costs from "./pages/Costs";
 import Projects from "./pages/Projects";
+import DesignStudio from "./pages/DesignStudio";
+import SarahChat from "./pages/SarahChat";
+import ProjectDetail from "./pages/ProjectDetail";
 
 function Router() {
   return (
@@ -16,6 +19,9 @@ function Router() {
       <Route path={"/analyze"} component={Analyze} />
       <Route path={"/costs"} component={Costs} />
       <Route path={"/projects"} component={Projects} />
+      <Route path={"/projects/:id"} component={ProjectDetail} />
+      <Route path={"/studio"} component={DesignStudio} />
+      <Route path={"/chat"} component={SarahChat} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
