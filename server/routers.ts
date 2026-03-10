@@ -1359,5 +1359,140 @@ ${structuralAnalysisPrompt}
         return { ideas: [], spaceAnalysis: null, structuralSuggestions: [] };
       }
     }),
+
+  // ===== Voice Design Command =====
+  voiceDesignCommand: publicProcedure
+    .input(z.object({
+      audioBase64: z.string(),
+      textCommand: z.string().optional(),
+      currentPlan: z.object({
+        rooms: z.array(z.any()),
+        doors: z.array(z.any()),
+        windows: z.array(z.any()),
+        scale: z.number(),
+        northAngle: z.number(),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      let userCommand = input.textCommand || "";
+      let transcription = "";
+
+      // Transcribe audio if provided
+      if (input.audioBase64 && input.audioBase64.length > 100) {
+        try {
+          const { transcribeAudio } = await import("./_core/voiceTranscription");
+          // Convert base64 to buffer and upload temporarily
+          const audioBuffer = Buffer.from(input.audioBase64, "base64");
+          const audioKey = `voice-commands/${nanoid()}.webm`;
+          const { url: audioUrl } = await storagePut(audioKey, audioBuffer, "audio/webm");
+          const result = await transcribeAudio({ audioUrl, language: "ar" });
+          transcription = (result as { text?: string }).text || "";
+          userCommand = transcription;
+        } catch {
+          userCommand = input.textCommand || "";
+        }
+      }
+
+      if (!userCommand.trim()) {
+        return {
+          transcription: "",
+          sarahResponse: "لم أسمع شيئاً. حاول مجدداً.",
+          updatedPlan: input.currentPlan,
+        };
+      }
+
+      // Build current plan summary for context
+      const planSummary = input.currentPlan.rooms.length > 0
+        ? `المخطط الحالي يحتوي على: ${input.currentPlan.rooms.map((r: {label:string;width:number;height:number}) => `${r.label} (${r.width}×${r.height}م)`).join("، ")}. أبواب: ${input.currentPlan.doors.length}. نوافذ: ${input.currentPlan.windows.length}.`
+        : "المخطط فارغ حتى الآن.";
+
+      const systemPrompt = `أنت م. سارة، مهندسة معمارية خبيرة تساعد في رسم المخططات الهندسية بالصوت. 
+تعمل مع لوحة رسم تفاعلية تعرض مخططاً هندسياً من الأعلى (top-down floor plan).
+الاتجاهات: شمال = أعلى الشاشة، جنوب = أسفل، شرق = يمين، غرب = يسار.
+المقياس: 1 متر = 60 بكسل. الغرف تبدأ من الإحداثيات (0,0).
+
+قواعد الرد:
+1. افهم الأمر الصوتي وحوّله إلى تعديل على المخطط.
+2. أضف الغرف بجانب بعضها تلقائياً (لا تتداخل).
+3. الأبواب والنوافذ تُضاف على جدران الغرف المحددة.
+4. رد بـ JSON فقط بالشكل التالي:
+{
+  "sarahResponse": "رد م. سارة بالعربية (جملة قصيرة)",
+  "action": "add_room" | "add_door" | "add_window" | "remove" | "clear" | "none",
+  "updatedPlan": { ...نفس هيكل المخطط مع التعديلات... }
+}
+
+هيكل الغرفة: { id, x, y, width, height, label, color }
+هيكل الباب: { id, roomId, side (N/S/E/W), position (0-1), width (بالمتر), swingDirection (in/out) }
+هيكل النافذة: { id, roomId, side (N/S/E/W), position (0-1), width (بالمتر), height (بالمتر), sillHeight (بالمتر) }
+
+ألوان الغرف المتاحة: ["#E8D5B7","#D4E8D5","#D5D4E8","#E8D5D5","#E8E4D5","#D5E8E4","#E4D5E8","#E8E0D5"]
+
+عند إضافة غرفة جديدة، ضعها بجانب آخر غرفة موجودة (لا تتداخل). احسب الإحداثيات تلقائياً.`;
+
+      const messages: Message[] = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `${planSummary}\n\nالأمر: ${userCommand}\n\nالمخطط الحالي كـ JSON:\n${JSON.stringify(input.currentPlan)}` },
+      ];
+
+      try {
+        const response = await invokeLLM({
+          messages,
+          response_format: { type: "json_object" },
+        });
+        const rawContent = response.choices[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : "{}";
+        const parsed = JSON.parse(content);
+
+        return {
+          transcription,
+          sarahResponse: parsed.sarahResponse || "تم!",
+          updatedPlan: parsed.updatedPlan || input.currentPlan,
+        };
+      } catch {
+        return {
+          transcription,
+          sarahResponse: "حدث خطأ في المعالجة. حاول مجدداً.",
+          updatedPlan: input.currentPlan,
+        };
+      }
+    }),
+
+  // ===== Generate Floor Plan 3D =====
+  generateFloorPlan3D: publicProcedure
+    .input(z.object({
+      plan: z.object({
+        rooms: z.array(z.any()),
+        doors: z.array(z.any()),
+        windows: z.array(z.any()),
+        scale: z.number(),
+        northAngle: z.number(),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      const { plan } = input;
+
+      // Build textual description of the floor plan
+      const roomsDesc = plan.rooms.map((r: {label:string;width:number;height:number}) =>
+        `${r.label} (${r.width}m × ${r.height}m)`
+      ).join(", ");
+
+      const doorsDesc = plan.doors.length > 0
+        ? `${plan.doors.length} doors on walls: ${plan.doors.map((d: {side:string;width:number}) => `${d.side} wall (${d.width}m wide)`).join(", ")}`
+        : "no doors yet";
+
+      const windowsDesc = plan.windows.length > 0
+        ? `${plan.windows.length} windows: ${plan.windows.map((w: {side:string;width:number;height:number}) => `${w.side} wall (${w.width}m × ${w.height}m)`).join(", ")}`
+        : "no windows yet";
+
+      const prompt = `Photorealistic architectural interior perspective rendering of a floor plan with the following rooms: ${roomsDesc}. ${doorsDesc}. ${windowsDesc}. View from inside the main room looking toward the entrance. Ceiling height 3 meters. Modern Saudi interior design style. Natural lighting from windows. Clean white walls with warm wood flooring. Professional architectural visualization, 8K quality, no people, no text, photorealistic rendering, architectural digest quality.`;
+
+      try {
+        const { url: imageUrl } = await generateImage({ prompt });
+        return { imageUrl };
+      } catch {
+        return { imageUrl: null };
+      }
+    }),
 });
 export type AppRouter = typeof appRouter;

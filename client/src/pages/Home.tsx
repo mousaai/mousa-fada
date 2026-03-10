@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2 } from "lucide-react";
+import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2, Layers } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -254,6 +254,16 @@ export default function Home() {
 
         {/* 4 Quick Action Buttons */}
         <div className="w-full grid grid-cols-4 gap-2">
+          <button
+            onClick={() => navigate("/voice-designer")}
+            className="flex flex-col items-center gap-2 bg-gradient-to-br from-[#5C3D11]/10 to-[#C9A84C]/10 rounded-2xl p-3 shadow-sm border border-[#5C3D11]/30 active:scale-95 transition-transform"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#5C3D11]/20 flex items-center justify-center">
+              <Layers className="w-5 h-5 text-[#5C3D11]" />
+            </div>
+            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">ارسم<br />بصوتك</span>
+          </button>
+
           <button
             onClick={() => navigate("/design-ideas")}
             className="flex flex-col items-center gap-2 bg-gradient-to-br from-[#C9A84C]/10 to-[#8B6914]/10 rounded-2xl p-3 shadow-sm border border-[#C9A84C]/30 active:scale-95 transition-transform"

@@ -17,6 +17,7 @@ import MoodBoard from "./pages/MoodBoard";
 import QuickAnalyze from "./pages/QuickAnalyze";
 import DesignIdeas from "./pages/DesignIdeas";
 import SmartCapture from "./pages/SmartCapture";
+import VoiceDesigner from "./pages/VoiceDesigner";
 
 function Router() {
   return (
@@ -38,6 +39,8 @@ function Router() {
       <Route path={"/ideas"} component={DesignIdeas} />
       <Route path={"/smart-capture"} component={SmartCapture} />
       <Route path={"/capture"} component={SmartCapture} />
+      <Route path={"/voice-designer"} component={VoiceDesigner} />
+      <Route path={"/draw"} component={VoiceDesigner} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

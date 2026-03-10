@@ -563,6 +563,52 @@ function IdeaCard({
   );
 }
 
+// ===== Camera utility: open ultra-wide then apply zoom =====
+async function openUltraWideCamera(): Promise<MediaStream> {
+  // Try 4K first, then FHD, then any resolution
+  const resolutions = [
+    { width: 3840, height: 2160 },
+    { width: 1920, height: 1080 },
+    { width: 1280, height: 720 },
+  ];
+
+  for (const res of resolutions) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { exact: "environment" },
+          width: { ideal: res.width },
+          height: { ideal: res.height },
+        },
+        audio: false,
+      });
+      return s;
+    } catch { /* try next */ }
+  }
+  // fallback without exact facingMode
+  return navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+    audio: false,
+  });
+}
+
+// Apply zoom via MediaStreamTrack constraints (hardware zoom on supported devices)
+async function applyHardwareZoom(stream: MediaStream, zoomLevel: number): Promise<void> {
+  const track = stream.getVideoTracks()[0];
+  if (!track) return;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const caps = (track as any).getCapabilities?.();
+    if (caps?.zoom) {
+      const minZoom = caps.zoom.min ?? 0.5;
+      const maxZoom = caps.zoom.max ?? 10;
+      const clampedZoom = Math.max(minZoom, Math.min(maxZoom, zoomLevel));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (track as any).applyConstraints({ advanced: [{ zoom: clampedZoom }] });
+    }
+  } catch { /* zoom not supported */ }
+}
+
 // ===== Live Camera Component =====
 function LiveCamera({
   mode,
@@ -579,21 +625,43 @@ function LiveCamera({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.5);
+  const [maxZoom, setMaxZoom] = useState(10);
+  const [hasHardwareZoom, setHasHardwareZoom] = useState(false);
+  // Pinch state
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number>(1);
 
   useEffect(() => {
     let activeStream: MediaStream | null = null;
     const startCamera = async () => {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        });
+        const s = await openUltraWideCamera();
         activeStream = s;
         setStream(s);
+
+        // Detect zoom capabilities
+        const track = s.getVideoTracks()[0];
+        if (track) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const caps = (track as any).getCapabilities?.();
+          if (caps?.zoom) {
+            setMinZoom(caps.zoom.min ?? 0.5);
+            setMaxZoom(caps.zoom.max ?? 10);
+            setHasHardwareZoom(true);
+            // Start at minimum zoom = widest angle
+            const startZoom = caps.zoom.min ?? 0.5;
+            setZoom(startZoom);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (track as any).applyConstraints({ advanced: [{ zoom: startZoom }] }).catch(() => {});
+          }
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = s;
           videoRef.current.onloadedmetadata = () => {
@@ -609,6 +677,37 @@ function LiveCamera({
     return () => { activeStream?.getTracks().forEach(t => t.stop()); };
   }, []);
 
+  const adjustZoom = async (newZoom: number) => {
+    const clamped = Math.max(minZoom, Math.min(maxZoom, newZoom));
+    setZoom(clamped);
+    if (stream) await applyHardwareZoom(stream, clamped);
+  };
+
+  // Pinch-to-zoom handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDistRef.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartZoomRef.current = zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / pinchStartDistRef.current;
+      const newZoom = Math.max(minZoom, Math.min(maxZoom, pinchStartZoomRef.current * scale));
+      setZoom(newZoom);
+      if (stream) applyHardwareZoom(stream, newZoom);
+    }
+  };
+
+  const handleTouchEnd = () => { pinchStartDistRef.current = null; };
+
   const capture = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
@@ -618,27 +717,31 @@ function LiveCamera({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0);
-    const raw = canvas.toDataURL("image/jpeg", 0.92);
-    const compressed = await compressImage(raw, 1280, 0.85);
+    const raw = canvas.toDataURL("image/jpeg", 0.95);
+    // Keep high resolution — compress only if > 2MP
+    const compressed = await compressImage(raw, 2048, 0.9);
     onCapture(compressed);
   };
 
-  const adjustZoom = (newZoom: number) => {
-    setZoom(newZoom);
-    if (stream) {
-      const track = stream.getVideoTracks()[0];
-      if (track) {
-        try {
-          (track as MediaStreamTrack & { applyConstraints: (c: unknown) => Promise<void> })
-            .applyConstraints({ advanced: [{ zoom: newZoom }] } as unknown)
-            .catch(() => {});
-        } catch {}
-      }
-    }
-  };
+  // Zoom preset buttons based on capabilities
+  const zoomPresets = hasHardwareZoom
+    ? [minZoom, 1, 2, 3].filter(z => z <= maxZoom)
+    : [1, 2, 3];
+
+  const zoomPercent = hasHardwareZoom
+    ? Math.round(((zoom - minZoom) / (maxZoom - minZoom)) * 100)
+    : Math.round(((zoom - 1) / (maxZoom - 1)) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-50 bg-black flex flex-col"
+      dir="rtl"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Header */}
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
           className="p-2 rounded-full bg-white/20 text-white">
@@ -653,6 +756,11 @@ function LiveCamera({
               {["أمام", "يسار", "خلف", "يمين"][capturedCount] || "اكتمل"}
             </p>
           )}
+          {/* Zoom indicator */}
+          <p className="text-[#C9A84C] text-[10px] font-bold">
+            {zoom < 1 ? `عريض ${zoom.toFixed(1)}×` : `زوم ${zoom.toFixed(1)}×`}
+            {!hasHardwareZoom && " (رقمي)"}
+          </p>
         </div>
         <div className="w-9" />
       </div>
@@ -667,28 +775,65 @@ function LiveCamera({
         </div>
       ) : (
         <>
-          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay
-            style={{ transform: `scale(${zoom})` }} />
+          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
           <canvas ref={canvasRef} className="hidden" />
 
-          {/* Viewfinder */}
+          {/* Viewfinder corners */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-8 border-2 border-white/30 rounded-2xl">
-              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#C9A84C] rounded-tl-xl" />
-              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[#C9A84C] rounded-tr-xl" />
-              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[#C9A84C] rounded-bl-xl" />
-              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#C9A84C] rounded-br-xl" />
+            <div className="absolute inset-6 border border-white/20 rounded-2xl">
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#C9A84C] rounded-tl-xl" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#C9A84C] rounded-tr-xl" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#C9A84C] rounded-bl-xl" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#C9A84C] rounded-br-xl" />
+            </div>
+            {/* Center crosshair */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="w-6 h-0.5 bg-white/40" />
+              <div className="w-0.5 h-6 bg-white/40 -mt-3 mx-auto" />
             </div>
           </div>
 
-          {/* Zoom controls */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-            {[1, 2, 3].map(z => (
-              <button key={z} onClick={() => adjustZoom(z)}
-                className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${zoom === z ? "bg-[#C9A84C] text-white" : "bg-white/20 text-white"}`}>
-                {z}×
-              </button>
-            ))}
+          {/* Zoom bar + presets — bottom left */}
+          <div className="absolute bottom-32 left-4 flex flex-col items-center gap-2">
+            {/* Vertical zoom slider */}
+            <div className="h-32 w-1.5 bg-white/20 rounded-full relative">
+              <div
+                className="absolute bottom-0 left-0 right-0 bg-[#C9A84C] rounded-full transition-all"
+                style={{ height: `${zoomPercent}%` }}
+              />
+            </div>
+            {/* Preset buttons */}
+            <div className="flex flex-col gap-1.5">
+              {zoomPresets.map(z => (
+                <button
+                  key={z}
+                  onClick={() => adjustZoom(z)}
+                  className={`w-10 h-10 rounded-full text-[11px] font-bold transition-all shadow-lg ${
+                    Math.abs(zoom - z) < 0.15
+                      ? "bg-[#C9A84C] text-white scale-110"
+                      : "bg-black/50 text-white/80 border border-white/20"
+                  }`}
+                >
+                  {z < 1 ? `×${z}` : `${z}×`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Zoom +/- buttons — right side */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+            <button
+              onClick={() => adjustZoom(Math.min(maxZoom, zoom + 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform"
+            >
+              +
+            </button>
+            <button
+              onClick={() => adjustZoom(Math.max(minZoom, zoom - 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform"
+            >
+              −
+            </button>
           </div>
 
           {/* Capture button */}
@@ -718,18 +863,34 @@ function PanoramaCapture({
   const [captured, setCaptured] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.5);
+  const [maxZoom, setMaxZoom] = useState(10);
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number>(1);
   const ANGLES = ["0°", "90°", "180°", "270°"];
 
   useEffect(() => {
     let activeStream: MediaStream | null = null;
     const startCamera = async () => {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        });
+        const s = await openUltraWideCamera();
         activeStream = s;
         setStream(s);
+        // Detect & apply minimum zoom (widest angle)
+        const track = s.getVideoTracks()[0];
+        if (track) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const caps = (track as any).getCapabilities?.();
+          if (caps?.zoom) {
+            const mn = caps.zoom.min ?? 0.5;
+            const mx = caps.zoom.max ?? 10;
+            setMinZoom(mn); setMaxZoom(mx);
+            setZoom(mn);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (track as any).applyConstraints({ advanced: [{ zoom: mn }] }).catch(() => {});
+          }
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = s;
           videoRef.current.onloadedmetadata = () => {
@@ -744,6 +905,34 @@ function PanoramaCapture({
     startCamera();
     return () => { activeStream?.getTracks().forEach(t => t.stop()); };
   }, []);
+
+  const adjustZoom = async (newZoom: number) => {
+    const clamped = Math.max(minZoom, Math.min(maxZoom, newZoom));
+    setZoom(clamped);
+    if (stream) await applyHardwareZoom(stream, clamped);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDistRef.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartZoomRef.current = zoom;
+    }
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / pinchStartDistRef.current;
+      const newZoom = Math.max(minZoom, Math.min(maxZoom, pinchStartZoomRef.current * scale));
+      setZoom(newZoom);
+      if (stream) applyHardwareZoom(stream, newZoom);
+    }
+  };
+  const handleTouchEnd = () => { pinchStartDistRef.current = null; };
 
   const captureAngle = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -763,7 +952,13 @@ function PanoramaCapture({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 bg-black flex flex-col"
+      dir="rtl"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
           className="p-2 rounded-full bg-white/20 text-white">
@@ -772,6 +967,9 @@ function PanoramaCapture({
         <div className="text-center">
           <p className="text-white font-bold text-sm">بانوراما — {captured.length}/4</p>
           <p className="text-white/60 text-[10px]">اتجاه {ANGLES[captured.length] || "مكتمل"}</p>
+          <p className="text-[#C9A84C] text-[10px] font-bold">
+            {zoom < 1 ? `عريض ${zoom.toFixed(1)}×` : `زوم ${zoom.toFixed(1)}×`}
+          </p>
         </div>
         <div className="w-9" />
       </div>
@@ -789,10 +987,39 @@ function PanoramaCapture({
           {/* Progress dots */}
           <div className="absolute top-20 left-0 right-0 flex justify-center gap-2">
             {ANGLES.map((a, i) => (
-              <div key={i} className={`flex flex-col items-center gap-1`}>
+              <div key={i} className="flex flex-col items-center gap-1">
                 <div className={`w-3 h-3 rounded-full ${i < captured.length ? "bg-[#C9A84C]" : "bg-white/30"}`} />
                 <span className="text-[9px] text-white/60">{a}</span>
               </div>
+            ))}
+          </div>
+
+          {/* Zoom +/- buttons */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+            <button
+              onClick={() => adjustZoom(Math.min(maxZoom, zoom + 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform"
+            >+</button>
+            <button
+              onClick={() => adjustZoom(Math.max(minZoom, zoom - 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform"
+            >−</button>
+          </div>
+
+          {/* Zoom presets */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+            {[minZoom, 1, 2].filter(z => z <= maxZoom).map(z => (
+              <button
+                key={z}
+                onClick={() => adjustZoom(z)}
+                className={`w-10 h-10 rounded-full text-[11px] font-bold transition-all shadow-lg ${
+                  Math.abs(zoom - z) < 0.15
+                    ? "bg-[#C9A84C] text-white scale-110"
+                    : "bg-black/50 text-white/80 border border-white/20"
+                }`}
+              >
+                {z < 1 ? `×${z}` : `${z}×`}
+              </button>
             ))}
           </div>
 
@@ -823,16 +1050,37 @@ function VideoRecorder({
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.5);
+  const [maxZoom, setMaxZoom] = useState(10);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pinchStartDistRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef<number>(1);
 
   useEffect(() => {
     let activeStream: MediaStream | null = null;
     const startCamera = async () => {
       try {
-        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        const s = await openUltraWideCamera();
         activeStream = s;
         setStream(s);
-        if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play(); }
+        // Apply widest zoom
+        const track = s.getVideoTracks()[0];
+        if (track) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const caps = (track as any).getCapabilities?.();
+          if (caps?.zoom) {
+            const mn = caps.zoom.min ?? 0.5;
+            const mx = caps.zoom.max ?? 10;
+            setMinZoom(mn); setMaxZoom(mx); setZoom(mn);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (track as any).applyConstraints({ advanced: [{ zoom: mn }] }).catch(() => {});
+          }
+        }
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => videoRef.current?.play();
+        }
       } catch { setError("لا يمكن الوصول للكاميرا."); }
     };
     startCamera();
@@ -841,6 +1089,33 @@ function VideoRecorder({
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  const adjustZoom = async (newZoom: number) => {
+    const clamped = Math.max(minZoom, Math.min(maxZoom, newZoom));
+    setZoom(clamped);
+    if (stream) await applyHardwareZoom(stream, clamped);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchStartDistRef.current = Math.sqrt(dx * dx + dy * dy);
+      pinchStartZoomRef.current = zoom;
+    }
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const newZoom = Math.max(minZoom, Math.min(maxZoom, pinchStartZoomRef.current * (dist / pinchStartDistRef.current)));
+      setZoom(newZoom);
+      if (stream) applyHardwareZoom(stream, newZoom);
+    }
+  };
+  const handleTouchEnd = () => { pinchStartDistRef.current = null; };
 
   const startRecording = () => {
     if (!stream) return;
@@ -877,7 +1152,13 @@ function VideoRecorder({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 bg-black flex flex-col"
+      dir="rtl"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
           className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
@@ -890,6 +1171,9 @@ function VideoRecorder({
           ) : (
             <span className="text-white font-bold text-sm">فيديو 360°</span>
           )}
+          <p className="text-[#C9A84C] text-[10px] font-bold">
+            {zoom < 1 ? `عريض ${zoom.toFixed(1)}×` : `زوم ${zoom.toFixed(1)}×`}
+          </p>
         </div>
         <div className="w-9" />
       </div>
@@ -902,6 +1186,27 @@ function VideoRecorder({
       ) : (
         <>
           <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
+
+          {/* Zoom +/- */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+            <button onClick={() => adjustZoom(Math.min(maxZoom, zoom + 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform">+</button>
+            <button onClick={() => adjustZoom(Math.max(minZoom, zoom - 0.5))}
+              className="w-11 h-11 rounded-full bg-black/50 border border-white/30 flex items-center justify-center text-white text-xl font-bold active:scale-90 transition-transform">−</button>
+          </div>
+
+          {/* Zoom presets */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+            {[minZoom, 1, 2].filter(z => z <= maxZoom).map(z => (
+              <button key={z} onClick={() => adjustZoom(z)}
+                className={`w-10 h-10 rounded-full text-[11px] font-bold transition-all shadow-lg ${
+                  Math.abs(zoom - z) < 0.15 ? "bg-[#C9A84C] text-white scale-110" : "bg-black/50 text-white/80 border border-white/20"
+                }`}>
+                {z < 1 ? `×${z}` : `${z}×`}
+              </button>
+            ))}
+          </div>
+
           <div className="absolute bottom-0 left-0 right-0 pb-safe pb-8 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent pt-8">
             <button
               onClick={recording ? stopRecording : startRecording}
