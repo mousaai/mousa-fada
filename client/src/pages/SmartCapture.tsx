@@ -1,7 +1,7 @@
 /**
- * SmartCapture — التصوير الذكي
- * لمسة واحدة → اختيار وضع التصوير → تصوير → 3-6 أفكار تصميمية فورية
- * كل شيء في شاشة واحدة بدون تنقل
+ * SmartCapture — التصوير الذكي مع التحليل المعماري
+ * لمسة واحدة → اختيار وضع التصوير → تصوير → تحليل معماري + 3-6 أفكار تصميمية فورية
+ * يحافظ على البنية الأصلية للغرفة (الأبواب، السلالم، الأبعاد)
  */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -9,7 +9,8 @@ import {
   Camera, ChevronRight, Sparkles, RefreshCw, X, Wand2,
   DollarSign, Palette, ChevronDown, ChevronUp, Heart,
   Share2, ZoomIn, Video, ScanLine, Box, ImageIcon,
-  Plus, Minus, Check, RotateCcw, Layers
+  Plus, Minus, Check, RotateCcw, Layers, AlertTriangle,
+  Building2, Home, Info, Star
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -24,11 +25,38 @@ interface ReplacementCost {
   notes: string;
 }
 
+interface StructuralElement {
+  element: string;
+  position: string;
+  keepInDesign: boolean;
+}
+
+interface StructuralSuggestion {
+  id: string;
+  title: string;
+  element: string;
+  reason: string;
+  benefit: string;
+  additionalCost: string;
+  structuralWarning: string;
+  timeRequired: string;
+}
+
+interface SpaceAnalysis {
+  spaceType: string;
+  estimatedArea: string;
+  structuralElements: StructuralElement[];
+  currentIssues: string[];
+  currentMaterials: string[];
+}
+
 interface DesignIdea {
   id: string;
   title: string;
   style: string;
   styleLabel: string;
+  scenario: string;
+  scenarioLabel: string;
   description: string;
   palette: { name: string; hex: string }[];
   materials: string[];
@@ -36,6 +64,7 @@ interface DesignIdea {
   estimatedCost: string;
   costMin: number;
   costMax: number;
+  timeline: string;
   replacementCosts: ReplacementCost[];
   imagePrompt: string;
   imageUrl?: string;
@@ -102,537 +131,166 @@ function compressImage(dataUrl: string, maxWidth = 1280, quality = 0.85): Promis
   });
 }
 
-// ===== Camera Component =====
-function LiveCamera({
-  onCapture,
-  onClose,
-  mode,
-  capturedCount,
-  targetCount,
-}: {
-  onCapture: (dataUrl: string) => void;
-  onClose: () => void;
-  mode: CaptureMode;
-  capturedCount: number;
-  targetCount: number;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const [flash, setFlash] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [maxZoom, setMaxZoom] = useState(4);
-  const touchStartRef = useRef<{ dist: number; zoom: number } | null>(null);
+// ===== Scenario badge colors =====
+const SCENARIO_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  surface: { bg: "#E8F5E9", text: "#2E7D32", border: "#A5D6A7", label: "تجديد سطحي" },
+  moderate: { bg: "#FFF3E0", text: "#E65100", border: "#FFCC80", label: "تحسين متوسط" },
+  complete: { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8", label: "تحول شامل" },
+};
 
-  useEffect(() => {
-    let s: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
-      .then((stream) => {
-        s = stream;
-        setStream(stream);
-        // Check zoom capability
-        const track = stream.getVideoTracks()[0];
-        const caps = track.getCapabilities?.() as { zoom?: { max?: number } } | undefined;
-        if (caps?.zoom?.max) setMaxZoom(Math.min(caps.zoom.max, 8));
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            setReady(true);
-          };
-        }
-      })
-      .catch(() => setError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن."));
-    return () => { s?.getTracks().forEach((t) => t.stop()); };
-  }, []);
-
-  // Apply zoom to camera track
-  const applyZoom = useCallback((newZoom: number) => {
-    const clamped = Math.max(1, Math.min(newZoom, maxZoom));
-    setZoom(clamped);
-    if (stream) {
-      const track = stream.getVideoTracks()[0];
-      const caps = track.getCapabilities?.() as { zoom?: { max?: number } } | undefined;
-      if (caps?.zoom) {
-        track.applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] }).catch(() => {});
-      }
-    }
-  }, [stream, maxZoom]);
-
-  // Pinch-to-zoom
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchStartRef.current = { dist: Math.hypot(dx, dy), zoom };
-    }
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && touchStartRef.current) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const newDist = Math.hypot(dx, dy);
-      const scale = newDist / touchStartRef.current.dist;
-      applyZoom(touchStartRef.current.zoom * scale);
-    }
-  };
-
-  const capture = async () => {
-    if (!videoRef.current || !canvasRef.current || !ready) return;
-    const v = videoRef.current;
-    const c = canvasRef.current;
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext("2d")?.drawImage(v, 0, 0);
-    const raw = c.toDataURL("image/jpeg", 0.95);
-    // Compress before sending
-    const compressed = await compressImage(raw, 1280, 0.85);
-    setFlash(true);
-    setTimeout(() => setFlash(false), 200);
-    onCapture(compressed);
-    if (capturedCount + 1 >= targetCount) {
-      stream?.getTracks().forEach((t) => t.stop());
-    }
-  };
-
-  const angleLabels = ["أمام", "يمين", "خلف", "يسار"];
+// ===== Structural Analysis Card =====
+function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
+  const [expanded, setExpanded] = useState(false);
+  const keepElements = analysis.structuralElements?.filter(e => e.keepInDesign) || [];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl"
-      onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}>
-      {/* Flash effect */}
-      {flash && <div className="absolute inset-0 bg-white z-50 pointer-events-none animate-ping opacity-60" />}
-
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/70 to-transparent">
-        <button onClick={() => { stream?.getTracks().forEach((t) => t.stop()); onClose(); }}
-          className="p-2 rounded-full bg-white/20 text-white">
-          <X className="w-5 h-5" />
-        </button>
-        <div className="text-center">
-          <p className="text-white font-bold text-sm">
-            {mode === "animation3d" ? `زاوية ${capturedCount + 1} من ${targetCount}: ${angleLabels[capturedCount] || ""}` :
-             mode === "panorama" ? "صورة بانوراما" : "التقط الصورة"}
-          </p>
-          {mode === "animation3d" && (
-            <div className="flex gap-1 justify-center mt-1">
-              {Array.from({ length: targetCount }).map((_, i) => (
-                <div key={i} className={`w-2 h-2 rounded-full ${i < capturedCount ? "bg-[#C9A84C]" : i === capturedCount ? "bg-white" : "bg-white/30"}`} />
-              ))}
-            </div>
-          )}
-        </div>
-        {/* Zoom indicator */}
-        <div className="bg-black/40 px-2 py-1 rounded-lg">
-          <span className="text-white text-xs font-bold">{zoom.toFixed(1)}×</span>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-          <Camera className="w-12 h-12 text-white/40" />
-          <p className="text-white text-sm">{error}</p>
-          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold">رجوع</button>
-        </div>
-      ) : (
-        <>
-          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
-          <canvas ref={canvasRef} className="hidden" />
-
-          {/* Viewfinder */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-8 border border-white/20 rounded-2xl">
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#C9A84C] rounded-tl-xl" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#C9A84C] rounded-tr-xl" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#C9A84C] rounded-bl-xl" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#C9A84C] rounded-br-xl" />
-            </div>
-            {mode === "panorama" && (
-              <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-px bg-[#C9A84C]/50" />
-            )}
-          </div>
-
-          {/* Zoom controls - right side */}
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
-            <button
-              onClick={() => applyZoom(zoom + 0.5)}
-              disabled={zoom >= maxZoom}
-              className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-30"
-            >
-              <ZoomIn className="w-5 h-5" />
-            </button>
-            {/* Zoom level pills */}
-            {[1, 2, 3].filter(z => z <= maxZoom).map(z => (
-              <button key={z} onClick={() => applyZoom(z)}
-                className={`w-10 h-10 rounded-full backdrop-blur border flex items-center justify-center text-xs font-bold transition-all active:scale-90 ${
-                  Math.abs(zoom - z) < 0.3
-                    ? "bg-[#C9A84C] border-[#C9A84C] text-white"
-                    : "bg-black/50 border-white/20 text-white"
-                }`}>
-                {z}×
-              </button>
-            ))}
-            <button
-              onClick={() => applyZoom(zoom - 0.5)}
-              disabled={zoom <= 1}
-              className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-30"
-            >
-              <Minus className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Capture button */}
-          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-4 bg-gradient-to-t from-black/70 to-transparent pt-8">
-            {mode === "animation3d" && capturedCount < targetCount && (
-              <p className="text-white/70 text-xs">وجّه الكاميرا نحو: {angleLabels[capturedCount]}</p>
-            )}
-            <button
-              onClick={capture}
-              disabled={!ready}
-              className="w-20 h-20 rounded-full border-4 border-white bg-white/20 backdrop-blur flex items-center justify-center active:scale-90 transition-transform disabled:opacity-40"
-            >
-              <div className="w-14 h-14 rounded-full bg-white" />
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ===== Panorama Capture (DeviceOrientation-based) =====
-function PanoramaCapture({ onCapture, onClose }: { onCapture: (images: string[]) => void; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const [heading, setHeading] = useState<number | null>(null);
-  const [capturedAngles, setCapturedAngles] = useState<number[]>([]);
-  const [capturedImages, setCapturedImagesLocal] = useState<string[]>([]);
-  const [flash, setFlash] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const headingRef = useRef<number>(0);
-  const baseHeadingRef = useRef<number | null>(null);
-
-  // Target angles: 0°, 90°, 180°, 270°
-  const TARGET_ANGLES = [0, 90, 180, 270];
-  const TOLERANCE = 15; // degrees
-
-  useEffect(() => {
-    let s: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } }, audio: false })
-      .then((stream) => {
-        s = stream;
-        setStream(stream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => { videoRef.current?.play(); setReady(true); };
-        }
-      })
-      .catch(() => setError("لا يمكن الوصول للكاميرا."));
-    return () => { s?.getTracks().forEach((t) => t.stop()); };
-  }, []);
-
-  const requestOrientationPermission = async () => {
-    // iOS 13+ requires explicit permission
-    if (typeof (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === "function") {
-      try {
-        const perm = await (DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission();
-        if (perm === "granted") startOrientation();
-        else setError("يجب السماح باستخدام الجيروسكوب.");
-      } catch { setError("خطأ في طلب إذن الجيروسكوب."); }
-    } else {
-      startOrientation();
-    }
-    setPermissionGranted(true);
-  };
-
-  const startOrientation = () => {
-    const handler = (e: DeviceOrientationEvent) => {
-      const alpha = e.alpha ?? 0; // compass heading 0-360
-      headingRef.current = alpha;
-      if (baseHeadingRef.current === null) baseHeadingRef.current = alpha;
-      // Relative heading from start
-      let rel = alpha - baseHeadingRef.current;
-      if (rel < 0) rel += 360;
-      setHeading(Math.round(rel));
-    };
-    window.addEventListener("deviceorientation", handler, true);
-    return () => window.removeEventListener("deviceorientation", handler, true);
-  };
-
-  const captureFrame = () => {
-    if (!videoRef.current || !canvasRef.current || !ready) return;
-    const v = videoRef.current;
-    const c = canvasRef.current;
-    c.width = v.videoWidth; c.height = v.videoHeight;
-    c.getContext("2d")?.drawImage(v, 0, 0);
-    return c.toDataURL("image/jpeg", 0.85);
-  };
-
-  // Auto-capture when near a target angle
-  useEffect(() => {
-    if (heading === null || !permissionGranted) return;
-    const nextTarget = TARGET_ANGLES[capturedAngles.length];
-    if (nextTarget === undefined) return;
-    const diff = Math.abs(heading - nextTarget);
-    const withinTolerance = diff <= TOLERANCE || diff >= (360 - TOLERANCE);
-    if (withinTolerance) {
-      const img = captureFrame();
-      if (img) {
-        setFlash(true);
-        setTimeout(() => setFlash(false), 300);
-        const newAngles = [...capturedAngles, nextTarget];
-        const newImages = [...capturedImages, img];
-        setCapturedAngles(newAngles);
-        setCapturedImagesLocal(newImages);
-        if (newAngles.length >= 4) {
-          stream?.getTracks().forEach((t) => t.stop());
-          setTimeout(() => onCapture(newImages), 500);
-        }
-      }
-    }
-  }, [heading]);
-
-  const currentTarget = TARGET_ANGLES[capturedAngles.length];
-  const relHeading = heading ?? 0;
-  const diff = currentTarget !== undefined ? Math.abs(relHeading - currentTarget) : 0;
-  const isAligned = diff <= TOLERANCE;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
-      {flash && <div className="absolute inset-0 bg-white z-50 pointer-events-none opacity-70" />}
-
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/80 to-transparent">
-        <button onClick={() => { stream?.getTracks().forEach((t) => t.stop()); onClose(); }}
-          className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
-        <div className="text-center">
-          <p className="text-white font-bold text-sm">بانوراما تلقائية</p>
-          <p className="text-white/60 text-xs">{capturedAngles.length} / 4 زاوية</p>
-        </div>
-        {/* Compass heading */}
-        <div className="bg-black/50 px-2 py-1 rounded-lg">
-          <span className="text-white text-xs font-bold">{relHeading}°</span>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-          <p className="text-white text-sm">{error}</p>
-          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold">رجوع</button>
-        </div>
-      ) : !permissionGranted ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8 text-center">
-          <div className="w-20 h-20 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
-            <ScanLine className="w-10 h-10 text-[#C9A84C]" />
-          </div>
-          <p className="text-white font-bold text-lg">بانوراما ذكية</p>
-          <p className="text-white/70 text-sm leading-relaxed">
-            ستستخدم الجيروسكوب لتتبع اتجاهك تلقائياً.<br/>
-            دوّر الهاتف 360° وستلتقط 4 صور تلقائياً عند 0° • 90° • 180° • 270°
-          </p>
-          <button onClick={requestOrientationPermission}
-            className="px-8 py-3 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-bold rounded-2xl active:scale-95 transition-transform">
-            ابدأ البانوراما
-          </button>
-        </div>
-      ) : (
-        <>
-          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
-          <canvas ref={canvasRef} className="hidden" />
-
-          {/* Panorama guide overlay */}
-          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-            {/* Horizontal guide line */}
-            <div className="absolute inset-x-0 top-1/2 h-px bg-[#C9A84C]/60" />
-            {/* Center crosshair */}
-            <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all ${
-              isAligned ? "border-green-400 bg-green-400/20" : "border-[#C9A84C] bg-[#C9A84C]/10"
-            }`}>
-              {isAligned && <div className="w-4 h-4 rounded-full bg-green-400 animate-ping" />}
-            </div>
-          </div>
-
-          {/* Progress dots */}
-          <div className="absolute top-20 left-0 right-0 flex justify-center gap-3">
-            {TARGET_ANGLES.map((angle, i) => (
-              <div key={i} className={`flex flex-col items-center gap-1`}>
-                <div className={`w-3 h-3 rounded-full transition-all ${
-                  i < capturedAngles.length ? "bg-[#C9A84C] scale-125" :
-                  i === capturedAngles.length ? "bg-white animate-pulse" : "bg-white/30"
-                }`} />
-                <span className="text-white/60 text-[9px]">{angle}°</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Instruction */}
-          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-3 bg-gradient-to-t from-black/80 to-transparent pt-8 px-6">
-            {currentTarget !== undefined ? (
-              <>
-                <p className="text-white/70 text-xs">وجّه الكاميرا نحو زاوية</p>
-                <p className={`text-3xl font-black transition-colors ${
-                  isAligned ? "text-green-400" : "text-white"
-                }`}>{currentTarget}°</p>
-                <p className="text-white/50 text-xs">
-                  {isAligned ? "✅ جاري التقاط الصورة تلقائياً..." : `الاتجاه الحالي: ${relHeading}° • المطلوب: ${currentTarget}°`}
-                </p>
-              </>
-            ) : (
-              <p className="text-green-400 font-bold text-lg">✅ تم التقاط جميع الزوايا!</p>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ===== Video Recorder =====
-function VideoRecorder({ onCapture, onClose }: { onCapture: (thumb: string) => void; onClose: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const mrRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let s: MediaStream | null = null;
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment" }, audio: false })
-      .then((stream) => {
-        s = stream;
-        setStream(stream);
-        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
-      })
-      .catch(() => setError("لا يمكن الوصول للكاميرا."));
-    return () => { s?.getTracks().forEach((t) => t.stop()); if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
-
-  const start = () => {
-    if (!stream) return;
-    chunksRef.current = [];
-    const mr = new MediaRecorder(stream, { mimeType: "video/webm" });
-    mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-    mr.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      const url = URL.createObjectURL(blob);
-      const v = document.createElement("video");
-      v.src = url;
-      v.onloadeddata = () => {
-        const c = document.createElement("canvas");
-        c.width = v.videoWidth; c.height = v.videoHeight;
-        c.getContext("2d")?.drawImage(v, 0, 0);
-        stream?.getTracks().forEach((t) => t.stop());
-        onCapture(c.toDataURL("image/jpeg", 0.85));
-      };
-    };
-    mr.start();
-    mrRef.current = mr;
-    setRecording(true);
-    setSeconds(0);
-    timerRef.current = setInterval(() => {
-      setSeconds((s) => { if (s >= 29) { stop(); return 30; } return s + 1; });
-    }, 1000);
-  };
-
-  const stop = () => {
-    mrRef.current?.stop();
-    if (timerRef.current) clearInterval(timerRef.current);
-    setRecording(false);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/80 to-transparent">
-        <button onClick={() => { stream?.getTracks().forEach((t) => t.stop()); onClose(); }} className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+    <div className="bg-white rounded-2xl border border-[#e8d9c0] shadow-sm overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
         <div className="flex items-center gap-2">
-          {recording && <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />}
-          <span className="text-white font-bold text-sm">{recording ? "جاري التسجيل" : "سجّل جولة الغرفة"}</span>
+          <Building2 className="w-4 h-4 text-[#C9A84C]" />
+          <span className="font-bold text-[#5C3D11] text-sm">التحليل المعماري</span>
+          <span className="text-[10px] bg-[#C9A84C]/10 text-[#8B6914] px-2 py-0.5 rounded-full border border-[#C9A84C]/20">
+            {analysis.spaceType} • {analysis.estimatedArea}
+          </span>
         </div>
-        <div className="w-9" />
-      </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-[#8B6914]" /> : <ChevronDown className="w-4 h-4 text-[#8B6914]" />}
+      </button>
 
-      {error ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-          <p className="text-white text-sm">{error}</p>
-          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold">رجوع</button>
-        </div>
-      ) : (
-        <>
-          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
-
-          {/* Recording indicator overlay */}
-          {recording && (
-            <>
-              {/* REC badge top-right */}
-              <div className="absolute top-16 right-4 z-20 flex items-center gap-1.5 bg-red-600 px-3 py-1.5 rounded-full">
-                <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                <span className="text-white text-xs font-black tracking-widest">REC</span>
-              </div>
-              {/* Timer center-top */}
-              <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
-                <div className="bg-black/60 backdrop-blur px-4 py-2 rounded-full">
-                  <span className="text-white font-black text-2xl tabular-nums">
-                    {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}
-                  </span>
-                  <span className="text-white/50 text-sm ml-1">/ 0:30</span>
-                </div>
-              </div>
-              {/* Progress bar */}
-              <div className="absolute top-28 left-6 right-6 z-20">
-                <div className="bg-white/20 rounded-full h-1">
-                  <div className="bg-red-500 h-1 rounded-full transition-all duration-1000" style={{ width: `${(seconds / 30) * 100}%` }} />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Instructions when not recording */}
-          {!recording && (
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 pointer-events-none">
-              <div className="bg-black/50 backdrop-blur px-5 py-3 rounded-2xl">
-                <p className="text-white/80 text-sm text-center">دوّر ببطء حول الغرفة أثناء التسجيل</p>
-                <p className="text-white/50 text-xs text-center mt-1">حد أقصى 30 ثانية</p>
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          {/* العناصر البنيوية المحافظ عليها */}
+          {keepElements.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-[#5C3D11] mb-2 flex items-center gap-1">
+                <Check className="w-3 h-3 text-green-600" />
+                عناصر محافظ عليها في كل التصاميم
+              </p>
+              <div className="space-y-1.5">
+                {keepElements.map((el, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2 border border-green-100">
+                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="text-xs text-green-800 font-medium">{el.element}</span>
+                    <span className="text-[10px] text-green-600 mr-auto">{el.position}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Capture button */}
-          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-3 bg-gradient-to-t from-black/70 to-transparent pt-8">
-            {recording ? (
-              <>
-                <p className="text-white/70 text-xs">اضغط لإيقاف التسجيل</p>
-                <button onClick={stop} className="w-20 h-20 rounded-full border-4 border-red-400 bg-red-500/80 backdrop-blur flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-red-500/40">
-                  <div className="w-8 h-8 rounded-sm bg-white" />
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-white/70 text-xs">اضغط لبدء التسجيل</p>
-                <button onClick={start} className="w-20 h-20 rounded-full border-4 border-white bg-red-500 flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-red-500/50">
-                  <div className="w-10 h-10 rounded-full bg-white" />
-                </button>
-              </>
-            )}
-          </div>
-        </>
+          {/* المشاكل الحالية */}
+          {analysis.currentIssues?.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-[#5C3D11] mb-2 flex items-center gap-1">
+                <Info className="w-3 h-3 text-orange-500" />
+                ملاحظات م. سارة
+              </p>
+              <div className="space-y-1">
+                {analysis.currentIssues.map((issue, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-orange-400 text-xs mt-0.5">•</span>
+                    <p className="text-xs text-[#6B4C1E] leading-relaxed">{issue}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* المواد الحالية */}
+          {analysis.currentMaterials?.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-[#5C3D11] mb-2">المواد الحالية</p>
+              <div className="flex flex-wrap gap-1.5">
+                {analysis.currentMaterials.map((m, i) => (
+                  <span key={i} className="text-[10px] bg-[#f0e8d8] text-[#8B6914] px-2 py-1 rounded-full">{m}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-// ===== Idea Card =====
+// ===== Structural Suggestions Card =====
+function StructuralSuggestionsCard({ suggestions }: { suggestions: StructuralSuggestion[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  if (!suggestions || suggestions.length === 0) return null;
+
+  return (
+    <div className="bg-amber-50 rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <span className="font-bold text-amber-800 text-sm">مقترحات تحسين بنيوية</span>
+          <span className="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+            {suggestions.length} مقترح
+          </span>
+        </div>
+        {expanded ? <ChevronUp className="w-4 h-4 text-amber-600" /> : <ChevronDown className="w-4 h-4 text-amber-600" />}
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          <p className="text-[10px] text-amber-700 bg-amber-100 rounded-xl px-3 py-2 leading-relaxed">
+            ⚠️ هذه مقترحات اختيارية تتطلب أعمال إنشائية. م. سارة تقدمها كأفكار إضافية — التصاميم الأساسية تحافظ على البنية الأصلية.
+          </p>
+          {suggestions.map((s) => (
+            <div key={s.id} className="bg-white rounded-xl border border-amber-200 overflow-hidden">
+              <button
+                onClick={() => setOpenId(openId === s.id ? null : s.id)}
+                className="w-full flex items-center justify-between px-3 py-2.5"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-3 h-3 text-amber-600" />
+                  </div>
+                  <span className="text-xs font-bold text-[#5C3D11]">{s.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-amber-700 font-bold">{s.additionalCost}</span>
+                  {openId === s.id ? <ChevronUp className="w-3.5 h-3.5 text-amber-600" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-600" />}
+                </div>
+              </button>
+              {openId === s.id && (
+                <div className="px-3 pb-3 space-y-2 border-t border-amber-100">
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-bold text-[#8B6914] flex-shrink-0 mt-0.5">السبب:</span>
+                      <p className="text-[10px] text-[#6B4C1E] leading-relaxed">{s.reason}</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-bold text-green-700 flex-shrink-0 mt-0.5">الفائدة:</span>
+                      <p className="text-[10px] text-green-800 leading-relaxed">{s.benefit}</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-red-700 leading-relaxed font-medium">{s.structuralWarning}</p>
+                    </div>
+                    <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2 py-1.5">
+                      <span className="text-[10px] text-amber-700">⏱️ {s.timeRequired}</span>
+                      <span className="text-[10px] text-amber-800 font-bold mr-auto">{s.additionalCost} إضافية</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===== Idea Card Component =====
 function IdeaCard({
   idea,
   onGenerateImage,
@@ -648,60 +306,106 @@ function IdeaCard({
   const [showDetails, setShowDetails] = useState(false);
   const [lightbox, setLightbox] = useState(false);
 
+  const scenario = SCENARIO_COLORS[idea.scenario] || SCENARIO_COLORS.surface;
+
   return (
-    <div className="bg-white rounded-3xl border border-[#e8d9c0] shadow-sm overflow-hidden mb-4">
-      {/* Image area */}
+    <div className="bg-white rounded-3xl border border-[#e8d9c0] shadow-sm overflow-hidden">
+      {/* صورة تصورية */}
       <div className="relative">
         {idea.imageUrl ? (
           <div className="relative cursor-pointer" onClick={() => setLightbox(true)}>
             <img src={idea.imageUrl} className="w-full h-52 object-cover" alt={idea.title} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            <div className="absolute bottom-3 right-3 left-3 flex items-end justify-between">
-              <div>
-                <span className="text-[10px] text-white/70 bg-black/30 px-2 py-0.5 rounded-full">{idea.styleLabel}</span>
-                <p className="text-white font-black text-lg mt-0.5 leading-tight">{idea.title}</p>
-              </div>
-              <div className="flex gap-1.5">
-                <button onClick={(e) => { e.stopPropagation(); onFavorite(idea.id); }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${isFavorited ? "bg-red-500 text-white" : "bg-white/20 text-white"}`}>
-                  <Heart className="w-4 h-4" fill={isFavorited ? "currentColor" : "none"} />
-                </button>
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
-                  <ZoomIn className="w-4 h-4" />
-                </div>
-              </div>
+            <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+              <ZoomIn className="w-3 h-3" /> تكبير
             </div>
           </div>
         ) : idea.isGeneratingImage ? (
-          <div className="h-52 bg-gradient-to-br from-[#1a1a2e] to-[#2d1b69] flex flex-col items-center justify-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
-              <Wand2 className="w-6 h-6 text-[#C9A84C] animate-pulse" />
+          <div className="w-full h-52 bg-gradient-to-br from-[#f0e8d8] to-[#faf6f0] flex flex-col items-center justify-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
+              <Wand2 className="w-7 h-7 text-[#C9A84C] animate-pulse" />
             </div>
-            <p className="text-white/70 text-sm">م. سارة تولّد الصورة...</p>
-            <p className="text-white/40 text-xs">15-30 ثانية</p>
+            <p className="text-sm text-[#8B6914] font-medium">م. سارة تولّد الصورة...</p>
+            <p className="text-[10px] text-[#8B6914]/60">تحافظ على موقع الأبواب والسلالم</p>
+            <div className="flex gap-1">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce"
+                  style={{ animationDelay: `${i * 0.15}s` }} />
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="h-52 bg-gradient-to-br from-[#f0e8d8] to-[#e8d9c0] flex flex-col items-center justify-center gap-3">
-            <div className="absolute top-3 right-3">
-              <span className="text-[10px] text-[#8B6914] bg-[#C9A84C]/20 px-2 py-0.5 rounded-full">{idea.styleLabel}</span>
+          <div
+            className="w-full h-52 flex flex-col items-center justify-center gap-3 cursor-pointer active:scale-[0.98] transition-transform"
+            style={{
+              background: `linear-gradient(135deg, ${idea.palette[0]?.hex || "#C9A84C"}30, ${idea.palette[1]?.hex || "#F5F0E8"}60)`,
+            }}
+            onClick={() => onGenerateImage(idea.id)}
+          >
+            <div className="w-14 h-14 rounded-full bg-white/60 backdrop-blur flex items-center justify-center shadow-lg">
+              <Wand2 className="w-7 h-7 text-[#8B6914]" />
             </div>
-            <Wand2 className="w-10 h-10 text-[#C9A84C]/50" />
-            <p className="text-sm text-[#8B6914] font-bold">{idea.title}</p>
+            <p className="text-sm font-bold text-[#5C3D11]">اضغط لتوليد الصورة</p>
+            <p className="text-[10px] text-[#8B6914]/70">مع الحفاظ على البنية الأصلية</p>
+            <div className="flex gap-1.5">
+              {idea.palette.slice(0, 4).map((c, i) => (
+                <div key={i} className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: c.hex }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Badge النمط */}
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-[#5C3D11] text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+          {idea.styleLabel}
+        </div>
+
+        {/* Badge السيناريو */}
+        <div
+          className="absolute top-3 left-12 text-xs font-bold px-2.5 py-1.5 rounded-full shadow-sm border"
+          style={{ backgroundColor: scenario.bg, color: scenario.text, borderColor: scenario.border }}
+        >
+          {scenario.label}
+        </div>
+
+        {/* أزرار الإجراءات */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+          <button
+            onClick={() => onFavorite(idea.id)}
+            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
+              isFavorited ? "bg-red-500 text-white" : "bg-white/90 text-[#8B6914]"
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isFavorited ? "fill-white" : ""}`} />
+          </button>
+          {idea.imageUrl && (
             <button
               onClick={() => onGenerateImage(idea.id)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold rounded-xl active:scale-95 transition-transform"
+              className="w-8 h-8 rounded-full bg-white/90 text-[#8B6914] flex items-center justify-center shadow-sm"
             >
-              <Sparkles className="w-3 h-3" />
-              توليد الصورة التصورية
+              <RefreshCw className="w-3.5 h-3.5" />
             </button>
+          )}
+        </div>
+
+        {/* التكلفة */}
+        <div className="absolute bottom-3 left-3 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+          {idea.estimatedCost}
+        </div>
+
+        {/* المدة الزمنية */}
+        {idea.timeline && (
+          <div className="absolute bottom-3 right-3 bg-black/40 text-white text-[10px] px-2 py-1 rounded-full">
+            ⏱️ {idea.timeline}
           </div>
         )}
       </div>
 
       {/* Content */}
       <div className="p-4">
-        {/* Description */}
-        <p className="text-sm text-[#6B4C1E] leading-relaxed mb-3">{idea.description}</p>
+        {/* Title + Description */}
+        <h3 className="font-black text-[#5C3D11] text-base mb-1">{idea.title}</h3>
+        <p className="text-xs text-[#6B4C1E] leading-relaxed mb-3">{idea.description}</p>
 
         {/* Color palette */}
         <div className="flex gap-1.5 mb-3">
@@ -758,7 +462,7 @@ function IdeaCard({
         <button onClick={() => setShowDetails(!showDetails)}
           className="w-full flex items-center justify-between py-2 border-t border-[#f0e8d8]">
           <div className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#C9A84C]" />
+            <Star className="w-3.5 h-3.5 text-[#C9A84C]" />
             <span className="text-xs font-bold text-[#5C3D11]">مزايا التصميم ({idea.highlights.length})</span>
           </div>
           {showDetails ? <ChevronUp className="w-3.5 h-3.5 text-[#8B6914]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#8B6914]" />}
@@ -779,7 +483,7 @@ function IdeaCard({
           <button onClick={() => onGenerateImage(idea.id)}
             className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-[#C9A84C]/10 text-[#8B6914] text-xs font-bold rounded-xl border border-[#C9A84C]/30 active:scale-95 transition-transform">
             <Wand2 className="w-3.5 h-3.5" />
-            توليد الصورة التصورية الواقعية
+            توليد الصورة التصورية (مع الحفاظ على البنية)
           </button>
         )}
 
@@ -791,6 +495,363 @@ function IdeaCard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ===== Live Camera Component =====
+function LiveCamera({
+  mode,
+  capturedCount,
+  targetCount,
+  onCapture,
+  onClose,
+}: {
+  mode: CaptureMode;
+  capturedCount: number;
+  targetCount: number;
+  onCapture: (dataUrl: string) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
+    const startCamera = async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+        activeStream = s;
+        setStream(s);
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play();
+            setIsReady(true);
+          };
+        }
+      } catch {
+        setError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن.");
+      }
+    };
+    startCamera();
+    return () => { activeStream?.getTracks().forEach(t => t.stop()); };
+  }, []);
+
+  const capture = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const raw = canvas.toDataURL("image/jpeg", 0.92);
+    const compressed = await compressImage(raw, 1280, 0.85);
+    onCapture(compressed);
+  };
+
+  const adjustZoom = (newZoom: number) => {
+    setZoom(newZoom);
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        try {
+          (track as MediaStreamTrack & { applyConstraints: (c: unknown) => Promise<void> })
+            .applyConstraints({ advanced: [{ zoom: newZoom }] } as unknown)
+            .catch(() => {});
+        } catch {}
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
+        <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
+          className="p-2 rounded-full bg-white/20 text-white">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <span className="text-white font-bold text-sm">
+            {mode === "animation3d" ? `${capturedCount}/${targetCount} زوايا` : "التقط صورة"}
+          </span>
+          {mode === "animation3d" && (
+            <p className="text-white/60 text-[10px]">
+              {["أمام", "يسار", "خلف", "يمين"][capturedCount] || "اكتمل"}
+            </p>
+          )}
+        </div>
+        <div className="w-9" />
+      </div>
+
+      {error ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <Camera className="w-12 h-12 text-red-400" />
+          <p className="text-white text-sm">{error}</p>
+          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold text-sm">
+            إغلاق
+          </button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay
+            style={{ transform: `scale(${zoom})` }} />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Viewfinder */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-8 border-2 border-white/30 rounded-2xl">
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#C9A84C] rounded-tl-xl" />
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[#C9A84C] rounded-tr-xl" />
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[#C9A84C] rounded-bl-xl" />
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#C9A84C] rounded-br-xl" />
+            </div>
+          </div>
+
+          {/* Zoom controls */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+            {[1, 2, 3].map(z => (
+              <button key={z} onClick={() => adjustZoom(z)}
+                className={`w-9 h-9 rounded-full text-xs font-bold transition-all ${zoom === z ? "bg-[#C9A84C] text-white" : "bg-white/20 text-white"}`}>
+                {z}×
+              </button>
+            ))}
+          </div>
+
+          {/* Capture button */}
+          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-8 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent pt-8">
+            <button onClick={capture} disabled={!isReady}
+              className="w-20 h-20 rounded-full border-4 border-white bg-white/20 backdrop-blur flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50">
+              <div className="w-14 h-14 rounded-full bg-white" />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===== Panorama Capture =====
+function PanoramaCapture({
+  onCapture,
+  onClose,
+}: {
+  onCapture: (images: string[]) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [captured, setCaptured] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const ANGLES = ["0°", "90°", "180°", "270°"];
+
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
+    const startCamera = async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+        activeStream = s;
+        setStream(s);
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play();
+            setIsReady(true);
+          };
+        }
+      } catch {
+        setError("لا يمكن الوصول للكاميرا.");
+      }
+    };
+    startCamera();
+    return () => { activeStream?.getTracks().forEach(t => t.stop()); };
+  }, []);
+
+  const captureAngle = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    const raw = canvas.toDataURL("image/jpeg", 0.85);
+    const compressed = await compressImage(raw, 1280, 0.8);
+    const newCaptured = [...captured, compressed];
+    setCaptured(newCaptured);
+    if (newCaptured.length >= 4) {
+      stream?.getTracks().forEach(t => t.stop());
+      onCapture(newCaptured);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
+        <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
+          className="p-2 rounded-full bg-white/20 text-white">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="text-center">
+          <p className="text-white font-bold text-sm">بانوراما — {captured.length}/4</p>
+          <p className="text-white/60 text-[10px]">اتجاه {ANGLES[captured.length] || "مكتمل"}</p>
+        </div>
+        <div className="w-9" />
+      </div>
+
+      {error ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-white text-sm">{error}</p>
+          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold text-sm">إغلاق</button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Progress dots */}
+          <div className="absolute top-20 left-0 right-0 flex justify-center gap-2">
+            {ANGLES.map((a, i) => (
+              <div key={i} className={`flex flex-col items-center gap-1`}>
+                <div className={`w-3 h-3 rounded-full ${i < captured.length ? "bg-[#C9A84C]" : "bg-white/30"}`} />
+                <span className="text-[9px] text-white/60">{a}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-8 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent pt-8">
+            <button onClick={captureAngle} disabled={!isReady}
+              className="w-20 h-20 rounded-full border-4 border-white bg-white/20 backdrop-blur flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50">
+              <div className="w-14 h-14 rounded-full bg-white" />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===== Video Recorder =====
+function VideoRecorder({
+  onCapture,
+  onClose,
+}: {
+  onCapture: (thumb: string) => void;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
+    const startCamera = async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        activeStream = s;
+        setStream(s);
+        if (videoRef.current) { videoRef.current.srcObject = s; videoRef.current.play(); }
+      } catch { setError("لا يمكن الوصول للكاميرا."); }
+    };
+    startCamera();
+    return () => {
+      activeStream?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const startRecording = () => {
+    if (!stream) return;
+    chunksRef.current = [];
+    const mr = new MediaRecorder(stream, { mimeType: "video/webm" });
+    mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    mr.onstop = async () => {
+      if (!videoRef.current) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
+      const raw = canvas.toDataURL("image/jpeg", 0.85);
+      const compressed = await compressImage(raw, 1280, 0.8);
+      stream?.getTracks().forEach(t => t.stop());
+      onCapture(compressed);
+    };
+    mr.start(100);
+    mediaRecorderRef.current = mr;
+    setRecording(true);
+    setSeconds(0);
+    timerRef.current = setInterval(() => {
+      setSeconds(s => {
+        if (s >= 29) { stopRecording(); return 30; }
+        return s + 1;
+      });
+    }, 1000);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    if (timerRef.current) clearInterval(timerRef.current);
+    setRecording(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
+        <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
+          className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+        <div className="text-center">
+          {recording ? (
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-white font-bold text-sm">REC {seconds}s</span>
+            </div>
+          ) : (
+            <span className="text-white font-bold text-sm">فيديو 360°</span>
+          )}
+        </div>
+        <div className="w-9" />
+      </div>
+
+      {error ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-white text-sm">{error}</p>
+          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold text-sm">إغلاق</button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
+          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-8 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent pt-8">
+            <button
+              onClick={recording ? stopRecording : startRecording}
+              className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center active:scale-90 transition-transform ${recording ? "bg-red-500" : "bg-white/20 backdrop-blur"}`}
+            >
+              {recording ? (
+                <div className="w-8 h-8 rounded bg-white" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-white" />
+              )}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -811,6 +872,8 @@ export default function SmartCapture() {
 
   // Results
   const [ideas, setIdeas] = useState<DesignIdea[]>([]);
+  const [spaceAnalysis, setSpaceAnalysis] = useState<SpaceAnalysis | null>(null);
+  const [structuralSuggestions, setStructuralSuggestions] = useState<StructuralSuggestion[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Filters
@@ -838,6 +901,8 @@ export default function SmartCapture() {
           title: idea.title || "فكرة تصميمية",
           style: idea.style || "modern",
           styleLabel: idea.styleLabel || "عصري",
+          scenario: idea.scenario || "surface",
+          scenarioLabel: idea.scenarioLabel || "تجديد سطحي",
           description: idea.description || "",
           palette: idea.palette || [],
           materials: idea.materials || [],
@@ -845,11 +910,19 @@ export default function SmartCapture() {
           estimatedCost: idea.estimatedCost || "",
           costMin: idea.costMin || 0,
           costMax: idea.costMax || 0,
+          timeline: idea.timeline || "",
           replacementCosts: idea.replacementCosts || [],
           imagePrompt: idea.imagePrompt || "",
           imageUrl: undefined,
           isGeneratingImage: false,
         })));
+      }
+      // حفظ التحليل المعماري
+      if (data.spaceAnalysis) {
+        setSpaceAnalysis(data.spaceAnalysis as SpaceAnalysis);
+      }
+      if (data.structuralSuggestions) {
+        setStructuralSuggestions(data.structuralSuggestions as StructuralSuggestion[]);
       }
       setStep("results");
     },
@@ -870,7 +943,7 @@ export default function SmartCapture() {
               : idea
           )
         );
-        toast.success("تم توليد الصورة التصورية!");
+        toast.success("تم توليد الصورة مع الحفاظ على البنية الأصلية!");
       } else {
         setIdeas((prev) => prev.map((idea) => ({ ...idea, isGeneratingImage: false })));
         toast.error("فشل توليد الصورة");
@@ -892,14 +965,13 @@ export default function SmartCapture() {
     setStep("capture");
   };
 
-  const handleCapture = (dataUrl: string) => {
+  const handleCapture = async (dataUrl: string) => {
     const newImages = [...capturedImages, dataUrl];
     setCapturedImages(newImages);
     if (newImages.length === 1) setPrimaryImage(dataUrl);
 
     // For 3D animation, need 4 shots
     if (selectedMode === "animation3d" && newImages.length < 4) {
-      // Keep camera open for more shots
       return;
     }
 
@@ -932,28 +1004,23 @@ export default function SmartCapture() {
     const idea = ideas.find((i) => i.id === ideaId);
     if (!idea || !primaryImage) return;
     setIdeas((prev) => prev.map((i) => i.id === ideaId ? { ...i, isGeneratingImage: true } : i));
-    // Build a highly specific prompt that matches the original photo's perspective
-    const colorList = idea.palette.map(c => c.name).join(", ");
-    const matList = idea.materials.slice(0, 4).join(", ");
-    const enhancedPrompt = idea.imagePrompt
-      ? `Interior design render of the EXACT SAME room from the EXACT SAME camera angle and perspective as the reference photo. ` +
-        `Style: ${idea.styleLabel}. Colors: ${colorList}. Materials: ${matList}. ` +
-        `${idea.imagePrompt}. ` +
-        `Keep the same room dimensions, same wall positions, same windows/doors layout. ` +
-        `Replace only furniture, decor, colors and finishes. ` +
-        `Photorealistic architectural visualization, cinematic lighting, 8K quality, no people, no text.`
-      : `Interior design render of the EXACT SAME room from the EXACT SAME camera angle. ` +
-        `Style: ${idea.styleLabel}. Colors: ${colorList}. Materials: ${matList}. ` +
-        `Keep same room structure, replace only furniture and finishes. ` +
-        `Photorealistic, cinematic lighting, 8K, no people.`;
+
+    // استخدام imagePrompt المخصص من التحليل المعماري
+    // وتمرير العناصر البنيوية للحفاظ عليها
+    const keepElements = spaceAnalysis?.structuralElements
+      ?.filter(e => e.keepInDesign)
+      .map(e => ({ element: e.element, position: e.position })) || [];
+
     (generateVizMutation.mutate as (input: Parameters<typeof generateVizMutation.mutate>[0] & { ideaId: string }) => void)({
       imageUrl: primaryImage,
       designStyle: idea.style,
       palette: idea.palette,
-      materials: enhancedPrompt,
+      materials: idea.materials.join(", "),
+      imagePrompt: idea.imagePrompt || undefined,
+      structuralElements: keepElements.length > 0 ? keepElements : undefined,
       ideaId,
     });
-  }, [ideas, primaryImage]);
+  }, [ideas, primaryImage, spaceAnalysis]);
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) => {
@@ -967,10 +1034,10 @@ export default function SmartCapture() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const raw = e.target?.result as string;
-      // Compress before analysis
       const dataUrl = await compressImage(raw, 1280, 0.85);
       setPrimaryImage(dataUrl);
       setCapturedImages([dataUrl]);
+      setSelectedMode("single");
       startAnalysis([dataUrl]);
     };
     reader.readAsDataURL(file);
@@ -982,6 +1049,8 @@ export default function SmartCapture() {
     setCapturedImages([]);
     setPrimaryImage(null);
     setIdeas([]);
+    setSpaceAnalysis(null);
+    setStructuralSuggestions([]);
     setFavorites(new Set());
   };
 
@@ -1124,9 +1193,10 @@ export default function SmartCapture() {
               </div>
             </div>
 
+            {/* Architectural integrity note */}
             <div className="bg-[#C9A84C]/10 rounded-2xl p-3 border border-[#C9A84C]/20">
-              <p className="text-xs text-[#8B6914] text-center leading-relaxed">
-                ✨ <strong>م. سارة</strong> ستحلل الصورة وتقدم {ideasCount} أفكار تصميمية فورية مع تكاليف الاستبدال
+              <p className="text-xs text-[#8B6914] leading-relaxed">
+                🏗️ <strong>م. سارة</strong> ستحلل البنية المعمارية وتحافظ على موقع الأبواب والسلالم والأبعاد في كل التصاميم
               </p>
             </div>
           </div>
@@ -1149,10 +1219,10 @@ export default function SmartCapture() {
             )}
             <div className="w-full space-y-2.5">
               {[
-                "تحليل الفضاء والأبعاد والإضاءة",
+                "تحليل البنية المعمارية (أبواب، سلالم، أبعاد)",
                 `توليد ${ideasCount} أفكار تصميمية متنوعة`,
                 "حساب تكاليف الاستبدال التفصيلية",
-                "اقتراح الألوان والمواد المثالية",
+                "اقتراح تحسينات بنيوية اختيارية",
               ].map((s, i) => (
                 <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-[#e8d9c0]">
                   <div className="w-5 h-5 rounded-full bg-[#C9A84C]/20 flex items-center justify-center flex-shrink-0">
@@ -1169,7 +1239,7 @@ export default function SmartCapture() {
         {step === "results" && (
           <div className="flex-1 flex flex-col gap-4">
 
-            {/* Original image + quick filters */}
+            {/* Original image */}
             {primaryImage && (
               <div className="relative rounded-2xl overflow-hidden">
                 <img src={primaryImage} className="w-full h-36 object-cover" alt="original" />
@@ -1177,13 +1247,32 @@ export default function SmartCapture() {
                 <div className="absolute bottom-3 right-3 left-3 flex items-end justify-between">
                   <div>
                     <span className="text-[10px] text-white/70">الصورة الأصلية</span>
-                    <p className="text-white font-bold text-sm">{CAPTURE_MODES.find(m => m.id === selectedMode)?.label}</p>
+                    <p className="text-white font-bold text-sm">{CAPTURE_MODES.find(m => m.id === selectedMode)?.label || "صورة"}</p>
                   </div>
                   <button onClick={reset} className="flex items-center gap-1 px-2.5 py-1.5 bg-white/20 backdrop-blur rounded-xl text-white text-[10px] font-bold">
                     <RotateCcw className="w-3 h-3" /> تصوير جديد
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* Scenario legend */}
+            <div className="flex gap-2 flex-wrap">
+              {Object.entries(SCENARIO_COLORS).map(([key, val]) => (
+                <div key={key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold"
+                  style={{ backgroundColor: val.bg, color: val.text, borderColor: val.border }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: val.text }} />
+                  {val.label}
+                </div>
+              ))}
+            </div>
+
+            {/* Space Analysis */}
+            {spaceAnalysis && <SpaceAnalysisCard analysis={spaceAnalysis} />}
+
+            {/* Structural Suggestions */}
+            {structuralSuggestions.length > 0 && (
+              <StructuralSuggestionsCard suggestions={structuralSuggestions} />
             )}
 
             {/* Filters panel */}
@@ -1217,8 +1306,8 @@ export default function SmartCapture() {
               </div>
             )}
 
-            {/* Ideas */}
-            <div className="flex items-center justify-between mb-1">
+            {/* Ideas header */}
+            <div className="flex items-center justify-between">
               <p className="font-bold text-[#5C3D11]">{ideas.length} أفكار تصميمية</p>
               <button onClick={() => startAnalysis(capturedImages)}
                 className="flex items-center gap-1.5 text-xs text-[#8B6914] font-bold">
@@ -1226,6 +1315,7 @@ export default function SmartCapture() {
               </button>
             </div>
 
+            {/* Idea cards */}
             {ideas.map((idea) => (
               <IdeaCard
                 key={idea.id}
@@ -1240,7 +1330,7 @@ export default function SmartCapture() {
             <div className="grid grid-cols-2 gap-3 mt-2">
               <button onClick={() => toast.success("تم الحفظ في مشاريعك")}
                 className="flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-[#e8d9c0] bg-white text-[#5C3D11] text-sm font-bold active:scale-95 transition-transform">
-                حفظ في المشاريع
+                <Home className="w-4 h-4" /> حفظ في المشاريع
               </button>
               <button onClick={() => {
                 if (navigator.share) navigator.share({ title: "أفكار م. سارة", text: `${ideas.length} أفكار تصميمية` });

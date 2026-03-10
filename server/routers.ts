@@ -943,7 +943,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       catch { return { overview: text.slice(0, 200), palette: [], topSuggestions: [], estimatedCost: "" }; }
     }),
 
-  // ===== توليد صورة تصورية للفضاء =====
+  // ===== توليد صورة تصورية للفضاء (مع الحفاظ على البنية الأصلية) =====
   generateVisualization: publicProcedure
     .input(z.object({
       imageUrl: z.string(),
@@ -951,35 +951,47 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       palette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
       materials: z.string().optional(),
       budget: z.string().optional(),
+      imagePrompt: z.string().optional(), // برومبت مخصص من analyzeAndGenerateIdeas
+      structuralElements: z.array(z.object({ element: z.string(), position: z.string() })).optional(),
     }))
     .mutation(async ({ input }) => {
       const styleMap: Record<string, string> = {
         modern: "modern contemporary", gulf: "Arabian Gulf luxury",
-        classic: "classic elegant", minimal: "minimalist",
-        japanese: "Japanese zen", scandinavian: "Scandinavian",
-        mediterranean: "Mediterranean", industrial: "industrial",
+        classic: "classic elegant", minimal: "minimalist Japandi",
+        japanese: "Japanese zen wabi-sabi", scandinavian: "Scandinavian hygge",
+        mediterranean: "Mediterranean warm", industrial: "industrial loft",
         bohemian: "bohemian eclectic", art_deco: "Art Deco glamorous",
-        moroccan: "Moroccan", indian: "Indian", chinese: "Chinese classical",
+        moroccan: "Moroccan riad", indian: "Indian", chinese: "Chinese classical",
         luxury: "ultra luxury premium", coastal: "coastal beach",
       };
       const styleName = styleMap[input.designStyle] || input.designStyle;
       const colorDesc = input.palette?.map(c => `${c.name} (${c.hex})`).join(", ") || "neutral warm tones";
       const materialsDesc = input.materials || "high quality materials";
       
-      const prompt = `Photorealistic interior design render, ${styleName} style interior, 
-color palette: ${colorDesc}, premium materials: ${materialsDesc}, 
-hyper-realistic 3D architectural visualization, ultra-high quality, 
-photorealistic rendering, cinematic lighting, natural sunlight through windows, 
-shadows and reflections, detailed textures, luxury home interior, 
-professional interior photography, 8K resolution, architectural digest quality, 
-no people, clean and elegant space, realistic furniture and decor`;
+      // إذا كان هناك برومبت مخصص (من analyzeAndGenerateIdeas)، استخدمه مباشرة
+      // وإلا أنشئ برومبت يحافظ على البنية الأصلية
+      const structuralNote = input.structuralElements?.length
+        ? `CRITICAL CONSTRAINT: Preserve EXACT positions of: ${input.structuralElements.map(e => `${e.element} at ${e.position}`).join(", ")}. Do NOT move doors, windows, stairs, or change room dimensions.`
+        : "CRITICAL: Preserve EXACT room layout - keep all doors, windows, stairs, and structural elements in their EXACT original positions. Do NOT change room dimensions or architectural structure.";
+
+      const prompt = input.imagePrompt || `Photorealistic architectural interior render, ${styleName} style interior design. ${structuralNote} Apply new: color palette (${colorDesc}), premium materials (${materialsDesc}), updated furniture and decor, new wall finishes, new flooring, new ceiling treatment, new lighting. Same camera angle and perspective as original. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text.`;
 
       try {
-        const { url } = await generateImage({ prompt });
+        // استخدام image editing مع الصورة الأصلية كمرجع للحفاظ على البنية
+        const { url } = await generateImage({
+          prompt,
+          originalImages: [{ url: input.imageUrl, mimeType: "image/jpeg" }]
+        });
         return { imageUrl: url, success: true };
       } catch (error) {
         console.error("Image generation error:", error);
-        return { imageUrl: null, success: false, error: "فشل توليد الصورة" };
+        // fallback: توليد بدون صورة مرجعية
+        try {
+          const { url } = await generateImage({ prompt });
+          return { imageUrl: url, success: true };
+        } catch {
+          return { imageUrl: null, success: false, error: "فشل توليد الصورة" };
+        }
       }
     }),
 
@@ -1147,59 +1159,78 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعمارية العالمية. تحللين الصور بدقة عالية وتقدمين أفكاراً تصميمية واقعية مع تكاليف استبدال تفصيلية بالريال السعودي.`;
+      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومتخصصة في التصميم الداخلي بخبرة 20 سنة. تتمتعين بخلفية علمية شاملة تغطي:
+- الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
+- علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
+- الجدوى الاقتصادية: التكاليف الدقيقة بالسوق السعودي، الجداول الزمنية
+- السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
+قاعدتكِ الذهبية: احترمي البنية الإنشائية الأصلية في التصور الافتراضي الأساسي. التغييرات البنيوية تُقدّم كمقترحات ذكية منفصلة بسبب هندسي واضح، ليس كتغيير تلقائي. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
 
-      const userPrompt = `حللي هذه الصورة (${modeDesc[captureMode]}) وقدّمي ${count} أفكار تصميمية مختلفة.
+      // تحليل العناصر البنيوية من الصورة
+      const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة:
+- موقع وحجم الأبواب والنوافذ
+- وجود درجات أو فروق مستويات
+- نوع الإضاءة الحالية
+- الأسطح والمواد الموجودة
+- المشاكل الهندسية الملاحظة (إضاءة سيئة، تدفق حركة خاطئ، مساحة مهدرة)
+- فرص التحسين البنيوي مع سبب هندسي واضح`;
 
-الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} ريال
+      const userPrompt = `حللي هذه الصورة (${modeDesc[captureMode]}) بعين خبيرة معمارية متخصصة.
+الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} ريال سعودي
+عدد الأفكار المطلوبة: ${count}
 
-لكل فكرة قدّمي:
-1. تحليل الفضاء الحالي (الأثاث الموجود، الألوان، الإضاءة، المواد)
-2. فكرة التصميم الجديدة بنمط مختلف
-3. تكاليف الاستبدال التفصيلية لكل عنصر
+${structuralAnalysisPrompt}
 
-أعيدي JSON فقط:
+المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
+قاعدة مهمة: التصور الأساسي يحافظ على نفس موقع الباب، الدرجات، النوافذ، وأبعاد الغرفة بالضبط. فقط يتغير: الألوان، الأثاث، الجدران، الأرضية، الإضاءة.
+
+أعيدي JSON فقط بهذا الهيكل:
 {
+  "spaceAnalysis": {
+    "spaceType": "نوع الفضاء (صالة/غرفة/مطبخ...)",
+    "estimatedArea": "المساحة التقديرية بالمتر المربع",
+    "structuralElements": [
+      {"element": "باب رئيسي", "position": "وسط الجدار الشمالي", "keepInDesign": true},
+      {"element": "درجة مدخل", "position": "عند الباب", "keepInDesign": true}
+    ],
+    "currentIssues": ["مشكلة 1", "مشكلة 2"],
+    "currentMaterials": ["مادة 1", "مادة 2"]
+  },
+  "structuralSuggestions": [
+    {
+      "id": "struct_1",
+      "title": "عنوان المقترح",
+      "element": "العنصر المقترح تغييره (درجة/باب/جدار)",
+      "reason": "سبب هندسي واضح: لماذا هذا التغيير مفيد؟",
+      "benefit": "الفائدة الهندسية والجمالية",
+      "additionalCost": "5,000 - 15,000 ر.س",
+      "structuralWarning": "تنبيه إنشائي مهم",
+      "timeRequired": "3-5 أيام عمل إضافية"
+    }
+  ],
   "ideas": [
     {
       "id": "idea_1",
       "title": "اسم الفكرة",
       "style": "modern",
       "styleLabel": "عصري حديث",
-      "description": "وصف الفكرة في جملتين",
-      "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}, ...],
+      "scenario": "surface",
+      "scenarioLabel": "تجديد سطحي",
+      "description": "وصف الفكرة في جملتين مع ذكر العناصر البنيوية المحافظ عليها",
+      "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}],
       "materials": ["مادة 1", "مادة 2"],
       "highlights": ["ميزة 1", "ميزة 2", "ميزة 3"],
       "estimatedCost": "25,000 - 45,000 ر.س",
       "costMin": 25000,
       "costMax": 45000,
+      "timeline": "3-4 أسابيع",
       "replacementCosts": [
-        {
-          "item": "الأثاث (أريكة + طاولة)",
-          "currentEstimate": "8,000 ر.س",
-          "replacementCost": "12,000 - 18,000 ر.س",
-          "notes": "استبدال بأريكة قماش رمادي + طاولة زجاجية"
-        },
-        {
-          "item": "الإضاءة",
-          "currentEstimate": "1,500 ر.س",
-          "replacementCost": "3,000 - 5,000 ر.س",
-          "notes": "إضافة إضاءة مخفية LED + نقطية"
-        },
-        {
-          "item": "الجدران والدهان",
-          "currentEstimate": "2,000 ر.س",
-          "replacementCost": "4,000 - 7,000 ر.س",
-          "notes": "دهان بألوان محايدة + ورق جدران للجدار الرئيسي"
-        },
-        {
-          "item": "الأرضيات",
-          "currentEstimate": "5,000 ر.س",
-          "replacementCost": "8,000 - 15,000 ر.س",
-          "notes": "تبليط بورسلان أو سجادة هندسية"
-        }
+        {"item": "الأثاث", "currentEstimate": "8,000 ر.س", "replacementCost": "12,000 - 18,000 ر.س", "notes": "وصف تفصيلي"},
+        {"item": "الإضاءة", "currentEstimate": "1,500 ر.س", "replacementCost": "3,000 - 5,000 ر.س", "notes": "وصف تفصيلي"},
+        {"item": "الجدران", "currentEstimate": "2,000 ر.س", "replacementCost": "4,000 - 7,000 ر.س", "notes": "وصف تفصيلي"},
+        {"item": "الأرضيات", "currentEstimate": "5,000 ر.س", "replacementCost": "8,000 - 15,000 ر.س", "notes": "وصف تفصيلي"}
       ],
-      "imagePrompt": "Photorealistic interior design render, [style] style room, [specific colors and materials], cinematic lighting, 8K quality, architectural digest, no people"
+      "imagePrompt": "سيتم توليده تلقائياً"
     }
   ]
 }`;
@@ -1223,9 +1254,39 @@ ${colorText}
       const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
       try {
         const parsed = JSON.parse(text);
-        return { ideas: parsed.ideas || [] };
+        // توليد imagePrompt تلقائياً لكل فكرة بناءً على البيانات المحللة
+        const structuralElements = (parsed.spaceAnalysis?.structuralElements || []) as Array<{element: string; position: string; keepInDesign: boolean}>;
+        const keepElements = structuralElements
+          .filter((e) => e.keepInDesign)
+          .map((e) => `${e.element} at ${e.position}`)
+          .join(", ");
+
+        const ideas = (parsed.ideas || []).map((idea: Record<string, unknown>) => {
+          const styleMap: Record<string, string> = {
+            modern: "modern contemporary", gulf: "Arabian Gulf luxury",
+            classic: "classic elegant", minimal: "minimalist Japandi",
+            japanese: "Japanese zen wabi-sabi", scandinavian: "Scandinavian hygge",
+            mediterranean: "Mediterranean warm", industrial: "industrial loft",
+            moroccan: "Moroccan riad", luxury: "ultra luxury premium",
+            bohemian: "bohemian eclectic", art_deco: "Art Deco glamorous",
+          };
+          const styleName = styleMap[idea.style as string] || String(idea.style || "modern");
+          const palette = (idea.palette as Array<{name: string; hex: string}> || []).map((c) => `${c.name} (${c.hex})`).join(", ");
+          const mats = (idea.materials as string[] || []).join(", ");
+          const structuralNote = keepElements
+            ? `CRITICAL: Preserve EXACT room layout - ${keepElements} MUST stay in same positions. Only change: colors, furniture, walls, floors, ceiling, lighting.`
+            : "Preserve EXACT room dimensions, door positions, window locations, steps/levels, and all structural elements. Only change: colors, furniture, walls, floors, ceiling, lighting.";
+          const generatedPrompt = `Photorealistic architectural interior render, ${styleName} style interior design. ${structuralNote} Color palette: ${palette}. Premium materials: ${mats}. Same camera angle and perspective as original photo. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text.`;
+          return { ...idea, imagePrompt: generatedPrompt };
+        });
+
+        return {
+          ideas,
+          spaceAnalysis: parsed.spaceAnalysis || null,
+          structuralSuggestions: parsed.structuralSuggestions || [],
+        };
       } catch {
-        return { ideas: [] };
+        return { ideas: [], spaceAnalysis: null, structuralSuggestions: [] };
       }
     }),
 });
