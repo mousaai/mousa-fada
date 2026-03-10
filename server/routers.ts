@@ -11,7 +11,11 @@ import {
   createAnalysis, getProjectAnalyses, getAnalysisById, getUserAnalyses,
   createDesignElement, getProjectDesignElements, updateDesignElement, deleteDesignElement,
   createPerspective, getProjectPerspectives,
-  createChatSession, updateChatSession, getChatSession, getUserChatSessions
+  createChatSession, updateChatSession, getChatSession, getUserChatSessions,
+  createArScan, getArScanByScanId, updateArScan, getUserArScans,
+  getMarketPrices, seedMarketPrices,
+  createMoodBoard, getProjectMoodBoards,
+  createReport, getProjectReports
 } from "./db";
 import { nanoid } from "nanoid";
 
@@ -638,6 +642,187 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => getChatSession(input.id, ctx.user.id)),
 
     getSessions: protectedProcedure.query(async ({ ctx }) => getUserChatSessions(ctx.user.id)),
+  }),
+
+  // ===== لوحة الإلهام =====
+  moodboard: router({
+    generate: protectedProcedure
+      .input(z.object({
+        designStyle: z.string(),
+        spaceType: z.string(),
+        customNotes: z.string().optional(),
+        projectId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
+        const spaceNames: Record<string, string> = {
+          living_room: "غرفة المعيشة", bedroom: "غرفة النوم", kitchen: "المطبخ",
+          dining_room: "غرفة الطعام", office: "مكتب منزلي", bathroom: "الحمام",
+          entrance: "المدخل", majlis: "المجلس"
+        };
+        const spaceName = spaceNames[input.spaceType] || input.spaceType;
+
+        const prompt = `أنتِ م. سارة خبيرة التصميم الداخلي العالمية.
+أنشئي لوحة إلهام تصميمية احترافية لـ:
+- نمط التصميم: ${styleInfo.name} (${styleInfo.description})
+- نوع الفضاء: ${spaceName}
+${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
+
+قدمي النتيجة بصيغة JSON:
+{
+  "styleDescription": "وصف النمط وفلسفته التصميمية",
+  "palette": {
+    "name": "اسم لوحة الألوان",
+    "colors": ["#HEX1", "#HEX2", "#HEX3", "#HEX4", "#HEX5"],
+    "description": "وصف اللوحة"
+  },
+  "items": [
+    {"type": "color", "title": "اسم اللون", "description": "وصف استخدامه", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]},
+    {"type": "material", "title": "اسم المادة", "description": "وصف المادة ومزاياها", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]},
+    {"type": "furniture", "title": "اسم قطعة الأثاث", "description": "وصف القطعة ومواصفاتها", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]},
+    {"type": "pattern", "title": "اسم النمط", "description": "وصف النمط الزخرفي", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]},
+    {"type": "lighting", "title": "نوع الإضاءة", "description": "وصف الإضاءة وتأثيرها", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]},
+    {"type": "material", "title": "مادة الأرضية", "description": "وصف مادة الأرضية", "color": "#HEX", "tags": ["وسم 1", "وسم 2"]}
+  ],
+  "generatedImages": []
+}`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودكِ دائماً باللغة العربية بصيغة JSON صحيحة." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" }
+        });
+
+        const rawContent = response.choices[0]?.message?.content;
+        const content = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent) || "{}";
+        let result;
+        try { result = JSON.parse(content); } catch { result = { styleDescription: "", palette: null, items: [], generatedImages: [] }; }
+
+        // توليد صورة تصورية واحدة
+        try {
+          const imgPrompt = `${styleInfo.name} interior design for ${spaceName}, professional architectural visualization, high quality, photorealistic, ${styleInfo.keywords}`;
+          const { url: imgUrl } = await generateImage({ prompt: imgPrompt });
+          result.generatedImages = [imgUrl];
+        } catch { result.generatedImages = []; }
+
+        // حفظ في قاعدة البيانات
+        if (input.projectId) {
+          await createMoodBoard({
+            projectId: input.projectId,
+            userId: ctx.user.id,
+            title: `لوحة إلهام ${styleInfo.name} - ${spaceName}`,
+            designStyle: input.designStyle,
+            colorPalette: result.palette,
+            materials: result.items,
+            images: result.generatedImages,
+            description: result.styleDescription,
+          });
+        }
+
+        return result;
+      }),
+
+    getByProject: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => getProjectMoodBoards(input.projectId, ctx.user.id)),
+  }),
+
+  // ===== نظام استقبال AR =====
+  arScan: router({
+    receive: publicProcedure
+      .input(z.object({
+        scanId: z.string(),
+        deviceModel: z.string().optional(),
+        rooms: z.array(z.object({
+          name: z.string(),
+          width: z.number(),
+          length: z.number(),
+          height: z.number(),
+          area: z.number(),
+          doors: z.number().optional(),
+          windows: z.number().optional(),
+        })),
+        totalArea: z.number(),
+        rawData: z.string().optional(),
+        userId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const scan = await createArScan({
+          scanId: input.scanId,
+          userId: input.userId ?? 0,
+          rooms: input.rooms,
+          totalArea: input.totalArea,
+          status: "received" as const,
+          scanDate: new Date(),
+        });
+
+        // تحليل بيانات الغرف بالذكاء الاصطناعي
+        const roomsDesc = input.rooms.map(r =>
+          `${r.name}: ${r.width}م × ${r.length}م × ${r.height}م (مساحة: ${r.area}م²)`
+        ).join('\n');
+
+        const analysisResponse = await invokeLLM({
+          messages: [
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. حللي بيانات المسح AR وقدمي توصيات تصميمية بالعربية." },
+            { role: "user", content: `بيانات المسح:المساحة الإجمالية: ${input.totalArea}م²\n${roomsDesc}\n\nقدمي JSON: {"summary": "ملخص", "recommendations": ["توصية 1", "توصية 2"], "suggestedStyle": "نمط مقترح"}` }
+          ],
+          response_format: { type: "json_object" }
+        });
+
+        const rawContent = analysisResponse.choices[0]?.message?.content;
+        const content = typeof rawContent === 'string' ? rawContent : '{}';
+        let aiAnalysis;
+        try { aiAnalysis = JSON.parse(content); } catch { aiAnalysis = {}; }
+
+        if (scan) await updateArScan(scan.id, { status: "completed", aiAnalysis });
+
+        return { scanId: input.scanId, dbId: scan?.id, aiAnalysis, rooms: input.rooms, totalArea: input.totalArea };
+      }),
+
+    getByScanId: publicProcedure
+      .input(z.object({ scanId: z.string() }))
+      .query(async ({ input }) => getArScanByScanId(input.scanId)),
+
+    getUserScans: protectedProcedure
+      .query(async ({ ctx }) => getUserArScans(ctx.user.id)),
+  }),
+
+  // ===== أسعار السوق =====
+  market: router({
+    getPrices: publicProcedure
+      .input(z.object({ category: z.string().optional(), quality: z.string().optional() }))
+      .query(async ({ input }) => getMarketPrices(input.category, input.quality)),
+
+    seedPrices: protectedProcedure
+      .mutation(async () => { await seedMarketPrices(); return { success: true }; }),
+  }),
+
+  // ===== التقارير =====
+  reports: router({
+    generate: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        reportType: z.enum(["full", "boq", "design_only", "cost_only"]).default("full"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const project = await getProjectById(input.projectId, ctx.user.id);
+        if (!project) throw new Error("المشروع غير موجود");
+
+        const report = await createReport({
+          projectId: input.projectId,
+          userId: ctx.user.id,
+          reportType: input.reportType,
+          status: "generating" as const,
+        });
+
+        return { reportId: report?.id, projectId: input.projectId, status: "generating" };
+      }),
+
+    getByProject: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ ctx, input }) => getProjectReports(input.projectId, ctx.user.id)),
   }),
 
   // ===== حساب التكاليف =====

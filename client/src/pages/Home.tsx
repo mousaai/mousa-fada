@@ -104,7 +104,9 @@ export default function HomePage() {
               {isAuthenticated && (
                 <>
                   <button onClick={() => navigate("/projects")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">مشاريعي</button>
-                  <button onClick={() => navigate("/studio")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">استوديو التصميم</button>
+                  <button onClick={() => navigate("/studio")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">استوديو</button>
+                  <button onClick={() => navigate("/ar-scan")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">مسح AR</button>
+                  <button onClick={() => navigate("/moodboard")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">لوحة الإلهام</button>
                   <button onClick={() => navigate("/chat")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">م. سارة</button>
                 </>
               )}

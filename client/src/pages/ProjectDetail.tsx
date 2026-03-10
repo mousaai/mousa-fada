@@ -10,9 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Home, Layers, Square, Circle, Lightbulb, DoorOpen, Sofa, Eye,
   Download, Share2, ArrowRight, CheckCircle, Clock, Image as ImageIcon,
-  FileText, BarChart3, Palette, Package
+  FileText, BarChart3, Palette, Package, Loader2, Box, Table
 } from "lucide-react";
 import { Link, useRoute } from "wouter";
+import Room3DViewer from "@/components/Room3DViewer";
+import { generatePDFReport } from "@/lib/pdfReport";
+import { generateBOQExcel } from "@/lib/excelBOQ";
 
 const ELEMENT_TYPES: Record<string, { label: string; color: string }> = {
   flooring: { label: "الأرضيات", color: "bg-amber-100 text-amber-700" },
@@ -87,6 +90,9 @@ export default function ProjectDetail() {
   const projectId = params?.id ? Number(params.id) : null;
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
+  const [isGeneratingMoodboard, setIsGeneratingMoodboard] = useState(false);
 
   const { data: project } = trpc.projects.get.useQuery(
     { id: projectId! },
@@ -101,9 +107,94 @@ export default function ProjectDetail() {
     { enabled: !!projectId && isAuthenticated }
   );
 
+  const { data: moodboards } = trpc.moodboard.getByProject.useQuery(
+    { projectId: projectId! },
+    { enabled: !!projectId && isAuthenticated }
+  );
+
+  const generateMoodboardMutation = trpc.moodboard.generate.useMutation({
+    onSuccess: () => { setIsGeneratingMoodboard(false); toast.success("تم توليد لوحة الإلهام!"); },
+    onError: (e) => { setIsGeneratingMoodboard(false); toast.error("خطأ: " + e.message); },
+  });
+
+  const handleDownloadPDF = async () => {
+    if (!typedProject) return;
+    setIsGeneratingPDF(true);
+    try {
+      const allColors: Array<{ hex: string; name: string; usage: string }> = [];
+      typedElements?.forEach(el => {
+        const specs = el.specifications as DesignResult | null;
+        specs?.colorPalette?.forEach(c => {
+          if (!allColors.find(ac => ac.hex === c.hex)) {
+            allColors.push({ hex: c.hex, name: c.name, usage: el.roomName });
+          }
+        });
+      });
+      const allProducts: Array<{ name: string; quantity?: number; material?: string; priceRange?: string }> = [];
+      typedElements?.forEach(el => {
+        const specs = el.specifications as DesignResult | null;
+        specs?.products?.forEach(p => {
+          allProducts.push({ name: p.name, quantity: p.quantity, material: undefined, priceRange: p.priceMin ? `${p.priceMin}-${p.priceMax} ر.س` : undefined });
+        });
+      });
+      await generatePDFReport({
+        name: typedProject.name,
+        designStyle: typedProject.designStyle || "modern",
+        spaceType: typedProject.projectType || undefined,
+        area: typedProject.totalArea || undefined,
+        colorPalette: allColors,
+        furniture: allProducts,
+        totalCostMin: totalCostMin || undefined,
+        totalCostMax: totalCostMax || undefined,
+        perspectives: typedPerspectives?.map(p => ({ imageUrl: p.imageUrl || undefined, roomName: p.roomName, description: p.description || undefined })),
+      });
+      toast.success("تم تنزيل تقرير PDF بنجاح!");
+    } catch { toast.error("خطأ في توليد PDF"); }
+    finally { setIsGeneratingPDF(false); }
+  };
+
+  const handleDownloadExcel = async () => {
+    if (!typedProject) return;
+    setIsGeneratingExcel(true);
+    try {
+      const allProducts: Array<{ name: string; quantity?: number; material?: string; priceRange?: string }> = [];
+      typedElements?.forEach(el => {
+        const specs = el.specifications as DesignResult | null;
+        specs?.products?.forEach(p => {
+          allProducts.push({ name: p.name, quantity: p.quantity, priceRange: p.priceMin ? `${p.priceMin}-${p.priceMax} ر.س` : undefined });
+        });
+      });
+      generateBOQExcel({
+        projectName: typedProject.name,
+        designStyle: typedProject.designStyle || "modern",
+        spaceType: typedProject.projectType || undefined,
+        area: typedProject.totalArea || undefined,
+        furniture: allProducts,
+        totalCostMin: totalCostMin || undefined,
+        totalCostMax: totalCostMax || undefined,
+      });
+      toast.success("تم تنزيل جدول الكميات بنجاح!");
+    } catch { toast.error("خطأ في توليد Excel"); }
+    finally { setIsGeneratingExcel(false); }
+  };
+
+  const handleGenerateMoodboard = () => {
+    if (!typedProject) return;
+    setIsGeneratingMoodboard(true);
+    generateMoodboardMutation.mutate({
+      designStyle: typedProject.designStyle || "modern",
+      spaceType: typedProject.projectType || "living_room",
+      projectId: typedProject.id,
+    });
+  };
+
   const typedProject = project as ProjectData | undefined;
   const typedElements = elements as DesignElementItem[] | undefined;
   const typedPerspectives = perspectives as PerspectiveItem[] | undefined;
+  const typedMoodboards = moodboards as Array<{
+    id: number; title: string; description?: string | null;
+    colorPalette?: unknown; materials?: unknown; images?: unknown;
+  }> | undefined;
 
   const completedCount = typedElements?.filter(e => e.isCompleted).length || 0;
   const totalCount = typedElements?.length || 0;
@@ -248,12 +339,17 @@ export default function ProjectDetail() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 mb-6 w-full max-w-xl">
-            <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-            <TabsTrigger value="elements">العناصر</TabsTrigger>
-            <TabsTrigger value="gallery">المعرض</TabsTrigger>
-            <TabsTrigger value="costs">التكاليف</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
+              <TabsTrigger value="elements">العناصر</TabsTrigger>
+              <TabsTrigger value="gallery">المعرض</TabsTrigger>
+              <TabsTrigger value="3d" className="flex items-center gap-1"><Box className="w-3 h-3" />ثلاثي الأبعاد</TabsTrigger>
+              <TabsTrigger value="moodboard" className="flex items-center gap-1"><Palette className="w-3 h-3" />لوحة الإلهام</TabsTrigger>
+              <TabsTrigger value="costs">التكاليف</TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-1"><FileText className="w-3 h-3" />التقارير</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* نظرة عامة */}
           <TabsContent value="overview">
@@ -494,6 +590,93 @@ export default function ProjectDetail() {
             )}
           </TabsContent>
 
+          {/* المخطط ثلاثي الأبعاد */}
+          <TabsContent value="3d">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Box className="w-4 h-4 text-gold" />
+                  المخطط ثلاثي الأبعاد التفاعلي
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Room3DViewer
+                  dimensions={{ width: 6, length: 8, height: 3 }}
+                  designStyle={typedProject?.designStyle || "modern"}
+                  roomName={typedProject?.name}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* لوحة الإلهام */}
+          <TabsContent value="moodboard">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-medium text-gold">لوحات الإلهام</h2>
+                <Button size="sm" onClick={handleGenerateMoodboard} disabled={isGeneratingMoodboard} className="btn-gold text-xs">
+                  {isGeneratingMoodboard ? <Loader2 className="w-3 h-3 animate-spin ml-1" /> : <Palette className="w-3 h-3 ml-1" />}
+                  توليد لوحة جديدة
+                </Button>
+              </div>
+              {typedMoodboards && typedMoodboards.length > 0 ? (
+                typedMoodboards.map((mb, i) => {
+                  const palette = mb.colorPalette as { name: string; colors: string[]; description?: string } | null;
+                  const items = mb.materials as Array<{ type: string; title: string; description: string; color?: string }> | null;
+                  const images = mb.images as string[] | null;
+                  return (
+                    <Card key={i}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base text-gold">{mb.title}</CardTitle>
+                        {mb.description && <p className="text-muted-foreground text-sm">{mb.description}</p>}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {palette && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">{palette.name}</p>
+                            <div className="flex gap-2">
+                              {palette.colors.map((c, ci) => (
+                                <div key={ci} className="flex-1 h-12 rounded-lg border border-border" style={{ backgroundColor: c }} title={c} />
+                              ))}
+                            </div>
+                            {palette.description && <p className="text-xs text-muted-foreground mt-1">{palette.description}</p>}
+                          </div>
+                        )}
+                        {items && items.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {items.map((item, ii) => (
+                              <div key={ii} className="p-3 rounded-xl border border-border bg-muted/30">
+                                {item.color && <div className="w-full h-8 rounded mb-2" style={{ backgroundColor: item.color }} />}
+                                <p className="text-sm font-medium">{item.title}</p>
+                                <p className="text-xs text-muted-foreground">{item.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {images && images.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {images.map((url, ii) => (
+                              <img key={ii} src={url} alt={`إلهام ${ii+1}`} className="rounded-xl w-full aspect-video object-cover" />
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                <div className="text-center py-16">
+                  <Palette className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-muted-foreground mb-4">لا توجد لوحات إلهام بعد</p>
+                  <Button onClick={handleGenerateMoodboard} disabled={isGeneratingMoodboard} className="btn-gold">
+                    {isGeneratingMoodboard ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Palette className="w-4 h-4 ml-2" />}
+                    توليد لوحة الإلهام الأولى
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           {/* التكاليف */}
           <TabsContent value="costs">
             <div className="space-y-4">
@@ -600,6 +783,38 @@ export default function ProjectDetail() {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          {/* التقارير */}
+          <TabsContent value="reports">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="hover:border-gold/40 transition-colors cursor-pointer" onClick={handleDownloadPDF}>
+                  <CardContent className="pt-6 text-center">
+                    {isGeneratingPDF ? <Loader2 className="w-8 h-8 mx-auto text-gold animate-spin mb-3" /> : <FileText className="w-8 h-8 mx-auto text-gold mb-3" />}
+                    <h3 className="font-bold mb-1">تقرير PDF الكامل</h3>
+                    <p className="text-sm text-muted-foreground mb-3">جميع التفاصيل والمواصفات والألوان والتكاليف</p>
+                    <Button className="btn-gold w-full" disabled={isGeneratingPDF}>
+                      {isGeneratingPDF ? "جاري التوليد..." : "تنزيل PDF"}
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Card className="hover:border-gold/40 transition-colors cursor-pointer" onClick={handleDownloadExcel}>
+                  <CardContent className="pt-6 text-center">
+                    {isGeneratingExcel ? <Loader2 className="w-8 h-8 mx-auto text-green-600 animate-spin mb-3" /> : <Table className="w-8 h-8 mx-auto text-green-600 mb-3" />}
+                    <h3 className="font-bold mb-1">جدول الكميات BOQ</h3>
+                    <p className="text-sm text-muted-foreground mb-3">Excel جاهز للمقاولين والموردين</p>
+                    <Button variant="outline" className="w-full border-green-600/30 text-green-600 hover:bg-green-50" disabled={isGeneratingExcel}>
+                      {isGeneratingExcel ? "جاري التوليد..." : "تنزيل Excel"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+              <Card className="bg-muted/30">
+                <CardContent className="pt-4">
+                  <p className="text-sm text-muted-foreground text-center">يتم توليد التقارير مباشرة من بيانات المشروع المحفوظة في قاعدة البيانات.</p>
                 </CardContent>
               </Card>
             </div>

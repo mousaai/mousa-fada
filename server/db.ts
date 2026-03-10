@@ -1,8 +1,10 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, projects, analyses, designElements, perspectives, chatSessions,
-  InsertProject, InsertAnalysis, InsertDesignElement, InsertPerspective, InsertChatSession
+  arScans, marketPrices, moodBoards, reports,
+  InsertProject, InsertAnalysis, InsertDesignElement, InsertPerspective, InsertChatSession,
+  InsertArScan, InsertMarketPrice, InsertMoodBoard, InsertReport
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -196,4 +198,119 @@ export async function getUserChatSessions(userId: number) {
   return db.select().from(chatSessions)
     .where(eq(chatSessions.userId, userId))
     .orderBy(desc(chatSessions.createdAt)).limit(10);
+}
+
+// ===== استعلامات مسح AR =====
+export async function createArScan(data: InsertArScan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(arScans).values(data);
+  const result = await db.select().from(arScans)
+    .where(eq(arScans.scanId, data.scanId)).limit(1);
+  return result[0];
+}
+
+export async function getArScanByScanId(scanId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(arScans)
+    .where(eq(arScans.scanId, scanId)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function updateArScan(id: number, data: Partial<InsertArScan>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(arScans).set(data).where(eq(arScans.id, id));
+}
+
+export async function getUserArScans(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(arScans)
+    .where(eq(arScans.userId, userId))
+    .orderBy(desc(arScans.createdAt)).limit(20);
+}
+
+// ===== استعلامات أسعار السوق =====
+export async function getMarketPrices(category?: string, quality?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  let query = db.select().from(marketPrices).where(eq(marketPrices.isActive, true));
+  return query.orderBy(marketPrices.category);
+}
+
+export async function seedMarketPrices() {
+  const db = await getDb();
+  if (!db) return;
+  // بيانات أسعار السوق الخليجي الأساسية
+  const pricesData: InsertMarketPrice[] = [
+    { category: "flooring", subcategory: "سيراميك", itemName: "Ceramic Tiles Standard", itemNameAr: "بلاط سيراميك عادي", unit: "م²", priceMin: 35, priceMax: 120, quality: "standard", country: "SA" },
+    { category: "flooring", subcategory: "رخام", itemName: "Marble Flooring", itemNameAr: "أرضية رخام", unit: "م²", priceMin: 200, priceMax: 800, quality: "premium", country: "SA" },
+    { category: "flooring", subcategory: "خشب", itemName: "Engineered Wood", itemNameAr: "خشب هندسي", unit: "م²", priceMin: 150, priceMax: 450, quality: "standard", country: "SA" },
+    { category: "flooring", subcategory: "باركيه", itemName: "Parquet Flooring", itemNameAr: "باركيه خشبي", unit: "م²", priceMin: 180, priceMax: 600, quality: "premium", country: "SA" },
+    { category: "walls", subcategory: "دهان", itemName: "Premium Wall Paint", itemNameAr: "دهان جدران فاخر", unit: "م²", priceMin: 15, priceMax: 45, quality: "standard", country: "SA" },
+    { category: "walls", subcategory: "ورق جدران", itemName: "Wallpaper", itemNameAr: "ورق جدران", unit: "م²", priceMin: 80, priceMax: 350, quality: "standard", country: "SA" },
+    { category: "walls", subcategory: "جبس ديكور", itemName: "Decorative Gypsum", itemNameAr: "جبس ديكوري", unit: "م²", priceMin: 120, priceMax: 400, quality: "premium", country: "SA" },
+    { category: "ceiling", subcategory: "جبس بورد", itemName: "Gypsum Board Ceiling", itemNameAr: "سقف جبس بورد", unit: "م²", priceMin: 120, priceMax: 350, quality: "standard", country: "SA" },
+    { category: "ceiling", subcategory: "جبس مزخرف", itemName: "Ornate Gypsum Ceiling", itemNameAr: "سقف جبس مزخرف", unit: "م²", priceMin: 250, priceMax: 800, quality: "premium", country: "SA" },
+    { category: "lighting", subcategory: "سبوت لايت", itemName: "LED Spotlight", itemNameAr: "سبوت لايت LED", unit: "قطعة", priceMin: 80, priceMax: 350, quality: "standard", country: "SA" },
+    { category: "lighting", subcategory: "ثريا", itemName: "Chandelier", itemNameAr: "ثريا ديكورية", unit: "قطعة", priceMin: 500, priceMax: 15000, quality: "luxury", country: "SA" },
+    { category: "furniture", subcategory: "كنب", itemName: "Sofa Set", itemNameAr: "طقم كنب", unit: "طقم", priceMin: 3000, priceMax: 25000, quality: "standard", country: "SA" },
+    { category: "furniture", subcategory: "غرفة نوم", itemName: "Bedroom Set", itemNameAr: "طقم غرفة نوم", unit: "طقم", priceMin: 5000, priceMax: 40000, quality: "standard", country: "SA" },
+    { category: "furniture", subcategory: "مطبخ", itemName: "Kitchen Cabinets", itemNameAr: "خزائن مطبخ", unit: "م.ط", priceMin: 1500, priceMax: 8000, quality: "standard", country: "SA" },
+    { category: "labor", subcategory: "تركيب عام", itemName: "General Installation", itemNameAr: "تركيب عام", unit: "م²", priceMin: 50, priceMax: 150, quality: "standard", country: "SA" },
+  ];
+  
+  try {
+    for (const price of pricesData) {
+      await db.insert(marketPrices).values(price).onDuplicateKeyUpdate({ set: { priceMin: price.priceMin, priceMax: price.priceMax } });
+    }
+  } catch (e) {
+    console.warn("Market prices seed skipped:", e);
+  }
+}
+
+// ===== استعلامات لوحات الإلهام =====
+export async function createMoodBoard(data: InsertMoodBoard) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(moodBoards).values(data);
+  const result = await db.select().from(moodBoards)
+    .where(and(eq(moodBoards.projectId, data.projectId), eq(moodBoards.userId, data.userId)))
+    .orderBy(desc(moodBoards.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getProjectMoodBoards(projectId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(moodBoards)
+    .where(and(eq(moodBoards.projectId, projectId), eq(moodBoards.userId, userId)))
+    .orderBy(desc(moodBoards.createdAt));
+}
+
+// ===== استعلامات التقارير =====
+export async function createReport(data: InsertReport) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(reports).values(data);
+  const result = await db.select().from(reports)
+    .where(and(eq(reports.projectId, data.projectId), eq(reports.userId, data.userId)))
+    .orderBy(desc(reports.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function updateReport(id: number, data: Partial<InsertReport>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(reports).set(data).where(eq(reports.id, id));
+}
+
+export async function getProjectReports(projectId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(reports)
+    .where(and(eq(reports.projectId, projectId), eq(reports.userId, userId)))
+    .orderBy(desc(reports.createdAt));
 }

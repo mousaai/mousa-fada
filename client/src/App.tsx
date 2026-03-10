@@ -11,6 +11,8 @@ import Projects from "./pages/Projects";
 import DesignStudio from "./pages/DesignStudio";
 import SarahChat from "./pages/SarahChat";
 import ProjectDetail from "./pages/ProjectDetail";
+import ARScan from "./pages/ARScan";
+import MoodBoard from "./pages/MoodBoard";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
       <Route path={"/projects/:id"} component={ProjectDetail} />
       <Route path={"/studio"} component={DesignStudio} />
       <Route path={"/chat"} component={SarahChat} />
+      <Route path={"/ar-scan"} component={ARScan} />
+      <Route path={"/moodboard"} component={MoodBoard} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
