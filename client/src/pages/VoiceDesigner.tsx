@@ -66,6 +66,10 @@ const ROOM_COLORS = [
 ];
 const COMPASS_LABELS: Record<Direction, string> = { N: "ش", S: "ج", E: "ش.ق", W: "غ" };
 
+// Wall labels: A=شمال, B=جنوب, C=شرق, D=غرب
+const WALL_LABELS: Record<Direction, string> = { N: "A", S: "B", E: "C", W: "D" };
+const WALL_NAMES: Record<Direction, string> = { N: "A (شمال)", S: "B (جنوب)", E: "C (شرق)", W: "D (غرب)" };
+
 // ===== Utility =====
 function generateId() { return Math.random().toString(36).slice(2, 9); }
 
@@ -126,6 +130,24 @@ function drawFloorPlan(
     ctx.font = `${Math.max(9, sc * 0.16)}px Cairo, sans-serif`;
     ctx.fillStyle = "#7a5c2a";
     ctx.fillText(`${room.width}×${room.height}م`, rx + rw / 2, ry + rh / 2 + sc * 0.15);
+
+    // Wall labels A/B/C/D on each side of the room
+    const wallLabelSize = Math.max(9, sc * 0.14);
+    ctx.font = `bold ${wallLabelSize}px Cairo, sans-serif`;
+    ctx.fillStyle = "#C9A84C";
+    const wallPad = Math.max(8, sc * 0.12);
+    // North wall = A
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText("A", rx + rw / 2, ry + wallPad);
+    // South wall = B
+    ctx.textBaseline = "top";
+    ctx.fillText("B", rx + rw / 2, ry + rh - wallPad);
+    // East wall = C (right in LTR canvas)
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText("C", rx + rw - wallPad * 0.5, ry + rh / 2);
+    // West wall = D (left)
+    ctx.textAlign = "left";
+    ctx.fillText("D", rx + wallPad * 0.5, ry + rh / 2);
   }
 
   // Doors
@@ -356,6 +378,7 @@ export default function VoiceDesigner() {
   const [view3DUrl, setView3DUrl] = useState<string | null>(null);
   const [isGenerating3D, setIsGenerating3D] = useState(false);
   const [showMessages, setShowMessages] = useState(true);
+  const [textInput, setTextInput] = useState("");
 
   const voiceCommandMutation = trpc.voiceDesignCommand.useMutation({
     onSuccess: (data) => {
@@ -561,8 +584,9 @@ export default function VoiceDesigner() {
     { label: "غرفة نوم 4×4", cmd: "أضيفي غرفة نوم 4 في 4 متر" },
     { label: "مطبخ 3×3", cmd: "أضيفي مطبخ 3 في 3 متر" },
     { label: "حمام 2×2", cmd: "أضيفي حمام 2 في 2 متر" },
-    { label: "باب غربي", cmd: "أضيفي باب على الجدار الغربي في المنتصف" },
-    { label: "نافذة شمالية", cmd: "أضيفي نافذة على الجدار الشمالي في المنتصف عرض 1.5 متر" },
+    { label: "باب D (غرب)", cmd: "أضيفي باب على الجدار D الغربي في المنتصف" },
+    { label: "نافذة A (شمال)", cmd: "أضيفي نافذة على الجدار A الشمالي في المنتصف عرض 1.5 متر" },
+    { label: "نافذة C (شرق)", cmd: "أضيفي نافذة على الجدار C الشرقي في المنتصف عرض 1.2 متر" },
   ];
 
   const sendTextCommand = async (cmd: string) => {
@@ -752,28 +776,70 @@ export default function VoiceDesigner() {
           </div>
         </div>
 
-        {/* Voice button */}
-        <div className="bg-white border-t border-[#e8d9c0] px-4 pb-safe pb-4 pt-3 flex items-center gap-3">
-          <div className="flex-1 bg-[#f5f0e8] rounded-2xl px-4 py-2.5 text-sm text-[#8B6914]/50">
-            {isListening ? "🎤 م. سارة تسمعك..." : isProcessing ? "⏳ م. سارة تفكر..." : "اضغط الميكروفون وتحدث..."}
+        {/* Input bar: text + voice */}
+        <div className="bg-white border-t border-[#e8d9c0] px-3 pb-safe pb-3 pt-2.5">
+          {/* Wall legend */}
+          <div className="flex gap-2 mb-2 justify-center">
+            {(["A=شمال", "B=جنوب", "C=شرق", "D=غرب"] as const).map(label => (
+              <span key={label} className="text-[10px] bg-[#C9A84C]/10 text-[#8B6914] px-2 py-0.5 rounded-full font-bold border border-[#C9A84C]/30">{label}</span>
+            ))}
           </div>
-          <button
-            onPointerDown={startListening}
-            onPointerUp={stopListening}
-            onPointerLeave={isListening ? stopListening : undefined}
-            disabled={isProcessing}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-lg disabled:opacity-50 ${
-              isListening
-                ? "bg-red-500 scale-110 shadow-red-200"
-                : "bg-gradient-to-br from-[#C9A84C] to-[#8B6914]"
-            }`}
-          >
-            {isListening ? (
-              <MicOff className="w-6 h-6 text-white" />
-            ) : (
-              <Mic className="w-6 h-6 text-white" />
-            )}
-          </button>
+          <div className="flex items-end gap-2">
+            {/* Text input */}
+            <div className="flex-1 relative">
+              <textarea
+                value={textInput}
+                onChange={e => setTextInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (textInput.trim() && !isProcessing) {
+                      sendTextCommand(textInput.trim());
+                      setTextInput("");
+                    }
+                  }
+                }}
+                placeholder={isListening ? "🎤 م. سارة تسمعك..." : isProcessing ? "⏳ م. سارة تفكر..." : "اكتب أمرك هنا... مثلاً: أضيفي باب على الجدار A"}
+                disabled={isProcessing || isListening}
+                rows={1}
+                className="w-full bg-[#f5f0e8] border border-[#e8d9c0] rounded-2xl px-4 py-2.5 text-sm text-[#5C3D11] placeholder:text-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] transition-colors disabled:opacity-60"
+                style={{ minHeight: 42, maxHeight: 80 }}
+              />
+            </div>
+            {/* Send text button */}
+            <button
+              onClick={() => {
+                if (textInput.trim() && !isProcessing) {
+                  sendTextCommand(textInput.trim());
+                  setTextInput("");
+                }
+              }}
+              disabled={!textInput.trim() || isProcessing || isListening}
+              className="w-11 h-11 rounded-xl bg-[#C9A84C]/20 border border-[#C9A84C]/40 flex items-center justify-center text-[#8B6914] disabled:opacity-30 active:scale-90 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+            {/* Voice button */}
+            <button
+              onPointerDown={startListening}
+              onPointerUp={stopListening}
+              onPointerLeave={isListening ? stopListening : undefined}
+              disabled={isProcessing}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md disabled:opacity-50 ${
+                isListening
+                  ? "bg-red-500 scale-110 shadow-red-200"
+                  : "bg-gradient-to-br from-[#C9A84C] to-[#8B6914]"
+              }`}
+            >
+              {isListening ? (
+                <MicOff className="w-5 h-5 text-white" />
+              ) : (
+                <Mic className="w-5 h-5 text-white" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
