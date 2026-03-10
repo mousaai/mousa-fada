@@ -910,5 +910,98 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       try { return JSON.parse(text); }
       catch { return { overview: text.slice(0, 200), palette: [], topSuggestions: [], estimatedCost: "" }; }
     }),
+
+  // ===== توليد صورة تصورية للفضاء =====
+  generateVisualization: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      designStyle: z.string().default("modern"),
+      palette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+      materials: z.string().optional(),
+      budget: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const styleMap: Record<string, string> = {
+        modern: "modern contemporary", gulf: "Arabian Gulf luxury",
+        classic: "classic elegant", minimal: "minimalist",
+        japanese: "Japanese zen", scandinavian: "Scandinavian",
+        mediterranean: "Mediterranean", industrial: "industrial",
+        bohemian: "bohemian eclectic", art_deco: "Art Deco glamorous",
+        moroccan: "Moroccan", indian: "Indian", chinese: "Chinese classical",
+        luxury: "ultra luxury premium", coastal: "coastal beach",
+      };
+      const styleName = styleMap[input.designStyle] || input.designStyle;
+      const colorDesc = input.palette?.map(c => `${c.name} (${c.hex})`).join(", ") || "neutral warm tones";
+      const materialsDesc = input.materials || "high quality materials";
+      
+      const prompt = `Interior design visualization, ${styleName} style, professional interior design render, 
+color palette: ${colorDesc}, materials: ${materialsDesc}, 
+photo-realistic, high-end interior design, 8K quality, 
+architectural visualization, beautiful lighting, elegant decor, 
+Gulf region luxury home interior, professional photography style`;
+
+      try {
+        const { url } = await generateImage({ prompt });
+        return { imageUrl: url, success: true };
+      } catch (error) {
+        console.error("Image generation error:", error);
+        return { imageUrl: null, success: false, error: "فشل توليد الصورة" };
+      }
+    }),
+
+  // ===== إعادة تحليل مع تعديلات المستخدم =====
+  reAnalyzeWithChanges: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      designStyle: z.string().default("modern"),
+      customPalette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+      budgetRange: z.object({ min: z.number(), max: z.number() }).optional(),
+      customRequirements: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const styleMap: Record<string, string> = {
+        modern: "عصري حديث", gulf: "خليجي فاخر",
+        classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
+        japanese: "ياباني زن", scandinavian: "سكندنافي",
+        mediterranean: "متوسطي", industrial: "صناعي",
+        moroccan: "مغربي", luxury: "فاخر بريميوم",
+      };
+      const styleName = styleMap[input.designStyle] || input.designStyle;
+      const colorConstraint = input.customPalette?.length 
+        ? `استخدمي هذه الألوان بالتحديد: ${input.customPalette.map(c => `${c.name} (${c.hex})`).join(", ")}`
+        : "اقترحي ألواناً مناسبة";
+      const budgetConstraint = input.budgetRange
+        ? `الميزانية المحددة: ${input.budgetRange.min.toLocaleString()} - ${input.budgetRange.max.toLocaleString()} ر.س`
+        : "";
+      const extraReqs = input.customRequirements ? `متطلبات إضافية: ${input.customRequirements}` : "";
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "user", content: [
+            { type: "text", text: `حللي هذا الفضاء بأسلوب ${styleName}.
+${colorConstraint}
+${budgetConstraint}
+${extraReqs}
+
+أعطيني JSON بهذا الشكل بالضبط:
+{
+  "overview": "تقييم مختصر للفضاء في جملتين",
+  "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}],
+  "topSuggestions": ["توصية 1", "توصية 2", "توصية 3", "توصية 4"],
+  "estimatedCost": "مثال: 15,000 - 40,000 ر.س",
+  "costBreakdown": {"furniture": "X,000 ر.س", "flooring": "X,000 ر.س", "walls": "X,000 ر.س", "lighting": "X,000 ر.س", "accessories": "X,000 ر.س"},
+  "materials": ["مادة 1", "مادة 2", "مادة 3"]
+}` },
+            { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } }
+          ] as Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }> }
+        ],
+        response_format: { type: "json_object" },
+      });
+      const raw = response.choices[0]?.message?.content;
+      const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
+      try { return JSON.parse(text); }
+      catch { return { overview: text.slice(0, 200), palette: [], topSuggestions: [], estimatedCost: "", costBreakdown: {}, materials: [] }; }
+    }),
 });
 export type AppRouter = typeof appRouter;
