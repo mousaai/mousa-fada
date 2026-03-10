@@ -228,14 +228,14 @@ export default function SarahChat() {
           <div className="flex gap-2 items-center">
             {projects && projects.length > 0 && (
               <Select
-                value={selectedProjectId?.toString() || ""}
-                onValueChange={(v) => setSelectedProjectId(v ? Number(v) : null)}
+                value={selectedProjectId?.toString() || "none"}
+                onValueChange={(v) => setSelectedProjectId(v === "none" ? null : Number(v))}
               >
                 <SelectTrigger className="bg-white/10 border-white/30 text-white w-36 h-8 text-xs">
                   <SelectValue placeholder="ربط بمشروع" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون مشروع</SelectItem>
+                  <SelectItem value="none">بدون مشروع</SelectItem>
                   {(projects as Array<{ id: number; name: string }>).map(p => (
                     <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                   ))}
