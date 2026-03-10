@@ -507,6 +507,124 @@ export const appRouter = router({
 
   // ===== عناصر التصميم =====
   designElements: router({
+    // تصميم عنصر بهوية بصرية موحدة
+    designWithIdentity: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        elementType: z.enum(["flooring", "walls", "ceiling", "windows", "doors", "lighting", "furniture", "perspective"]),
+        roomName: z.string(),
+        roomArea: z.number().default(20),
+        designStyle: z.string().default("modern"),
+        budget: z.enum(["economic", "medium", "luxury", "premium"]).default("medium"),
+        // الهوية البصرية الموحدة للمشروع
+        visualIdentity: z.object({
+          primaryColor: z.string(),
+          secondaryColor: z.string(),
+          accentColor: z.string(),
+          primaryMaterial: z.string(),
+          woodTone: z.string(),
+          stoneType: z.string(),
+          metalFinish: z.string(),
+          overallMood: z.string(),
+        }).optional(),
+        // العناصر المصممة مسبقاً للتناسق
+        existingElements: z.record(z.string(), z.unknown()).optional(),
+        referenceImageUrl: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
+        const budgetMap = { economic: "اقتصادي (5k-20k ريال)", medium: "متوسط (20k-60k ريال)", luxury: "فاخر (60k-150k ريال)", premium: "بريميوم (150k+ ريال)" };
+        const elementNames: Record<string, string> = {
+          flooring: "الأرضيات", walls: "الجدران", ceiling: "الأسقف",
+          windows: "النوافذ والستائر", doors: "الأبواب", lighting: "الإضاءة",
+          furniture: "الأثاث", perspective: "المنظور الكامل"
+        };
+
+        const identityContext = input.visualIdentity ? `
+الهوية البصرية الموحدة للمشروع (يجب الالتزام بها بالكامل):
+- اللون الأساسي: ${input.visualIdentity.primaryColor}
+- اللون الثانوي: ${input.visualIdentity.secondaryColor}
+- لون التمييز: ${input.visualIdentity.accentColor}
+- المادة الأساسية: ${input.visualIdentity.primaryMaterial}
+- درجة الخشب: ${input.visualIdentity.woodTone}
+- نوع الحجر: ${input.visualIdentity.stoneType}
+- تشطيب المعادن: ${input.visualIdentity.metalFinish}
+- الروح العامة: ${input.visualIdentity.overallMood}
+
+يجب أن يتناسق هذا العنصر تماماً مع الهوية البصرية أعلاه.` : '';
+
+        const existingContext = input.existingElements && Object.keys(input.existingElements).length > 0 ?
+          `\nالعناصر المصممة مسبقاً (للتناسق معها):\n${JSON.stringify(input.existingElements, null, 2)}` : '';
+
+        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي العالمية المتخصصة في الهوية البصرية المتكاملة.
+مهمتك: تصميم ${elementNames[input.elementType]} بحيث يتناسق تماماً مع باقي عناصر المشروع.
+نمط التصميم: ${styleInfo.name} - ${styleInfo.keywords}
+الميزانية: ${budgetMap[input.budget]}
+${identityContext}
+${existingContext}
+قاعدة ذهبية: لا يجوز أن تختلف الأرضيات عن الجدران عن الأسقف في الروح والمواد والألوان. كل شيء يجب أن يكون قصة واحدة متكاملة.`;
+
+        const userPrompt = `صممي ${elementNames[input.elementType]} لـ ${input.roomName} (${input.roomArea} م²).
+
+أعطيني JSON دقيق:
+{
+  "elementType": "${input.elementType}",
+  "roomName": "${input.roomName}",
+  "designConcept": "مفهوم التصميم ودوره في الهوية البصرية الكاملة",
+  "harmonyNote": "كيف يتناسق هذا العنصر مع باقي عناصر المشروع",
+  "specifications": {
+    "primaryMaterial": "المادة الرئيسية",
+    "secondaryMaterial": "المادة الثانوية",
+    "primaryColor": "#XXXXXX",
+    "secondaryColor": "#XXXXXX",
+    "accentColor": "#XXXXXX",
+    "pattern": "النمط أو الملمس",
+    "finish": "نوع التشطيب",
+    "dimensions": "الأبعاد التفصيلية"
+  },
+  "products": [{"name": "اسم المنتج", "brand": "الماركة", "priceMin": 100, "priceMax": 300, "unit": "م²", "quantity": 10}],
+  "colorPalette": [{"hex": "#XXXXXX", "name": "اسم اللون", "role": "دور اللون في الهوية البصرية"}],
+  "installationSteps": ["خطوة 1", "خطوة 2"],
+  "totalCostMin": 1000,
+  "totalCostMax": 5000,
+  "unit": "م²",
+  "quantity": ${input.roomArea},
+  "professionalNotes": "ملاحظات م. سارة المهنية"
+}`;
+
+        const messages: Message[] = [
+          { role: "system", content: systemPrompt },
+        ];
+        if (input.referenceImageUrl) {
+          messages.push({ role: "user", content: [{ type: "image_url", image_url: { url: input.referenceImageUrl, detail: "high" } } as ImageContent, { type: "text", text: userPrompt } as TextContent] });
+        } else {
+          messages.push({ role: "user", content: userPrompt });
+        }
+
+        const response = await invokeLLM({ messages, response_format: { type: "json_object" } });
+        const rawContent = response.choices[0]?.message?.content;
+        const contentStr = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent) || "{}";
+        let result: Record<string, unknown>;
+        try { result = JSON.parse(contentStr); } catch { result = { designConcept: contentStr, specifications: {}, products: [] }; }
+
+        const element = await createDesignElement({
+          projectId: input.projectId,
+          userId: ctx.user.id,
+          elementType: input.elementType,
+          roomName: input.roomName,
+          roomArea: input.roomArea,
+          specifications: result,
+          costMin: (result.totalCostMin as number) || null,
+          costMax: (result.totalCostMax as number) || null,
+          unit: (result.unit as string) || "م²",
+          quantity: (result.quantity as number) || input.roomArea,
+          isCompleted: false,
+          sortOrder: 0,
+        });
+        await updateProject(input.projectId, ctx.user.id, { status: "designing" });
+        return { element, design: result };
+      }),
+
     design: protectedProcedure
       .input(z.object({
         projectId: z.number(),
