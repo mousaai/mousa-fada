@@ -1164,10 +1164,28 @@ ${colorText}
 - علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
 - الجدوى الاقتصادية: التكاليف الدقيقة بالسوق السعودي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
-قاعدتكِ الذهبية: احترمي البنية الإنشائية الأصلية في التصور الافتراضي الأساسي. التغييرات البنيوية تُقدّم كمقترحات ذكية منفصلة بسبب هندسي واضح، ليس كتغيير تلقائي. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+قاعدتكِ الذهبية المطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط مع تغيير المواد فقط. لا تتغير زاوية الكاميرا، لا تتغير الزوم، لا تتغير اتجاه الصورة، لا تتغير أبعاد الغرفة، لا تتغير مواقع الفتحات. التغييرات البنيوية تُقدّم كمقترحات ذكية منفصلة بسبب هندسي واضح، ليس كتغيير تلقائي. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
 
       // تحليل العناصر البنيوية من الصورة
-      const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة:
+      const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:
+
+المنظور والكاميرا:
+- زاوية التصوير (مستوى الكاميرا: منخفضة/متوسطة/عالية)
+- اتجاه الصورة (من الباب/من الزاوية/من الوسط)
+- نقطة التقارب (قريبة/متوسطة/بعيدة)
+- خطوط المنظور الموجهة (تضيق أو توسع)
+
+الفتحات بالأرقام:
+- كل باب: عرض تقريبي (ضيق/عادي/واسع)، ارتفاع (قصير/عادي/طويل)، موقعه (يسار/وسط/يمين الجدار)، نوعه (خشب/زجاج/معدن)
+- كل نافذة: عرض تقريبي، ارتفاع، موقعها من الأرض (منخفض/متوسط/عالي)
+- كل خزانة/دولاب: عرضها، ارتفاعها، موقعها (يسار/يمين/كلا الجانبين)، لونها
+
+أبعاد الغرفة:
+- شكل الغرفة (مربع/مستطيل/معقد)
+- نسبة العرض إلى الطول (ضيقة/عادية/واسعة)
+- ارتفاع السقف (منخفض/عادي/عالي)
+
+العناصر البنيوية الثابتة:
 - موقع وحجم الأبواب والنوافذ
 - وجود درجات أو فروق مستويات
 - نوع الإضاءة الحالية
@@ -1182,16 +1200,25 @@ ${colorText}
 ${structuralAnalysisPrompt}
 
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
-قاعدة مهمة: التصور الأساسي يحافظ على نفس موقع الباب، الدرجات، النوافذ، وأبعاد الغرفة بالضبط. فقط يتغير: الألوان، الأثاث، الجدران، الأرضية، الإضاءة.
+قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة، نفس مواقع الفتحات بالضبط. فقط يتغير: الألوان، الأثاث، الجدران، الأرضية، الإضاءة.
 
 أعيدي JSON فقط بهذا الهيكل:
 {
   "spaceAnalysis": {
     "spaceType": "نوع الفضاء (صالة/غرفة/مطبخ...)",
     "estimatedArea": "المساحة التقديرية بالمتر المربع",
+    "cameraAnalysis": {
+      "cameraHeight": "منخفضة/متوسطة/عالية",
+      "viewingAngle": "من الباب/من الزاوية/من الوسط",
+      "zoomLevel": "قريب/متوسط/بعيد",
+      "perspectiveLines": "تضيق للخلف/توسع للخلف/متوازي"
+    },
+    "roomShape": "مستطيل ضيق/مربع/مستطيل عريض",
+    "roomProportions": "عرض:طول 1:3 مثلاً",
+    "ceilingHeight": "منخفض/عادي/عالي",
     "structuralElements": [
-      {"element": "باب رئيسي", "position": "وسط الجدار الشمالي", "keepInDesign": true},
-      {"element": "درجة مدخل", "position": "عند الباب", "keepInDesign": true}
+      {"element": "باب رئيسي", "position": "وسط الجدار الشمالي", "width": "عادي", "height": "طويل", "type": "خشبي", "keepInDesign": true},
+      {"element": "خزانة يسار", "position": "الجدار الغربي", "width": "واسعة", "height": "كامل الارتفاع", "type": "خزانة بيضاء", "keepInDesign": true}
     ],
     "currentIssues": ["مشكلة 1", "مشكلة 2"],
     "currentMaterials": ["مادة 1", "مادة 2"]
@@ -1256,10 +1283,46 @@ ${structuralAnalysisPrompt}
         const parsed = JSON.parse(text);
         // توليد imagePrompt تلقائياً لكل فكرة بناءً على البيانات المحللة
         const structuralElements = (parsed.spaceAnalysis?.structuralElements || []) as Array<{element: string; position: string; keepInDesign: boolean}>;
+        // استخراج بيانات الكاميرا والأبعاد لتوليد برومبت دقيق
+        const cameraAnalysis = parsed.spaceAnalysis?.cameraAnalysis || {};
+        const roomShape = parsed.spaceAnalysis?.roomShape || "";
+        const roomProportions = parsed.spaceAnalysis?.roomProportions || "";
+        const ceilingHeight = parsed.spaceAnalysis?.ceilingHeight || "";
+
+        // وصف الكاميرا بالإنجليزية للـ prompt
+        const cameraHeightMap: Record<string, string> = { "منخفضة": "low camera angle", "متوسطة": "eye-level camera", "عالية": "high camera angle" };
+        const viewingAngleMap: Record<string, string> = { "من الباب": "shot from doorway", "من الزاوية": "corner shot", "من الوسط": "centered shot" };
+        const zoomMap: Record<string, string> = { "قريب": "close-up shot", "متوسط": "medium shot", "بعيد": "wide shot" };
+        const perspMap: Record<string, string> = { "تضيق للخلف": "converging perspective lines", "توسع للخلف": "expanding perspective", "متوازي": "parallel perspective" };
+        const cameraDesc = [
+          cameraHeightMap[cameraAnalysis.cameraHeight] || "eye-level camera",
+          viewingAngleMap[cameraAnalysis.viewingAngle] || "centered shot",
+          zoomMap[cameraAnalysis.zoomLevel] || "medium shot",
+          perspMap[cameraAnalysis.perspectiveLines] || "converging perspective lines",
+        ].join(", ");
+
+        // وصف الغرفة بالإنجليزية
+        const roomShapeMap: Record<string, string> = { "مستطيل ضيق": "narrow rectangular room", "مربع": "square room", "مستطيل عريض": "wide rectangular room" };
+        const ceilingMap: Record<string, string> = { "منخفض": "low ceiling", "عادي": "standard ceiling height", "عالي": "high ceiling" };
+        const roomDesc = [
+          roomShapeMap[roomShape] || roomShape,
+          ceilingMap[ceilingHeight] || ceilingHeight,
+          roomProportions ? `proportions ${roomProportions}` : "",
+        ].filter(Boolean).join(", ");
+
+        // وصف الفتحات بالتفصيل
         const keepElements = structuralElements
           .filter((e) => e.keepInDesign)
-          .map((e) => `${e.element} at ${e.position}`)
-          .join(", ");
+          .map((e) => {
+            const el = e as unknown as Record<string, string>;
+            const widthMap: Record<string, string> = { "ضيق": "narrow", "عادي": "standard-width", "واسع": "wide", "واسعة": "wide" };
+            const heightMap: Record<string, string> = { "قصير": "short", "عادي": "standard-height", "طويل": "tall", "كامل الارتفاع": "full-height" };
+            const w = widthMap[el.width] || el.width || "";
+            const h = heightMap[el.height] || el.height || "";
+            const sizeDesc = [w, h].filter(Boolean).join(" ");
+            return `${el.element} (${sizeDesc ? sizeDesc + ", " : ""}${el.position})`;
+          })
+          .join("; ");
 
         const ideas = (parsed.ideas || []).map((idea: Record<string, unknown>) => {
           const styleMap: Record<string, string> = {
@@ -1273,10 +1336,17 @@ ${structuralAnalysisPrompt}
           const styleName = styleMap[idea.style as string] || String(idea.style || "modern");
           const palette = (idea.palette as Array<{name: string; hex: string}> || []).map((c) => `${c.name} (${c.hex})`).join(", ");
           const mats = (idea.materials as string[] || []).join(", ");
+          
+          // برومبت معماري دقيق يحافظ على كل شيء
           const structuralNote = keepElements
-            ? `CRITICAL: Preserve EXACT room layout - ${keepElements} MUST stay in same positions. Only change: colors, furniture, walls, floors, ceiling, lighting.`
-            : "Preserve EXACT room dimensions, door positions, window locations, steps/levels, and all structural elements. Only change: colors, furniture, walls, floors, ceiling, lighting.";
-          const generatedPrompt = `Photorealistic architectural interior render, ${styleName} style interior design. ${structuralNote} Color palette: ${palette}. Premium materials: ${mats}. Same camera angle and perspective as original photo. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text.`;
+            ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${keepElements}. These elements MUST remain in EXACT same positions, sizes, and proportions.`
+            : "ABSOLUTE CONSTRAINT: Preserve ALL structural elements (doors, windows, cabinets, stairs) in their EXACT original positions and sizes.";
+          
+          const cameraNote = `CAMERA CONSTRAINT: Use IDENTICAL camera setup as original photo - ${cameraDesc}. Do NOT change zoom level, camera angle, or perspective. The output must look like the SAME photo with only materials/colors changed.`;
+          
+          const roomNote = roomDesc ? `ROOM GEOMETRY: ${roomDesc}. Maintain EXACT room proportions and ceiling height.` : "";
+          
+          const generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} Apply ONLY these changes: ${styleName} style colors and materials. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style. New wall finish, new flooring, new ceiling treatment, new lighting. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
           return { ...idea, imagePrompt: generatedPrompt };
         });
 

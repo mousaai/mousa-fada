@@ -28,7 +28,17 @@ interface ReplacementCost {
 interface StructuralElement {
   element: string;
   position: string;
+  width?: string;
+  height?: string;
+  type?: string;
   keepInDesign: boolean;
+}
+
+interface CameraAnalysis {
+  cameraHeight: string;
+  viewingAngle: string;
+  zoomLevel: string;
+  perspectiveLines: string;
 }
 
 interface StructuralSuggestion {
@@ -45,6 +55,10 @@ interface StructuralSuggestion {
 interface SpaceAnalysis {
   spaceType: string;
   estimatedArea: string;
+  cameraAnalysis?: CameraAnalysis;
+  roomShape?: string;
+  roomProportions?: string;
+  ceilingHeight?: string;
   structuralElements: StructuralElement[];
   currentIssues: string[];
   currentMaterials: string[];
@@ -142,6 +156,7 @@ const SCENARIO_COLORS: Record<string, { bg: string; text: string; border: string
 function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
   const [expanded, setExpanded] = useState(false);
   const keepElements = analysis.structuralElements?.filter(e => e.keepInDesign) || [];
+  const cam = analysis.cameraAnalysis;
 
   return (
     <div className="bg-white rounded-2xl border border-[#e8d9c0] shadow-sm overflow-hidden">
@@ -159,6 +174,48 @@ function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
         {expanded ? <ChevronUp className="w-4 h-4 text-[#8B6914]" /> : <ChevronDown className="w-4 h-4 text-[#8B6914]" />}
       </button>
 
+      {/* Camera analysis summary — always visible */}
+      {cam && (
+        <div className="px-4 pb-3 border-b border-[#f0e8d8]">
+          <div className="bg-blue-50 rounded-xl px-3 py-2 border border-blue-100">
+            <p className="text-[10px] font-bold text-blue-800 mb-1.5 flex items-center gap-1">
+              📷 زاوية الكاميرا المحفوظة في التصاميم
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-blue-600 font-bold">المستوى:</span>
+                <span className="text-[9px] text-blue-800">{cam.cameraHeight}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-blue-600 font-bold">الاتجاه:</span>
+                <span className="text-[9px] text-blue-800">{cam.viewingAngle}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-blue-600 font-bold">الزوم:</span>
+                <span className="text-[9px] text-blue-800">{cam.zoomLevel}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-blue-600 font-bold">المنظور:</span>
+                <span className="text-[9px] text-blue-800">{cam.perspectiveLines}</span>
+              </div>
+            </div>
+          </div>
+          {(analysis.roomShape || analysis.ceilingHeight) && (
+            <div className="flex gap-2 mt-2">
+              {analysis.roomShape && (
+                <span className="text-[9px] bg-[#f0e8d8] text-[#8B6914] px-2 py-1 rounded-full">📐 {analysis.roomShape}</span>
+              )}
+              {analysis.roomProportions && (
+                <span className="text-[9px] bg-[#f0e8d8] text-[#8B6914] px-2 py-1 rounded-full">نسبة {analysis.roomProportions}</span>
+              )}
+              {analysis.ceilingHeight && (
+                <span className="text-[9px] bg-[#f0e8d8] text-[#8B6914] px-2 py-1 rounded-full">⬆️ سقف {analysis.ceilingHeight}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {expanded && (
         <div className="px-4 pb-4 space-y-3">
           {/* العناصر البنيوية المحافظ عليها */}
@@ -166,14 +223,21 @@ function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
             <div>
               <p className="text-xs font-bold text-[#5C3D11] mb-2 flex items-center gap-1">
                 <Check className="w-3 h-3 text-green-600" />
-                عناصر محافظ عليها في كل التصاميم
+                فتحات وعناصر محافظ عليها في كل التصاميم
               </p>
               <div className="space-y-1.5">
                 {keepElements.map((el, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2 border border-green-100">
-                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                    <span className="text-xs text-green-800 font-medium">{el.element}</span>
-                    <span className="text-[10px] text-green-600 mr-auto">{el.position}</span>
+                  <div key={i} className="bg-green-50 rounded-xl px-3 py-2 border border-green-100">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                      <span className="text-xs text-green-800 font-bold">{el.element}</span>
+                      {el.type && <span className="text-[9px] text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">{el.type}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mr-4">
+                      <span className="text-[10px] text-green-700">📍 {el.position}</span>
+                      {el.width && <span className="text-[10px] text-green-600">عرض: {el.width}</span>}
+                      {el.height && <span className="text-[10px] text-green-600">ارتفاع: {el.height}</span>}
+                    </div>
                   </div>
                 ))}
               </div>
