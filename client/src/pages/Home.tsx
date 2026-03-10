@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft } from "lucide-react";
+import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -252,16 +252,26 @@ export default function Home() {
           <span className="text-white font-bold text-sm">تحليل الآن</span>
         </button>
 
-        {/* 3 Quick Action Buttons */}
-        <div className="w-full grid grid-cols-3 gap-3">
+        {/* 4 Quick Action Buttons */}
+        <div className="w-full grid grid-cols-4 gap-2">
+          <button
+            onClick={() => navigate("/design-ideas")}
+            className="flex flex-col items-center gap-2 bg-gradient-to-br from-[#C9A84C]/10 to-[#8B6914]/10 rounded-2xl p-3 shadow-sm border border-[#C9A84C]/30 active:scale-95 transition-transform"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/20 flex items-center justify-center">
+              <Wand2 className="w-5 h-5 text-[#C9A84C]" />
+            </div>
+            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">أفكار<br />تصميمية</span>
+          </button>
+
           <button
             onClick={() => navigate("/design-studio")}
-            className="flex flex-col items-center gap-2 bg-white rounded-2xl p-4 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
+            className="flex flex-col items-center gap-2 bg-white rounded-2xl p-3 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
           >
-            <div className="w-12 h-12 rounded-xl bg-[#C9A84C]/10 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-[#C9A84C]" />
+            <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[#C9A84C]" />
             </div>
-            <span className="text-xs font-bold text-[#5C3D11] text-center">استوديو<br />التصميم</span>
+            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">استوديو<br />التصميم</span>
           </button>
 
           <button

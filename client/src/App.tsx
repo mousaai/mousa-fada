@@ -15,6 +15,7 @@ import ProjectDetail from "./pages/ProjectDetail";
 import ARScan from "./pages/ARScan";
 import MoodBoard from "./pages/MoodBoard";
 import QuickAnalyze from "./pages/QuickAnalyze";
+import DesignIdeas from "./pages/DesignIdeas";
 
 function Router() {
   return (
@@ -32,6 +33,8 @@ function Router() {
       <Route path={"/ar-scan"} component={ARScan} />
       <Route path={"/mood-board"} component={MoodBoard} />
       <Route path={"/moodboard"} component={MoodBoard} />
+      <Route path={"/design-ideas"} component={DesignIdeas} />
+      <Route path={"/ideas"} component={DesignIdeas} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

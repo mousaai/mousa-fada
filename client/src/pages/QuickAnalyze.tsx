@@ -131,6 +131,11 @@ export default function QuickAnalyze() {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  // حفظ الصورة في sessionStorage للاستخدام في صفحة الأفكار
+  const saveImageForIdeas = (imageData: string) => {
+    try { sessionStorage.setItem("quickAnalyzeImage", imageData); } catch {}
+  };
+
   const analyzeMutation = trpc.quickAnalyze.useMutation({
     onSuccess: (data: Partial<QuickResult>) => {
       const palette = data.palette?.slice(0, 5) || [];
@@ -702,10 +707,25 @@ export default function QuickAnalyze() {
             </div>
 
             <button
-              onClick={() => navigate("/design-studio")}
-              className="w-full py-4 rounded-2xl bg-[#5C3D11] text-white font-bold active:scale-95 transition-transform mb-4"
+    onClick={() => navigate("/design-studio")}
+          className="w-full py-4 rounded-2xl bg-[#5C3D11] text-white font-bold active:scale-95 transition-transform mb-4"
+        >
+          تصميم كامل في الاستوديو ←
+        </button>
+
+            {/* زر أفكار تصميمية متعددة */}
+            <button
+              onClick={() => {
+                if (preview) saveImageForIdeas(preview);
+                navigate("/design-ideas");
+              }}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-black text-base shadow-lg active:scale-95 transition-transform mb-6"
+              style={{ boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}
             >
-              تصميم كامل في الاستوديو ←
+              <span className="flex items-center justify-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                استعرض أفكاراً تصميمية متعددة ✨
+              </span>
             </button>
           </div>
         )}

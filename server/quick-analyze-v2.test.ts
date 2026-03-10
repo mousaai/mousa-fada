@@ -191,3 +191,61 @@ describe("reAnalyzeWithChanges — إعادة التحليل مع التعديل
     expect(result.overview).toBeTruthy();
   });
 });
+
+describe("generateDesignIdeas — توليد أفكار تصميمية متعددة", () => {
+  it("يولّد 3 أفكار تصميمية بنجاح", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.generateDesignIdeas({
+      styles: ["modern", "gulf", "minimal"],
+      budgetMin: 20000,
+      budgetMax: 60000,
+      count: 3,
+    });
+    expect(result).toBeDefined();
+    expect(result.ideas).toBeDefined();
+    expect(Array.isArray(result.ideas)).toBe(true);
+  });
+
+  it("يقبل ثيم ألوان مخصص", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.generateDesignIdeas({
+      styles: ["luxury"],
+      budgetMin: 100000,
+      budgetMax: 300000,
+      colorTheme: "دافئ ذهبي",
+      count: 2,
+    });
+    expect(result).toBeDefined();
+    expect(result.ideas).toBeDefined();
+  });
+
+  it("يقبل صورة مرجعية", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.generateDesignIdeas({
+      styles: ["modern", "scandinavian"],
+      budgetMin: 15000,
+      budgetMax: 50000,
+      count: 3,
+      referenceImageUrl: "https://example.com/room.jpg",
+    });
+    expect(result).toBeDefined();
+    expect(result.ideas).toBeDefined();
+  });
+
+  it("يقبل جميع أنماط التصميم", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    const allStyles = ["modern", "gulf", "classic", "minimal", "japanese", "scandinavian", "moroccan", "luxury", "mediterranean", "industrial"];
+    const result = await caller.generateDesignIdeas({
+      styles: allStyles,
+      budgetMin: 30000,
+      budgetMax: 100000,
+      count: 4,
+    });
+    expect(result).toBeDefined();
+    expect(result.ideas).toBeDefined();
+  });
+});

@@ -1003,5 +1003,86 @@ ${extraReqs}
       try { return JSON.parse(text); }
       catch { return { overview: text.slice(0, 200), palette: [], topSuggestions: [], estimatedCost: "", costBreakdown: {}, materials: [] }; }
     }),
+
+  // ===== توليد أفكار تصميمية متعددة =====
+  generateDesignIdeas: publicProcedure
+    .input(z.object({
+      styles: z.array(z.string()).min(1).max(10),
+      budgetMin: z.number().min(0),
+      budgetMax: z.number().min(0),
+      colorTheme: z.string().optional(),
+      count: z.number().min(2).max(6).default(3),
+      referenceImageUrl: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const styleNames: Record<string, string> = {
+        modern: "عصري حديث", gulf: "خليجي فاخر",
+        classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
+        japanese: "ياباني زن", scandinavian: "سكندنافي",
+        mediterranean: "متوسطي", industrial: "صناعي",
+        moroccan: "مغربي", luxury: "فاخر بريميوم",
+      };
+      const stylesText = input.styles.map(s => styleNames[s] || s).join(", ");
+      const budgetText = `${input.budgetMin.toLocaleString()} - ${input.budgetMax.toLocaleString()} ر.س`;
+      const colorText = input.colorTheme ? `ثيم الألوان: ${input.colorTheme}` : "ألوان تناسب كل نمط";
+
+      const messages: Array<{ role: "system" | "user"; content: string | Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }> }> = [
+        {
+          role: "system",
+          content: `أنتِ م. سارة، خبيرة التصميم الداخلي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
+        },
+        {
+          role: "user",
+          content: [
+            ...(input.referenceImageUrl ? [{ type: "image_url", image_url: { url: input.referenceImageUrl, detail: "low" } }] : []),
+            {
+              type: "text",
+              text: `ولّدي ${input.count} أفكار تصميمية مختلفة ومتنوعة لهذا الفضاء.
+الأنماط المطلوبة: ${stylesText}
+الميزانية: ${budgetText}
+${colorText}
+
+أعطيني JSON بهذا الشكل بالضبط:
+{
+  "ideas": [
+    {
+      "id": "معرف فريد",
+      "title": "عنوان الفكرة بالعربية",
+      "description": "وصف مختصر للفكرة في جملتين",
+      "style": "اسم النمط بالإنجليزية (modern/gulf/classic/minimal/japanese/scandinavian/moroccan/luxury/mediterranean/industrial)",
+      "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}, {"name": "لون 2", "hex": "#XXXXXX"}, {"name": "لون 3", "hex": "#XXXXXX"}, {"name": "لون 4", "hex": "#XXXXXX"}],
+      "furniture": [
+        {"name": "اسم القطعة", "description": "وصف مختصر", "priceRange": "X,000 - X,000 ر.س"},
+        {"name": "قطعة 2", "description": "وصف", "priceRange": "X,000 - X,000 ر.س"}
+      ],
+      "materials": ["مادة 1", "مادة 2", "مادة 3"],
+      "estimatedCost": "XX,000 - XX,000 ر.س",
+      "costMin": 0,
+      "costMax": 0,
+      "highlights": ["ميزة 1", "ميزة 2", "ميزة 3"],
+      "imagePrompt": "وصف بالإنجليزية لتوليد صورة التصميم"
+    }
+  ]
+}
+
+تأكدي أن كل فكرة فريدة ومختلفة عن الأخرى، وأن التكاليف ضمن الميزانية المحددة.`
+            }
+          ]
+        }
+      ];
+
+      const response = await invokeLLM({
+        messages: messages as Parameters<typeof invokeLLM>[0]["messages"],
+        response_format: { type: "json_object" },
+      });
+      const raw = response.choices[0]?.message?.content;
+      const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
+      try {
+        const parsed = JSON.parse(text);
+        return { ideas: parsed.ideas || [] };
+      } catch {
+        return { ideas: [] };
+      }
+    }),
 });
 export type AppRouter = typeof appRouter;
