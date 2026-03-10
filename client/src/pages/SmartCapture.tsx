@@ -85,6 +85,23 @@ const CAPTURE_MODES: {
   },
 ];
 
+// ===== Image compression helper =====
+function compressImage(dataUrl: string, maxWidth = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d")?.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 // ===== Camera Component =====
 function LiveCamera({
   onCapture,
@@ -105,14 +122,21 @@ function LiveCamera({
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(4);
+  const touchStartRef = useRef<{ dist: number; zoom: number } | null>(null);
 
   useEffect(() => {
     let s: MediaStream | null = null;
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } }, audio: false })
+      .getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
       .then((stream) => {
         s = stream;
         setStream(stream);
+        // Check zoom capability
+        const track = stream.getVideoTracks()[0];
+        const caps = track.getCapabilities?.() as { zoom?: { max?: number } } | undefined;
+        if (caps?.zoom?.max) setMaxZoom(Math.min(caps.zoom.max, 8));
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
@@ -125,17 +149,50 @@ function LiveCamera({
     return () => { s?.getTracks().forEach((t) => t.stop()); };
   }, []);
 
-  const capture = () => {
+  // Apply zoom to camera track
+  const applyZoom = useCallback((newZoom: number) => {
+    const clamped = Math.max(1, Math.min(newZoom, maxZoom));
+    setZoom(clamped);
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities?.() as { zoom?: { max?: number } } | undefined;
+      if (caps?.zoom) {
+        track.applyConstraints({ advanced: [{ zoom: clamped } as MediaTrackConstraintSet] }).catch(() => {});
+      }
+    }
+  }, [stream, maxZoom]);
+
+  // Pinch-to-zoom
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartRef.current = { dist: Math.hypot(dx, dy), zoom };
+    }
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartRef.current) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.hypot(dx, dy);
+      const scale = newDist / touchStartRef.current.dist;
+      applyZoom(touchStartRef.current.zoom * scale);
+    }
+  };
+
+  const capture = async () => {
     if (!videoRef.current || !canvasRef.current || !ready) return;
     const v = videoRef.current;
     const c = canvasRef.current;
     c.width = v.videoWidth;
     c.height = v.videoHeight;
     c.getContext("2d")?.drawImage(v, 0, 0);
-    const dataUrl = c.toDataURL("image/jpeg", 0.92);
+    const raw = c.toDataURL("image/jpeg", 0.95);
+    // Compress before sending
+    const compressed = await compressImage(raw, 1280, 0.85);
     setFlash(true);
     setTimeout(() => setFlash(false), 200);
-    onCapture(dataUrl);
+    onCapture(compressed);
     if (capturedCount + 1 >= targetCount) {
       stream?.getTracks().forEach((t) => t.stop());
     }
@@ -144,7 +201,8 @@ function LiveCamera({
   const angleLabels = ["أمام", "يمين", "خلف", "يسار"];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl"
+      onTouchStart={handleTouchStart} onTouchMove={handleTouchMove}>
       {/* Flash effect */}
       {flash && <div className="absolute inset-0 bg-white z-50 pointer-events-none animate-ping opacity-60" />}
 
@@ -167,7 +225,10 @@ function LiveCamera({
             </div>
           )}
         </div>
-        <div className="w-9" />
+        {/* Zoom indicator */}
+        <div className="bg-black/40 px-2 py-1 rounded-lg">
+          <span className="text-white text-xs font-bold">{zoom.toFixed(1)}×</span>
+        </div>
       </div>
 
       {error ? (
@@ -194,6 +255,35 @@ function LiveCamera({
             )}
           </div>
 
+          {/* Zoom controls - right side */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+            <button
+              onClick={() => applyZoom(zoom + 0.5)}
+              disabled={zoom >= maxZoom}
+              className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-30"
+            >
+              <ZoomIn className="w-5 h-5" />
+            </button>
+            {/* Zoom level pills */}
+            {[1, 2, 3].filter(z => z <= maxZoom).map(z => (
+              <button key={z} onClick={() => applyZoom(z)}
+                className={`w-10 h-10 rounded-full backdrop-blur border flex items-center justify-center text-xs font-bold transition-all active:scale-90 ${
+                  Math.abs(zoom - z) < 0.3
+                    ? "bg-[#C9A84C] border-[#C9A84C] text-white"
+                    : "bg-black/50 border-white/20 text-white"
+                }`}>
+                {z}×
+              </button>
+            ))}
+            <button
+              onClick={() => applyZoom(zoom - 0.5)}
+              disabled={zoom <= 1}
+              className="w-10 h-10 rounded-full bg-black/50 backdrop-blur border border-white/20 flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-30"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+          </div>
+
           {/* Capture button */}
           <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-4 bg-gradient-to-t from-black/70 to-transparent pt-8">
             {mode === "animation3d" && capturedCount < targetCount && (
@@ -206,6 +296,197 @@ function LiveCamera({
             >
               <div className="w-14 h-14 rounded-full bg-white" />
             </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===== Panorama Capture (DeviceOrientation-based) =====
+function PanoramaCapture({ onCapture, onClose }: { onCapture: (images: string[]) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [heading, setHeading] = useState<number | null>(null);
+  const [capturedAngles, setCapturedAngles] = useState<number[]>([]);
+  const [capturedImages, setCapturedImagesLocal] = useState<string[]>([]);
+  const [flash, setFlash] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const headingRef = useRef<number>(0);
+  const baseHeadingRef = useRef<number | null>(null);
+
+  // Target angles: 0°, 90°, 180°, 270°
+  const TARGET_ANGLES = [0, 90, 180, 270];
+  const TOLERANCE = 15; // degrees
+
+  useEffect(() => {
+    let s: MediaStream | null = null;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } }, audio: false })
+      .then((stream) => {
+        s = stream;
+        setStream(stream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => { videoRef.current?.play(); setReady(true); };
+        }
+      })
+      .catch(() => setError("لا يمكن الوصول للكاميرا."));
+    return () => { s?.getTracks().forEach((t) => t.stop()); };
+  }, []);
+
+  const requestOrientationPermission = async () => {
+    // iOS 13+ requires explicit permission
+    if (typeof (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }).requestPermission === "function") {
+      try {
+        const perm = await (DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission();
+        if (perm === "granted") startOrientation();
+        else setError("يجب السماح باستخدام الجيروسكوب.");
+      } catch { setError("خطأ في طلب إذن الجيروسكوب."); }
+    } else {
+      startOrientation();
+    }
+    setPermissionGranted(true);
+  };
+
+  const startOrientation = () => {
+    const handler = (e: DeviceOrientationEvent) => {
+      const alpha = e.alpha ?? 0; // compass heading 0-360
+      headingRef.current = alpha;
+      if (baseHeadingRef.current === null) baseHeadingRef.current = alpha;
+      // Relative heading from start
+      let rel = alpha - baseHeadingRef.current;
+      if (rel < 0) rel += 360;
+      setHeading(Math.round(rel));
+    };
+    window.addEventListener("deviceorientation", handler, true);
+    return () => window.removeEventListener("deviceorientation", handler, true);
+  };
+
+  const captureFrame = () => {
+    if (!videoRef.current || !canvasRef.current || !ready) return;
+    const v = videoRef.current;
+    const c = canvasRef.current;
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext("2d")?.drawImage(v, 0, 0);
+    return c.toDataURL("image/jpeg", 0.85);
+  };
+
+  // Auto-capture when near a target angle
+  useEffect(() => {
+    if (heading === null || !permissionGranted) return;
+    const nextTarget = TARGET_ANGLES[capturedAngles.length];
+    if (nextTarget === undefined) return;
+    const diff = Math.abs(heading - nextTarget);
+    const withinTolerance = diff <= TOLERANCE || diff >= (360 - TOLERANCE);
+    if (withinTolerance) {
+      const img = captureFrame();
+      if (img) {
+        setFlash(true);
+        setTimeout(() => setFlash(false), 300);
+        const newAngles = [...capturedAngles, nextTarget];
+        const newImages = [...capturedImages, img];
+        setCapturedAngles(newAngles);
+        setCapturedImagesLocal(newImages);
+        if (newAngles.length >= 4) {
+          stream?.getTracks().forEach((t) => t.stop());
+          setTimeout(() => onCapture(newImages), 500);
+        }
+      }
+    }
+  }, [heading]);
+
+  const currentTarget = TARGET_ANGLES[capturedAngles.length];
+  const relHeading = heading ?? 0;
+  const diff = currentTarget !== undefined ? Math.abs(relHeading - currentTarget) : 0;
+  const isAligned = diff <= TOLERANCE;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+      {flash && <div className="absolute inset-0 bg-white z-50 pointer-events-none opacity-70" />}
+
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/80 to-transparent">
+        <button onClick={() => { stream?.getTracks().forEach((t) => t.stop()); onClose(); }}
+          className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+        <div className="text-center">
+          <p className="text-white font-bold text-sm">بانوراما تلقائية</p>
+          <p className="text-white/60 text-xs">{capturedAngles.length} / 4 زاوية</p>
+        </div>
+        {/* Compass heading */}
+        <div className="bg-black/50 px-2 py-1 rounded-lg">
+          <span className="text-white text-xs font-bold">{relHeading}°</span>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-white text-sm">{error}</p>
+          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold">رجوع</button>
+        </div>
+      ) : !permissionGranted ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
+            <ScanLine className="w-10 h-10 text-[#C9A84C]" />
+          </div>
+          <p className="text-white font-bold text-lg">بانوراما ذكية</p>
+          <p className="text-white/70 text-sm leading-relaxed">
+            ستستخدم الجيروسكوب لتتبع اتجاهك تلقائياً.<br/>
+            دوّر الهاتف 360° وستلتقط 4 صور تلقائياً عند 0° • 90° • 180° • 270°
+          </p>
+          <button onClick={requestOrientationPermission}
+            className="px-8 py-3 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-bold rounded-2xl active:scale-95 transition-transform">
+            ابدأ البانوراما
+          </button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Panorama guide overlay */}
+          <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+            {/* Horizontal guide line */}
+            <div className="absolute inset-x-0 top-1/2 h-px bg-[#C9A84C]/60" />
+            {/* Center crosshair */}
+            <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all ${
+              isAligned ? "border-green-400 bg-green-400/20" : "border-[#C9A84C] bg-[#C9A84C]/10"
+            }`}>
+              {isAligned && <div className="w-4 h-4 rounded-full bg-green-400 animate-ping" />}
+            </div>
+          </div>
+
+          {/* Progress dots */}
+          <div className="absolute top-20 left-0 right-0 flex justify-center gap-3">
+            {TARGET_ANGLES.map((angle, i) => (
+              <div key={i} className={`flex flex-col items-center gap-1`}>
+                <div className={`w-3 h-3 rounded-full transition-all ${
+                  i < capturedAngles.length ? "bg-[#C9A84C] scale-125" :
+                  i === capturedAngles.length ? "bg-white animate-pulse" : "bg-white/30"
+                }`} />
+                <span className="text-white/60 text-[9px]">{angle}°</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Instruction */}
+          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-3 bg-gradient-to-t from-black/80 to-transparent pt-8 px-6">
+            {currentTarget !== undefined ? (
+              <>
+                <p className="text-white/70 text-xs">وجّه الكاميرا نحو زاوية</p>
+                <p className={`text-3xl font-black transition-colors ${
+                  isAligned ? "text-green-400" : "text-white"
+                }`}>{currentTarget}°</p>
+                <p className="text-white/50 text-xs">
+                  {isAligned ? "✅ جاري التقاط الصورة تلقائياً..." : `الاتجاه الحالي: ${relHeading}° • المطلوب: ${currentTarget}°`}
+                </p>
+              </>
+            ) : (
+              <p className="text-green-400 font-bold text-lg">✅ تم التقاط جميع الزوايا!</p>
+            )}
           </div>
         </>
       )}
@@ -272,32 +553,77 @@ function VideoRecorder({ onCapture, onClose }: { onCapture: (thumb: string) => v
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/70 to-transparent">
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-gradient-to-b from-black/80 to-transparent">
         <button onClick={() => { stream?.getTracks().forEach((t) => t.stop()); onClose(); }} className="p-2 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
-        <span className="text-white font-bold text-sm">{recording ? `🔴 ${seconds}s / 30s` : "سجّل جولة الغرفة"}</span>
+        <div className="flex items-center gap-2">
+          {recording && <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />}
+          <span className="text-white font-bold text-sm">{recording ? "جاري التسجيل" : "سجّل جولة الغرفة"}</span>
+        </div>
         <div className="w-9" />
       </div>
+
       {error ? (
-        <div className="flex-1 flex items-center justify-center"><p className="text-white">{error}</p></div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <p className="text-white text-sm">{error}</p>
+          <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold">رجوع</button>
+        </div>
       ) : (
         <>
           <video ref={videoRef} className="flex-1 w-full object-cover" playsInline muted autoPlay />
+
+          {/* Recording indicator overlay */}
           {recording && (
-            <div className="absolute top-20 left-8 right-8">
-              <div className="bg-black/50 rounded-full h-1.5">
-                <div className="bg-red-500 h-1.5 rounded-full transition-all" style={{ width: `${(seconds / 30) * 100}%` }} />
+            <>
+              {/* REC badge top-right */}
+              <div className="absolute top-16 right-4 z-20 flex items-center gap-1.5 bg-red-600 px-3 py-1.5 rounded-full">
+                <div className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                <span className="text-white text-xs font-black tracking-widest">REC</span>
+              </div>
+              {/* Timer center-top */}
+              <div className="absolute top-16 left-0 right-0 flex justify-center z-20">
+                <div className="bg-black/60 backdrop-blur px-4 py-2 rounded-full">
+                  <span className="text-white font-black text-2xl tabular-nums">
+                    {String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}
+                  </span>
+                  <span className="text-white/50 text-sm ml-1">/ 0:30</span>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="absolute top-28 left-6 right-6 z-20">
+                <div className="bg-white/20 rounded-full h-1">
+                  <div className="bg-red-500 h-1 rounded-full transition-all duration-1000" style={{ width: `${(seconds / 30) * 100}%` }} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Instructions when not recording */}
+          {!recording && (
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 pointer-events-none">
+              <div className="bg-black/50 backdrop-blur px-5 py-3 rounded-2xl">
+                <p className="text-white/80 text-sm text-center">دوّر ببطء حول الغرفة أثناء التسجيل</p>
+                <p className="text-white/50 text-xs text-center mt-1">حد أقصى 30 ثانية</p>
               </div>
             </div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex items-center justify-center bg-gradient-to-t from-black/70 to-transparent pt-8">
+
+          {/* Capture button */}
+          <div className="absolute bottom-0 left-0 right-0 pb-safe pb-10 flex flex-col items-center gap-3 bg-gradient-to-t from-black/70 to-transparent pt-8">
             {recording ? (
-              <button onClick={stop} className="w-20 h-20 rounded-full border-4 border-white bg-red-500/80 flex items-center justify-center active:scale-90 transition-transform">
-                <div className="w-8 h-8 rounded-sm bg-white" />
-              </button>
+              <>
+                <p className="text-white/70 text-xs">اضغط لإيقاف التسجيل</p>
+                <button onClick={stop} className="w-20 h-20 rounded-full border-4 border-red-400 bg-red-500/80 backdrop-blur flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-red-500/40">
+                  <div className="w-8 h-8 rounded-sm bg-white" />
+                </button>
+              </>
             ) : (
-              <button onClick={start} className="w-20 h-20 rounded-full border-4 border-white bg-red-500/80 flex items-center justify-center active:scale-90 transition-transform">
-                <div className="w-14 h-14 rounded-full bg-red-500" />
-              </button>
+              <>
+                <p className="text-white/70 text-xs">اضغط لبدء التسجيل</p>
+                <button onClick={start} className="w-20 h-20 rounded-full border-4 border-white bg-red-500 flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-red-500/50">
+                  <div className="w-10 h-10 rounded-full bg-white" />
+                </button>
+              </>
             )}
           </div>
         </>
@@ -606,14 +932,25 @@ export default function SmartCapture() {
     const idea = ideas.find((i) => i.id === ideaId);
     if (!idea || !primaryImage) return;
     setIdeas((prev) => prev.map((i) => i.id === ideaId ? { ...i, isGeneratingImage: true } : i));
+    // Build a highly specific prompt that matches the original photo's perspective
+    const colorList = idea.palette.map(c => c.name).join(", ");
+    const matList = idea.materials.slice(0, 4).join(", ");
     const enhancedPrompt = idea.imagePrompt
-      ? `${idea.imagePrompt}, photorealistic render, cinematic lighting, 8K quality, architectural digest, no people`
-      : undefined;
+      ? `Interior design render of the EXACT SAME room from the EXACT SAME camera angle and perspective as the reference photo. ` +
+        `Style: ${idea.styleLabel}. Colors: ${colorList}. Materials: ${matList}. ` +
+        `${idea.imagePrompt}. ` +
+        `Keep the same room dimensions, same wall positions, same windows/doors layout. ` +
+        `Replace only furniture, decor, colors and finishes. ` +
+        `Photorealistic architectural visualization, cinematic lighting, 8K quality, no people, no text.`
+      : `Interior design render of the EXACT SAME room from the EXACT SAME camera angle. ` +
+        `Style: ${idea.styleLabel}. Colors: ${colorList}. Materials: ${matList}. ` +
+        `Keep same room structure, replace only furniture and finishes. ` +
+        `Photorealistic, cinematic lighting, 8K, no people.`;
     (generateVizMutation.mutate as (input: Parameters<typeof generateVizMutation.mutate>[0] & { ideaId: string }) => void)({
       imageUrl: primaryImage,
       designStyle: idea.style,
       palette: idea.palette,
-      materials: enhancedPrompt || idea.materials.join(", "),
+      materials: enhancedPrompt,
       ideaId,
     });
   }, [ideas, primaryImage]);
@@ -628,8 +965,10 @@ export default function SmartCapture() {
 
   const handleFileUpload = (file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
+    reader.onload = async (e) => {
+      const raw = e.target?.result as string;
+      // Compress before analysis
+      const dataUrl = await compressImage(raw, 1280, 0.85);
       setPrimaryImage(dataUrl);
       setCapturedImages([dataUrl]);
       startAnalysis([dataUrl]);
@@ -651,12 +990,23 @@ export default function SmartCapture() {
   return (
     <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir="rtl">
       {/* Camera overlays */}
-      {showCamera && selectedMode && (
+      {showCamera && selectedMode && selectedMode !== "panorama" && (
         <LiveCamera
           mode={selectedMode}
           capturedCount={capturedImages.length}
           targetCount={targetCount}
           onCapture={handleCapture}
+          onClose={() => { setShowCamera(false); setStep("select"); setCapturedImages([]); }}
+        />
+      )}
+      {showCamera && selectedMode === "panorama" && (
+        <PanoramaCapture
+          onCapture={(images) => {
+            setShowCamera(false);
+            setPrimaryImage(images[0]);
+            setCapturedImages(images);
+            startAnalysis(images);
+          }}
           onClose={() => { setShowCamera(false); setStep("select"); setCapturedImages([]); }}
         />
       )}
