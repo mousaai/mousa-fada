@@ -16,6 +16,7 @@ import ARScan from "./pages/ARScan";
 import MoodBoard from "./pages/MoodBoard";
 import QuickAnalyze from "./pages/QuickAnalyze";
 import DesignIdeas from "./pages/DesignIdeas";
+import SmartCapture from "./pages/SmartCapture";
 
 function Router() {
   return (
@@ -35,6 +36,8 @@ function Router() {
       <Route path={"/moodboard"} component={MoodBoard} />
       <Route path={"/design-ideas"} component={DesignIdeas} />
       <Route path={"/ideas"} component={DesignIdeas} />
+      <Route path={"/smart-capture"} component={SmartCapture} />
+      <Route path={"/capture"} component={SmartCapture} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

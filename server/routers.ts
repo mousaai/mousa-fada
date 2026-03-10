@@ -1118,5 +1118,115 @@ ${colorText}
         return { ideas: [] };
       }
     }),
+
+  // ===== analyzeAndGenerateIdeas: تحليل + أفكار في طلب واحد =====
+  analyzeAndGenerateIdeas: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      imageUrls: z.array(z.string()).optional(),
+      captureMode: z.enum(["single", "panorama", "animation3d", "video360"]).default("single"),
+      count: z.number().min(2).max(6).default(3),
+      budgetMin: z.number().default(20000),
+      budgetMax: z.number().default(60000),
+    }))
+    .mutation(async ({ input }) => {
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax } = input;
+
+      const modeDesc: Record<string, string> = {
+        single: "صورة واحدة للفضاء",
+        panorama: "صورة بانوراما 180 درجة للفضاء",
+        animation3d: "4 زوايا للفضاء من جميع الاتجاهات",
+        video360: "إطار من فيديو 360 درجة للفضاء",
+      };
+
+      const styleKeys = ["modern", "gulf", "minimal", "japanese", "scandinavian", "mediterranean", "moroccan", "luxury", "industrial", "bohemian"];
+      const selectedStyles = styleKeys.slice(0, count);
+
+      const imageContents: ImageContent[] = (imageUrls || [imageUrl]).map(url => ({
+        type: "image_url" as const,
+        image_url: { url, detail: "high" as const }
+      }));
+
+      const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعمارية العالمية. تحللين الصور بدقة عالية وتقدمين أفكاراً تصميمية واقعية مع تكاليف استبدال تفصيلية بالريال السعودي.`;
+
+      const userPrompt = `حللي هذه الصورة (${modeDesc[captureMode]}) وقدّمي ${count} أفكار تصميمية مختلفة.
+
+الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} ريال
+
+لكل فكرة قدّمي:
+1. تحليل الفضاء الحالي (الأثاث الموجود، الألوان، الإضاءة، المواد)
+2. فكرة التصميم الجديدة بنمط مختلف
+3. تكاليف الاستبدال التفصيلية لكل عنصر
+
+أعيدي JSON فقط:
+{
+  "ideas": [
+    {
+      "id": "idea_1",
+      "title": "اسم الفكرة",
+      "style": "modern",
+      "styleLabel": "عصري حديث",
+      "description": "وصف الفكرة في جملتين",
+      "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}, ...],
+      "materials": ["مادة 1", "مادة 2"],
+      "highlights": ["ميزة 1", "ميزة 2", "ميزة 3"],
+      "estimatedCost": "25,000 - 45,000 ر.س",
+      "costMin": 25000,
+      "costMax": 45000,
+      "replacementCosts": [
+        {
+          "item": "الأثاث (أريكة + طاولة)",
+          "currentEstimate": "8,000 ر.س",
+          "replacementCost": "12,000 - 18,000 ر.س",
+          "notes": "استبدال بأريكة قماش رمادي + طاولة زجاجية"
+        },
+        {
+          "item": "الإضاءة",
+          "currentEstimate": "1,500 ر.س",
+          "replacementCost": "3,000 - 5,000 ر.س",
+          "notes": "إضافة إضاءة مخفية LED + نقطية"
+        },
+        {
+          "item": "الجدران والدهان",
+          "currentEstimate": "2,000 ر.س",
+          "replacementCost": "4,000 - 7,000 ر.س",
+          "notes": "دهان بألوان محايدة + ورق جدران للجدار الرئيسي"
+        },
+        {
+          "item": "الأرضيات",
+          "currentEstimate": "5,000 ر.س",
+          "replacementCost": "8,000 - 15,000 ر.س",
+          "notes": "تبليط بورسلان أو سجادة هندسية"
+        }
+      ],
+      "imagePrompt": "Photorealistic interior design render, [style] style room, [specific colors and materials], cinematic lighting, 8K quality, architectural digest, no people"
+    }
+  ]
+}`;
+
+      const messages = [
+        { role: "system" as const, content: systemPrompt },
+        {
+          role: "user" as const,
+          content: [
+            ...imageContents,
+            { type: "text" as const, text: userPrompt }
+          ]
+        }
+      ];
+
+      const response = await invokeLLM({
+        messages: messages as Parameters<typeof invokeLLM>[0]["messages"],
+        response_format: { type: "json_object" },
+      });
+      const raw = response.choices[0]?.message?.content;
+      const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
+      try {
+        const parsed = JSON.parse(text);
+        return { ideas: parsed.ideas || [] };
+      } catch {
+        return { ideas: [] };
+      }
+    }),
 });
 export type AppRouter = typeof appRouter;

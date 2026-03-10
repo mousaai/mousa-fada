@@ -242,7 +242,7 @@ export default function Home() {
               window.location.href = getLoginUrl();
               return;
             }
-            setShowQuickAnalysis(true);
+            navigate("/smart-capture");
           }}
           className="relative w-40 h-40 rounded-full bg-gradient-to-br from-[#C9A84C] via-[#A07820] to-[#8B6914] shadow-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200"
           style={{ boxShadow: "0 8px 40px rgba(201,168,76,0.5)" }}
