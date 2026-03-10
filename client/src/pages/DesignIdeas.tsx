@@ -337,12 +337,18 @@ export default function DesignIdeas() {
     setIdeas(prev => prev.map(i =>
       i.id === ideaId ? { ...i, isGeneratingImage: true } : i
     ));
+    // Use the imagePrompt from the idea for best photorealistic results
+    const enhancedPrompt = idea.imagePrompt
+      ? `${idea.imagePrompt}, photorealistic render, cinematic lighting, 8K quality, architectural digest style, no people`
+      : undefined;
     generateVizMutation.mutate({
-      imageUrl: referenceImage || "https://example.com/placeholder.jpg",
+      imageUrl: referenceImage || "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800",
       designStyle: idea.style,
       palette: idea.palette,
-      materials: idea.materials.join(", "),
-    });
+      materials: enhancedPrompt || idea.materials.join(", "),
+    } as Parameters<typeof generateVizMutation.mutate>[0] & { ideaId: string });
+    // Store ideaId for tracking (passed via variables in onSuccess)
+    (generateVizMutation as unknown as { _currentIdeaId: string })._currentIdeaId = ideaId;
   }, [ideas, referenceImage]);
 
   const toggleStyle = (styleId: StyleId) => {

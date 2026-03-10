@@ -877,30 +877,62 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       }),
    }),
 
-  // Quick Analysis — تحليل سريع بدون مشروع
+  // Quick Analysis — تحليل سريع بدون مشروع (يدعم صورة واحدة أو متعددة)
   quickAnalyze: publicProcedure
     .input(z.object({
       imageUrl: z.string(),
+      imageUrls: z.array(z.string()).optional(), // صور متعددة
+      captureMode: z.enum(["single", "multi", "panorama", "video"]).optional(),
       designStyle: z.string().default("modern"),
     }))
     .mutation(async ({ input }) => {
       const styleMap: Record<string, string> = {
         modern: "عصري حديث", gulf: "خليجي فاخر",
         classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
+        japanese: "ياباني زن", scandinavian: "سكندنافي",
+        moroccan: "مغربي أصيل", luxury: "فاخر بريميوم",
       };
       const styleName = styleMap[input.designStyle] || input.designStyle;
+      const allImages = input.imageUrls?.length ? input.imageUrls : [input.imageUrl];
+      const modeNote = input.captureMode === "multi" ? `(${allImages.length} صور من زوايا مختلفة)` :
+                       input.captureMode === "panorama" ? "(صورة بانوراما)" :
+                       input.captureMode === "video" ? "(إطار من فيديو)" : "";
+
+      // Build image content for all images (max 4 for efficiency)
+      const imageContents = allImages.slice(0, 4).map(url => ({
+        type: "image_url" as const,
+        image_url: { url, detail: "low" as const }
+      }));
+
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي العالمية. تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
-            { type: "text", text: `حللي هذا الفضاء بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
+            { type: "text" as const, text: `حللي هذا الفضاء ${modeNote} بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
 {
-  "overview": "تقييم مختصر للفضاء في جملتين",
-  "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}],
-  "topSuggestions": ["توصية 1", "توصية 2", "توصية 3"],
-  "estimatedCost": "مثال: 15,000 - 40,000 ر.س"
+  "overview": "تقييم احترافي للفضاء في 2-3 جمل يصف الوضع الحالي ونقاط القوة والضعف",
+  "palette": [
+    {"name": "اسم اللون", "hex": "#XXXXXX"},
+    {"name": "لون 2", "hex": "#XXXXXX"},
+    {"name": "لون 3", "hex": "#XXXXXX"},
+    {"name": "لون 4", "hex": "#XXXXXX"}
+  ],
+  "topSuggestions": [
+    "توصية تفصيلية 1 للتحسين",
+    "توصية تفصيلية 2 للأثاث والديكور",
+    "توصية تفصيلية 3 للإضاءة والألوان"
+  ],
+  "estimatedCost": "XX,000 - XX,000 ر.س",
+  "costBreakdown": {
+    "furniture": "X,000 - X,000 ر.س",
+    "flooring": "X,000 - X,000 ر.س",
+    "walls": "X,000 - X,000 ر.س",
+    "lighting": "X,000 - X,000 ر.س",
+    "accessories": "X,000 - X,000 ر.س"
+  },
+  "materials": ["مادة 1", "مادة 2", "مادة 3", "مادة 4"]
 }` },
-            { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } }
+            ...imageContents
           ] as Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }> }
         ],
         response_format: { type: "json_object" },
@@ -934,11 +966,13 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       const colorDesc = input.palette?.map(c => `${c.name} (${c.hex})`).join(", ") || "neutral warm tones";
       const materialsDesc = input.materials || "high quality materials";
       
-      const prompt = `Interior design visualization, ${styleName} style, professional interior design render, 
-color palette: ${colorDesc}, materials: ${materialsDesc}, 
-photo-realistic, high-end interior design, 8K quality, 
-architectural visualization, beautiful lighting, elegant decor, 
-Gulf region luxury home interior, professional photography style`;
+      const prompt = `Photorealistic interior design render, ${styleName} style interior, 
+color palette: ${colorDesc}, premium materials: ${materialsDesc}, 
+hyper-realistic 3D architectural visualization, ultra-high quality, 
+photorealistic rendering, cinematic lighting, natural sunlight through windows, 
+shadows and reflections, detailed textures, luxury home interior, 
+professional interior photography, 8K resolution, architectural digest quality, 
+no people, clean and elegant space, realistic furniture and decor`;
 
       try {
         const { url } = await generateImage({ prompt });
@@ -1060,7 +1094,7 @@ ${colorText}
       "costMin": 0,
       "costMax": 0,
       "highlights": ["ميزة 1", "ميزة 2", "ميزة 3"],
-      "imagePrompt": "وصف بالإنجليزية لتوليد صورة التصميم"
+      "imagePrompt": "Photorealistic interior design render, [style] style, [specific materials and colors], cinematic lighting, natural sunlight, detailed textures, luxury home, architectural digest quality, 8K, no people"
     }
   ]
 }
