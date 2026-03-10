@@ -875,7 +875,40 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
           return { breakdown: [], total: { min: 0, max: 0 }, tips: [] };
         }
       }),
-  }),
-});
+   }),
 
+  // Quick Analysis — تحليل سريع بدون مشروع
+  quickAnalyze: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      designStyle: z.string().default("modern"),
+    }))
+    .mutation(async ({ input }) => {
+      const styleMap: Record<string, string> = {
+        modern: "عصري حديث", gulf: "خليجي فاخر",
+        classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
+      };
+      const styleName = styleMap[input.designStyle] || input.designStyle;
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "user", content: [
+            { type: "text", text: `حللي هذا الفضاء بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
+{
+  "overview": "تقييم مختصر للفضاء في جملتين",
+  "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}],
+  "topSuggestions": ["توصية 1", "توصية 2", "توصية 3"],
+  "estimatedCost": "مثال: 15,000 - 40,000 ر.س"
+}` },
+            { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } }
+          ] as Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }> }
+        ],
+        response_format: { type: "json_object" },
+      });
+      const raw = response.choices[0]?.message?.content;
+      const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
+      try { return JSON.parse(text); }
+      catch { return { overview: text.slice(0, 200), palette: [], topSuggestions: [], estimatedCost: "" }; }
+    }),
+});
 export type AppRouter = typeof appRouter;

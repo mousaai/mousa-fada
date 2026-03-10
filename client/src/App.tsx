@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import { VoiceFAB } from "./components/VoiceFAB";
 import Analyze from "./pages/Analyze";
 import Costs from "./pages/Costs";
 import Projects from "./pages/Projects";
@@ -13,18 +14,23 @@ import SarahChat from "./pages/SarahChat";
 import ProjectDetail from "./pages/ProjectDetail";
 import ARScan from "./pages/ARScan";
 import MoodBoard from "./pages/MoodBoard";
+import QuickAnalyze from "./pages/QuickAnalyze";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/analyze"} component={Analyze} />
+      <Route path={"/quick"} component={QuickAnalyze} />
       <Route path={"/costs"} component={Costs} />
       <Route path={"/projects"} component={Projects} />
       <Route path={"/projects/:id"} component={ProjectDetail} />
+      <Route path={"/design-studio"} component={DesignStudio} />
       <Route path={"/studio"} component={DesignStudio} />
+      <Route path={"/sarah-chat"} component={SarahChat} />
       <Route path={"/chat"} component={SarahChat} />
       <Route path={"/ar-scan"} component={ARScan} />
+      <Route path={"/mood-board"} component={MoodBoard} />
       <Route path={"/moodboard"} component={MoodBoard} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
@@ -39,6 +45,7 @@ function App() {
         <TooltipProvider>
           <Toaster richColors position="top-center" />
           <Router />
+          <VoiceFAB />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
