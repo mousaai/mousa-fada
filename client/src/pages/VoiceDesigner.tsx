@@ -478,16 +478,22 @@ export default function VoiceDesigner() {
   };
 
   const processVoiceCommand = async (audioBlob: Blob) => {
-    // Convert blob to base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(",")[1];
+    // Convert blob to base64 using arrayBuffer (more reliable than FileReader)
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < uint8Array.byteLength; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+
       // Add user message placeholder
       const userMsgId = generateId();
       setMessages(prev => [...prev, {
         id: userMsgId,
         role: "user",
-        text: "🎤 جاري المعالجة...",
+        text: "🎙️ جاري المعالجة...",
         timestamp: Date.now(),
         isProcessing: true,
       }]);
@@ -509,8 +515,11 @@ export default function VoiceDesigner() {
           }
         }
       });
-    };
-    reader.readAsDataURL(audioBlob);
+    } catch (err) {
+      console.error("Voice processing error:", err);
+      setIsProcessing(false);
+      addSarahMessage("عذراً، حدث خطأ في معالجة الصوت. حاول مرة أخرى.");
+    }
   };
 
   // ===== Canvas interaction =====
