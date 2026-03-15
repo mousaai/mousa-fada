@@ -197,3 +197,90 @@ describe("bonyan.searchProducts", () => {
     ).rejects.toThrow("فشل الاتصال بمنصة بنيان");
   });
 });
+
+describe("bonyan.matchFurnitureToProducts", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it("يبحث عن منتجات مطابقة لكل قطعة أثاث", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockBonyanResponse,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.matchFurnitureToProducts({
+      furniturePieces: [
+        {
+          nameAr: "كنبة",
+          nameEn: "sofa",
+          description: "كنبة ثلاثية",
+          searchKeyword: "sofa",
+          priority: "أساسي",
+        },
+      ],
+    });
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].piece.nameAr).toBe("كنبة");
+    expect(result.results[0].matches.length).toBeGreaterThan(0);
+    expect(result.totalMatches).toBeGreaterThan(0);
+  });
+
+  it("يعود بنتائج فارغة عند فشل الاتصال ببنيان", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.matchFurnitureToProducts({
+      furniturePieces: [
+        {
+          nameAr: "طاولة",
+          nameEn: "table",
+          description: "طاولة قهوة",
+          searchKeyword: "coffee table",
+          priority: "أساسي",
+        },
+      ],
+    });
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].matches).toHaveLength(0);
+    expect(result.totalMatches).toBe(0);
+  });
+
+  it("يصفي المنتجات حسب الميزانية المحددة", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockBonyanResponse,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // ميزانية صغيرة جداً لاستبعاد كل المنتجات
+    const result = await caller.bonyan.matchFurnitureToProducts({
+      furniturePieces: [
+        {
+          nameAr: "كنبة",
+          nameEn: "sofa",
+          description: "كنبة",
+          searchKeyword: "sofa",
+          priority: "أساسي",
+        },
+      ],
+      budgetMax: 100, // 100 درهم فقط — لن يمر أي منتج
+    });
+
+    // المنتجات بسعر 2500 و 800 درهم تتجاوز حد 150 درهم (100/1 * 1.5)
+    expect(result.results[0].matches).toHaveLength(0);
+    expect(result.totalMatches).toBe(0);
+  });
+});

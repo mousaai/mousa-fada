@@ -355,6 +355,138 @@ function StructuralSuggestionsCard({ suggestions }: { suggestions: StructuralSug
 }
 
 // ===== Idea Card Component =====
+// ===== Shop The Look Component =====
+function ShopTheLookPanel({ imageUrl, designStyle, spaceType }: { imageUrl: string; designStyle: string; spaceType?: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedPieceIdx, setSelectedPieceIdx] = useState<number | null>(null);
+
+  const extractMutation = trpc.bonyan.extractFurnitureFromImage.useMutation();
+  const matchMutation = trpc.bonyan.matchFurnitureToProducts.useMutation();
+
+  const handleExtract = async () => {
+    setIsOpen(true);
+    if (extractMutation.data) return; // already extracted
+    await extractMutation.mutateAsync({ imageUrl, designStyle, spaceType });
+  };
+
+  const handleMatch = async (idx: number) => {
+    if (!extractMutation.data?.furniturePieces) return;
+    setSelectedPieceIdx(idx);
+    const piece = extractMutation.data.furniturePieces[idx];
+    if (!piece) return;
+    await matchMutation.mutateAsync({ furniturePieces: [piece] });
+  };
+
+  const handleMatchAll = async () => {
+    if (!extractMutation.data?.furniturePieces?.length) return;
+    setSelectedPieceIdx(null);
+    await matchMutation.mutateAsync({ furniturePieces: extractMutation.data.furniturePieces.slice(0, 5) });
+  };
+
+  const BONYAN_BASE = "https://bonyanpltf-gegfwhcg.manus.space";
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={handleExtract}
+        disabled={extractMutation.isPending}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-700 to-amber-500 text-white text-sm font-bold active:scale-95 transition-transform disabled:opacity-70"
+      >
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4" />
+          {extractMutation.isPending ? "جاري تحليل الصورة..." : "اشتري هذا الديكور من بنيان"}
+        </div>
+        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+
+      {isOpen && extractMutation.data && (
+        <div className="mt-2 bg-amber-50 rounded-2xl border border-amber-200 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-amber-800">
+              {extractMutation.data.furniturePieces.length} قطعة أثاث مكتشفة
+            </p>
+            <button
+              onClick={handleMatchAll}
+              disabled={matchMutation.isPending}
+              className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-full active:scale-95 transition-transform"
+            >
+              {matchMutation.isPending && selectedPieceIdx === null ? "جاري البحث..." : "بحث عن الكل"}
+            </button>
+          </div>
+
+          {/* قطع الأثاث المكتشفة */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {extractMutation.data.furniturePieces.map((piece, i) => (
+              <button
+                key={i}
+                onClick={() => handleMatch(i)}
+                disabled={matchMutation.isPending}
+                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full border transition-all active:scale-95 ${
+                  selectedPieceIdx === i
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : "bg-white text-amber-800 border-amber-300"
+                }`}
+              >
+                {piece.nameAr}
+                {piece.priority === "أساسي" && <span className="mr-1 text-amber-500">★</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* نتائج المطابقة */}
+          {matchMutation.isPending && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+              <p className="text-xs text-amber-700">م. سارة تبحث في متاجر بنيان...</p>
+            </div>
+          )}
+
+          {matchMutation.data && !matchMutation.isPending && (
+            <div className="space-y-3">
+              {matchMutation.data.results.map((result, ri) => (
+                result.matches.length > 0 && (
+                  <div key={ri}>
+                    <p className="text-[10px] font-bold text-amber-700 mb-1.5">
+                      {result.piece.nameAr}
+                      <span className="text-amber-500 mr-1">({result.matches.length} منتج)</span>
+                    </p>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {result.matches.map((product, pi) => (
+                        <a
+                          key={pi}
+                          href={`${BONYAN_BASE}/products/${product.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 w-28 bg-white rounded-xl border border-amber-200 overflow-hidden shadow-sm active:scale-95 transition-transform"
+                        >
+                          <img
+                            src={product.imageUrl}
+                            alt={product.nameAr}
+                            className="w-full h-20 object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/112x80/f5f0e8/8B6914?text=أثاث"; }}
+                          />
+                          <div className="p-1.5">
+                            <p className="text-[9px] font-bold text-amber-900 leading-tight line-clamp-2">{product.nameAr || product.nameEn}</p>
+                            <p className="text-[10px] font-black text-amber-700 mt-0.5">{parseFloat(product.price).toLocaleString()} د.إ</p>
+                            <p className="text-[8px] text-amber-600/70">{product.sourceName}</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ))}
+              {matchMutation.data.totalMatches === 0 && (
+                <p className="text-xs text-amber-600 text-center py-2">لم يتم العثور على منتجات مطابقة حالياً</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IdeaCard({
   idea,
   onGenerateImage,
@@ -550,6 +682,13 @@ function IdeaCard({
             توليد الصورة التصورية (مع الحفاظ على البنية)
           </button>
         )}
+
+        {/* Shop The Look — استخراج مصدر الأثاث من بنيان */}
+        <ShopTheLookPanel
+          imageUrl={idea.imageUrl || ""}
+          designStyle={idea.style}
+          spaceType={undefined}
+        />
 
         {/* Lightbox */}
         {lightbox && idea.imageUrl && (

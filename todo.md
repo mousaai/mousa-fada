@@ -221,3 +221,11 @@
 - [x] زر "اشتري الأثاث من متاجر محلية" في نتائج SmartCapture
 - [x] مسارات /furniture و /store في App.tsx
 - [x] 6 اختبارات vitest لـ bonyan.searchProducts (55 اختبار إجمالي)
+
+## الإصدار 19.0 — استخراج مصدر الأثاث من الصورة (Shop the Look)
+- [x] procedure bonyan.extractFurnitureFromImage: تحليل صورة الغرفة واستخراج قطع الأثاث بالذكاء الاصطناعي
+- [x] procedure bonyan.matchFurnitureToProducts: مطابقة القطع المستخرجة مع منتجات بنيان
+- [x] مكون ShopTheLookPanel في بطاقة الفكرة التصميمية: زر "اشتري هذا الديكور" يعرض المنتجات المطابقة
+- [x] عرض كل قطعة أثاث مع صورتها وسعرها ورابط بنيان
+- [x] ربط الميزة بالصورة الأصلية والصورة المولّدة معاً
+- [x] 3 اختبارات vitest لـ matchFurnitureToProducts (58 اختبار إجمالي)

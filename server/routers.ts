@@ -1736,6 +1736,140 @@ ${structuralAnalysisPrompt}
           totalFound: filtered.length,
         };
       }),
+
+    // استخراج قطع الأثاث من صورة الغرفة بالذكاء الاصطناعي
+    extractFurnitureFromImage: publicProcedure
+      .input(z.object({
+        imageUrl: z.string(), // صورة الغرفة أو التصميم المولّد
+        designStyle: z.string().optional(), // نمط التصميم المختار
+        spaceType: z.string().optional(), // نوع الفضاء
+      }))
+      .mutation(async ({ input }) => {
+        const messages: Message[] = [
+          {
+            role: "system",
+            content: `أنتِ م. سارة خبيرة التصميم الداخلي. مهمتك تحليل صور الغرف واستخراج قطع الأثاث والديكور الموجودة فيها بدقة. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url" as const,
+                image_url: { url: input.imageUrl, detail: "high" as const },
+              },
+              {
+                type: "text" as const,
+                text: `حللي هذه الصورة واستخرجي كل قطع الأثاث والديكور الموجودة فيها. لكل قطعة حددي:
+- الاسم بالعربية والإنجليزية
+- الوصف الدقيق (اللون، الشكل، المادة المرئية)
+- كلمة بحث مناسبة للعثور عليها في متجر أثاث
+- الأولوية (أساسي/ثانوي)
+
+أعيدي JSON بهذا الشكل:
+{
+  "furniturePieces": [
+    {
+      "nameAr": "كنبة",
+      "nameEn": "sofa",
+      "description": "كنبة ثلاثية بقماش رمادي فاتح",
+      "searchKeyword": "sofa",
+      "color": "رمادي",
+      "material": "قماش",
+      "priority": "أساسي"
+    }
+  ],
+  "spaceType": "غرفة معيشة",
+  "dominantStyle": "عصري"
+}`,
+              },
+            ] as Array<ImageContent | TextContent>,
+          },
+        ];
+
+        const aiResponse = await invokeLLM({
+          messages,
+          response_format: { type: "json_object" },
+        });
+
+        const rawContent = aiResponse.choices[0]?.message?.content;
+        const aiText = typeof rawContent === "string" ? rawContent : "{}";
+        let parsed: {
+          furniturePieces?: Array<{
+            nameAr: string;
+            nameEn: string;
+            description: string;
+            searchKeyword: string;
+            color?: string;
+            material?: string;
+            priority: string;
+          }>;
+          spaceType?: string;
+          dominantStyle?: string;
+        } = {};
+        try { parsed = JSON.parse(aiText); } catch { parsed = {}; }
+
+        return {
+          furniturePieces: parsed.furniturePieces || [],
+          spaceType: parsed.spaceType || input.spaceType || "غرفة معيشة",
+          dominantStyle: parsed.dominantStyle || input.designStyle || "عصري",
+        };
+      }),
+
+    // مطابقة قطع الأثاث المستخرجة مع منتجات بنيان
+    matchFurnitureToProducts: publicProcedure
+      .input(z.object({
+        furniturePieces: z.array(z.object({
+          nameAr: z.string(),
+          nameEn: z.string(),
+          description: z.string(),
+          searchKeyword: z.string(),
+          color: z.string().optional(),
+          material: z.string().optional(),
+          priority: z.string(),
+        })),
+        budgetMax: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const results: Array<{
+          piece: typeof input.furniturePieces[0];
+          matches: BonyanProduct[];
+        }> = [];
+
+        // البحث عن كل قطعة في بنيان
+        for (const piece of input.furniturePieces.slice(0, 6)) {
+          try {
+            const params = new URLSearchParams();
+            params.set("input", JSON.stringify({ json: { page: 1, limit: 4, search: piece.searchKeyword } }));
+            const res = await fetch(`${BONYAN_API}/products.list?${params.toString()}`);
+            if (res.ok) {
+              const data = await res.json() as { result: { data: { json: { items: BonyanProduct[] } } } };
+              let items: BonyanProduct[] = data?.result?.data?.json?.items || [];
+
+              // تصفية حسب الميزانية إذا حددت
+              if (input.budgetMax) {
+                items = items.filter((p: BonyanProduct) => parseFloat(p.price) <= input.budgetMax! / input.furniturePieces.length * 1.5);
+              }
+
+              results.push({ piece, matches: items.slice(0, 3) });
+            } else {
+              results.push({ piece, matches: [] });
+            }
+          } catch {
+            results.push({ piece, matches: [] });
+          }
+        }
+
+        const totalMatches = results.reduce((sum, r) => sum + r.matches.length, 0);
+        const minPrice = results.flatMap(r => r.matches).reduce((min, p) => Math.min(min, parseFloat(p.price)), Infinity);
+        const maxPrice = results.flatMap(r => r.matches).reduce((max, p) => Math.max(max, parseFloat(p.price)), 0);
+
+        return {
+          results,
+          totalMatches,
+          priceRange: totalMatches > 0 ? { min: minPrice, max: maxPrice } : null,
+        };
+      }),
   }),
 
   // ===== Generate Floor Plan 3D =====
