@@ -537,7 +537,7 @@ export default function FurnitureStore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "relevance">("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<BonyanProduct | null>(null);
@@ -546,38 +546,59 @@ export default function FurnitureStore() {
   const [pendingFilters, setPendingFilters] = useState<AdvancedFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<AdvancedFilters>(DEFAULT_FILTERS);
 
-  // بناء كلمة البحث المركّبة من الفلاتر المطبّقة
-  const composedSearch = useMemo(() => {
-    const parts: string[] = [];
-    if (activeSearch) parts.push(activeSearch);
-    if (appliedFilters.designStyle) {
-      const style = DESIGN_STYLES.find(s => s.id === appliedFilters.designStyle);
-      if (style) parts.push(style.keywords);
-    }
-    if (appliedFilters.material) {
-      const mat = MATERIALS.find(m => m.id === appliedFilters.material);
-      if (mat) parts.push(mat.keywords);
-    }
-    if (appliedFilters.colorPalette) {
-      const palette = COLOR_PALETTES.find(p => p.id === appliedFilters.colorPalette);
-      if (palette) parts.push(palette.keywords);
-    }
-    if (appliedFilters.roomType) {
-      const room = ROOM_TYPES.find(r => r.id === appliedFilters.roomType);
-      if (room) parts.push(room.keywords);
-    }
-    return parts.join(" ").trim() || selectedCategory || undefined;
-  }, [activeSearch, appliedFilters, selectedCategory]);
+  // تحويل الفلاتر المطبّقة إلى صيغة smartFilter
+  const smartFilterInput = useMemo(() => {
+    // تحديد التصنيف: من البحث النصي أو التصنيف السريع
+    const categoryKeyword = selectedCategory || activeSearch || undefined;
 
-  // جلب المنتجات
-  const { data, isLoading, refetch } = trpc.bonyan.searchProducts.useQuery({
-    search: composedSearch,
-    page: currentPage,
-    limit: 12,
-    sortBy,
-    minPrice: appliedFilters.minPrice > 0 ? appliedFilters.minPrice : undefined,
-    maxPrice: appliedFilters.maxPrice < 50000 ? appliedFilters.maxPrice : undefined,
-  });
+    // نمط التصميم
+    const designStyles = appliedFilters.designStyle ? [appliedFilters.designStyle] : undefined;
+
+    // الخامة
+    const materials = appliedFilters.material ? [appliedFilters.material] : undefined;
+
+    // اللون — نحوّل palette id إلى كلمات ألوان
+    const COLOR_PALETTE_TO_COLORS: Record<string, string[]> = {
+      neutral: ["beige", "cream", "white"],
+      warm: ["warm", "brown"],
+      cool: ["cool", "blue", "grey"],
+      dark: ["dark", "black"],
+      green: ["green"],
+      pink: ["pink"],
+      gold: ["gold"],
+      white: ["white"],
+    };
+    const colors = appliedFilters.colorPalette
+      ? (COLOR_PALETTE_TO_COLORS[appliedFilters.colorPalette] || [appliedFilters.colorPalette])
+      : undefined;
+
+    // نطاق السعر
+    const priceRange = appliedFilters.budgetRange as "economy" | "mid" | "premium" | "luxury" | undefined || undefined;
+
+    // الحجم
+    const size = appliedFilters.sizeFilter as "small" | "medium" | "large" | undefined || undefined;
+
+    // ترتيب — smartFilter يدعم relevance/price_asc/price_desc/newest
+    const sortByMapped: "relevance" | "price_asc" | "price_desc" | "newest" =
+      sortBy === "newest" ? "newest" :
+      sortBy === "price_asc" ? "price_asc" :
+      sortBy === "price_desc" ? "price_desc" : "relevance";
+
+    return {
+      category: categoryKeyword,
+      designStyles,
+      materials,
+      colors,
+      priceRange,
+      size,
+      sortBy: sortByMapped,
+      page: currentPage,
+      pageSize: 20,
+    };
+  }, [activeSearch, selectedCategory, appliedFilters, sortBy, currentPage]);
+
+  // جلب المنتجات عبر smartFilter
+  const { data, isLoading, refetch } = trpc.bonyan.smartFilter.useQuery(smartFilterInput);
 
   const handleSearch = useCallback(() => {
     setActiveSearch(searchQuery);
@@ -656,7 +677,7 @@ export default function FurnitureStore() {
     setCurrentPage(1);
   }, [appliedFilters]);
 
-  const totalPages = data ? Math.ceil(data.total / 12) : 0;
+  const totalPages = data ? Math.ceil(data.total / (data.pageSize || 20)) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50" dir="rtl">
@@ -769,12 +790,13 @@ export default function FurnitureStore() {
                 {data.total.toLocaleString("ar-AE")} منتج
               </span>
             )}
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-36 border-amber-200 text-sm h-8">
+            <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
+              <SelectTrigger className="w-40 border-amber-200 text-sm h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">الأحدث</SelectItem>
+                <SelectItem value="relevance">الأكثر صلة</SelectItem>
                 <SelectItem value="price_asc">السعر: الأقل أولاً</SelectItem>
                 <SelectItem value="price_desc">السعر: الأعلى أولاً</SelectItem>
               </SelectContent>

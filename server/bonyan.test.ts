@@ -284,3 +284,311 @@ describe("bonyan.matchFurnitureToProducts", () => {
     expect(result.totalMatches).toBe(0);
   });
 });
+
+// ===== اختبارات bonyan.smartFilter =====
+describe("bonyan.smartFilter", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  // بيانات اختبار تحتوي على معلومات مادة ولون في الاسم
+  const mockProductsWithDetails = {
+    result: {
+      data: {
+        json: {
+          items: [
+            {
+              id: 10,
+              nameEn: "Velvet Sofa - Grey 3 Seater",
+              nameAr: "كنبة مخمل رمادي 3 مقاعد",
+              slug: "velvet-sofa-grey",
+              price: "3500",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://example.com/velvet-sofa.jpg",
+              brand: "Pan Home",
+              material: null,
+              color: null,
+              sourceType: "store",
+              sourceName: "Pan Home UAE",
+              isVerified: true,
+              categoryId: 1,
+              width: 220,
+              height: 85,
+              depth: 95,
+              dimensionUnit: "cm",
+              supplierConfirmed: true,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+            {
+              id: 11,
+              nameEn: "Wooden Coffee Table - Oak",
+              nameAr: "طاولة قهوة خشب بلوط",
+              slug: "wooden-coffee-table",
+              price: "1200",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://example.com/wood-table.jpg",
+              brand: "IKEA",
+              material: null,
+              color: null,
+              sourceType: "store",
+              sourceName: "IKEA UAE",
+              isVerified: true,
+              categoryId: 2,
+              width: 120,
+              height: 45,
+              depth: 60,
+              dimensionUnit: "cm",
+              supplierConfirmed: false,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+            {
+              id: 12,
+              nameEn: "Modern Leather Bed - White King",
+              nameAr: "سرير جلد أبيض كينج عصري",
+              slug: "leather-bed-white",
+              price: "8000",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://example.com/leather-bed.jpg",
+              brand: "Homes R Us",
+              material: null,
+              color: null,
+              sourceType: "store",
+              sourceName: "Homes R Us",
+              isVerified: true,
+              categoryId: 3,
+              width: 200,
+              height: 120,
+              depth: 220,
+              dimensionUnit: "cm",
+              supplierConfirmed: true,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+          ],
+          total: 3,
+          page: 1,
+          limit: 50,
+        },
+      },
+    },
+  };
+
+  it("يُرجع منتجات بدون فلاتر (كل المنتجات)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "newest",
+    });
+
+    expect(result.items.length).toBeGreaterThan(0);
+    expect(result.total).toBeGreaterThan(0);
+    expect(result).toHaveProperty("fetchedTotal");
+  });
+
+  it("يصفي حسب الخامة (velvet) من اسم المنتج", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      materials: ["velvet"],
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // الكنبة المخملية يجب أن تظهر
+    expect(result.items.length).toBeGreaterThan(0);
+    const velvetItem = result.items.find(p => p.nameEn.toLowerCase().includes("velvet"));
+    expect(velvetItem).toBeDefined();
+  });
+
+  it("يصفي حسب الخامة (wood) من اسم المنتج", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      materials: ["wood"],
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // الطاولة الخشبية يجب أن تظهر
+    expect(result.items.length).toBeGreaterThan(0);
+    const woodItem = result.items.find(p => p.nameEn.toLowerCase().includes("wood") || p.nameEn.toLowerCase().includes("oak"));
+    expect(woodItem).toBeDefined();
+  });
+
+  it("يصفي حسب اللون (grey) من اسم المنتج", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      colors: ["grey"],
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // الكنبة الرمادية يجب أن تظهر
+    expect(result.items.length).toBeGreaterThan(0);
+    const greyItem = result.items.find(p => p.nameEn.toLowerCase().includes("grey"));
+    expect(greyItem).toBeDefined();
+  });
+
+  it("يصفي حسب نطاق السعر (mid: 1000-4999)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      priceRange: "mid",
+      page: 1,
+      pageSize: 20,
+      sortBy: "price_asc",
+    });
+
+    // الكنبة (3500) والطاولة (1200) ضمن النطاق، السرير (8000) خارجه
+    result.items.forEach(item => {
+      const price = parseFloat(item.price);
+      expect(price).toBeGreaterThanOrEqual(1000);
+      expect(price).toBeLessThanOrEqual(4999);
+    });
+  });
+
+  it("يرتب حسب السعر تصاعدياً", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "price_asc",
+    });
+
+    if (result.items.length >= 2) {
+      const prices = result.items.map(p => parseFloat(p.price));
+      for (let i = 1; i < prices.length; i++) {
+        expect(prices[i]).toBeGreaterThanOrEqual(prices[i - 1]);
+      }
+    }
+  });
+
+  it("يرتب حسب السعر تنازلياً", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "price_desc",
+    });
+
+    if (result.items.length >= 2) {
+      const prices = result.items.map(p => parseFloat(p.price));
+      for (let i = 1; i < prices.length; i++) {
+        expect(prices[i]).toBeLessThanOrEqual(prices[i - 1]);
+      }
+    }
+  });
+
+  it("يدعم التصفح (pagination)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 2,
+      sortBy: "newest",
+    });
+
+    expect(result.items.length).toBeLessThanOrEqual(2);
+    expect(result).toHaveProperty("hasMore");
+    expect(result.page).toBe(1);
+    expect(result.pageSize).toBe(2);
+  });
+
+  it("يُرجع كل المنتجات عند عدم تطابق الفلاتر (fallback)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // فلتر نادر جداً لن يطابق أي منتج
+    const result = await caller.bonyan.smartFilter({
+      materials: ["acrylic"],
+      colors: ["pink"],
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // يجب أن يُرجع كل المنتجات كـ fallback بدلاً من صفر
+    expect(result.items.length).toBeGreaterThan(0);
+  });
+
+  it("يُرجع hasMore=false عند وجود صفحة واحدة فقط", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockProductsWithDetails,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 100, // صفحة كبيرة تستوعب كل المنتجات
+      sortBy: "newest",
+    });
+
+    expect(result.hasMore).toBe(false);
+  });
+});

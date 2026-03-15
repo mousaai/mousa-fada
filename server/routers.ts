@@ -1829,6 +1829,217 @@ ${structuralAnalysisPrompt}
         };
       }),
 
+    // فلترة ذكية: جلب كميات كبيرة وتصفية بخوارزمية تحليل النص
+    smartFilter: publicProcedure
+      .input(z.object({
+        category: z.string().optional(),       // تصنيف الأثاث (sofa, bed, table...)
+        designStyles: z.array(z.string()).optional(),  // أنماط التصميم المختارة
+        materials: z.array(z.string()).optional(),     // الخامات (velvet, wood, leather...)
+        colors: z.array(z.string()).optional(),        // الألوان (beige, grey, white...)
+        priceRange: z.enum(["economy", "mid", "premium", "luxury"]).optional(),
+        roomType: z.string().optional(),              // نوع الغرفة
+        size: z.enum(["small", "medium", "large"]).optional(),
+        store: z.string().optional(),                 // المتجر
+        sortBy: z.enum(["relevance", "price_asc", "price_desc", "newest"]).default("relevance"),
+        page: z.number().default(1),
+        pageSize: z.number().default(20),
+      }))
+      .query(async ({ input }) => {
+        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+
+        // ===== خريطة الكلمات المفتاحية =====
+        // الأنماط → كلمات تظهر في أسماء المنتجات
+        const STYLE_KEYWORDS: Record<string, string[]> = {
+          modern: ["modern", "contemporary", "sleek", "minimalist", "clean"],
+          classic: ["classic", "traditional", "ornate", "carved", "tufted", "capitonne"],
+          gulf: ["arabic", "oriental", "majlis", "moroccan", "arabesque"],
+          bohemian: ["boho", "bohemian", "rattan", "wicker", "macrame", "jute"],
+          industrial: ["industrial", "metal", "iron", "steel", "pipe"],
+          minimal: ["minimal", "simple", "basic", "clean", "nordic", "scandinavian"],
+          rustic: ["rustic", "farmhouse", "barn", "reclaimed", "vintage", "distressed"],
+        };
+
+        // الخامات → كلمات تظهر في أسماء المنتجات
+        const MATERIAL_KEYWORDS: Record<string, string[]> = {
+          velvet: ["velvet", "velour", "plush"],
+          wood: ["wood", "wooden", "oak", "teak", "walnut", "pine", "timber", "mdf"],
+          leather: ["leather", "leatherette", "pu leather", "faux leather"],
+          fabric: ["fabric", "linen", "cotton", "polyester", "chenille", "microfiber"],
+          metal: ["metal", "steel", "iron", "chrome", "brass", "gold"],
+          marble: ["marble", "stone", "granite"],
+          glass: ["glass", "tempered glass", "crystal"],
+          rattan: ["rattan", "wicker", "bamboo", "cane"],
+        };
+
+        // الألوان → كلمات تظهر في أسماء المنتجات
+        const COLOR_KEYWORDS: Record<string, string[]> = {
+          beige: ["beige", "sand", "cream", "ivory", "off white", "off-white", "natural"],
+          grey: ["grey", "gray", "charcoal", "silver"],
+          white: ["white"],
+          black: ["black", "ebony", "onyx"],
+          brown: ["brown", "walnut", "chocolate", "mocha", "caramel"],
+          blue: ["blue", "navy", "teal", "turquoise", "cobalt"],
+          green: ["green", "sage", "olive", "emerald", "forest"],
+          gold: ["gold", "golden", "brass", "bronze"],
+          pink: ["pink", "blush", "rose", "dusty pink"],
+          warm: ["beige", "cream", "sand", "caramel", "terracotta", "rust"],
+          cool: ["grey", "blue", "teal", "navy", "silver"],
+          dark: ["black", "charcoal", "dark", "espresso", "ebony"],
+          light: ["white", "cream", "ivory", "light", "pale"],
+        };
+
+        // الحجم → كلمات في الأسماء
+        const SIZE_KEYWORDS: Record<string, string[]> = {
+          small: ["single", "1 seater", "small", "compact", "mini", "side"],
+          medium: ["2 seater", "double", "medium", "standard"],
+          large: ["3 seater", "4 seater", "5 seater", "large", "king", "super king", "corner", "sectional", "modular"],
+        };
+
+        // نطاقات الأسعار
+        const PRICE_RANGES: Record<string, { min: number; max: number }> = {
+          economy: { min: 0, max: 999 },
+          mid: { min: 1000, max: 4999 },
+          premium: { min: 5000, max: 14999 },
+          luxury: { min: 15000, max: 999999 },
+        };
+
+        // ===== بناء كلمة البحث الأساسية =====
+        // نستخدم فقط التصنيف كبحث أساسي (بسيط وفعّال)
+        const searchTerm = input.category || "";
+
+        // ===== تحديد نطاق السعر =====
+        const priceFilter = input.priceRange ? PRICE_RANGES[input.priceRange] : null;
+
+        // ===== جلب كمية كبيرة من بنيان =====
+        // نجلب 3 صفحات (150 منتج) لضمان نتائج كافية بعد التصفية
+        const FETCH_PAGES = 3;
+        const FETCH_LIMIT = 50;
+        let allFetched: BonyanProduct[] = [];
+
+        for (let p = 1; p <= FETCH_PAGES; p++) {
+          try {
+            const apiInput: Record<string, unknown> = {
+              page: p,
+              limit: FETCH_LIMIT,
+            };
+            if (searchTerm) apiInput.search = searchTerm;
+            if (priceFilter) {
+              apiInput.minPrice = priceFilter.min;
+              apiInput.maxPrice = priceFilter.max;
+            }
+            if (input.store) apiInput.sourceName = input.store;
+
+            const params = new URLSearchParams();
+            params.set("input", JSON.stringify({ json: apiInput }));
+            const res = await fetch(`${BONYAN_API}/products.list?${params.toString()}`);
+            if (!res.ok) break;
+            const data = await res.json() as { result: { data: { json: { items: BonyanProduct[]; total: number } } } };
+            const items = data?.result?.data?.json?.items || [];
+            allFetched.push(...items);
+            // إذا انتهت الصفحات نتوقف
+            if (items.length < FETCH_LIMIT) break;
+          } catch { break; }
+        }
+
+        // ===== تصفية الأسعار الوهمية =====
+        allFetched = allFetched.filter(p => {
+          const price = parseFloat(p.price);
+          return price > 0 && price < 999999;
+        });
+
+        // ===== تصفية السعر server-side (لضمان الدقة حتى عند فشل API في تطبيق الفلتر) =====
+        if (priceFilter) {
+          allFetched = allFetched.filter(p => {
+            const price = parseFloat(p.price);
+            return price >= priceFilter.min && price <= priceFilter.max;
+          });
+        }
+
+        // ===== خوارزمية التصفية الذكية =====
+        // لكل منتج نحسب نقاط التطابق مع الفلاتر المختارة
+        const scored = allFetched.map(product => {
+          const nameLower = ((product.nameEn || "") + " " + (product.nameAr || "")).toLowerCase();
+          let score = 0;
+          let matchedFilters = 0;
+          let totalFilters = 0;
+
+          // فلتر نمط التصميم
+          if (input.designStyles && input.designStyles.length > 0) {
+            totalFilters++;
+            const styleMatch = input.designStyles.some(style => {
+              const keywords = STYLE_KEYWORDS[style] || [style.toLowerCase()];
+              return keywords.some(kw => nameLower.includes(kw));
+            });
+            if (styleMatch) { score += 3; matchedFilters++; }
+          }
+
+          // فلتر الخامة
+          if (input.materials && input.materials.length > 0) {
+            totalFilters++;
+            const matMatch = input.materials.some(mat => {
+              const keywords = MATERIAL_KEYWORDS[mat] || [mat.toLowerCase()];
+              return keywords.some(kw => nameLower.includes(kw));
+            });
+            if (matMatch) { score += 4; matchedFilters++; }
+          }
+
+          // فلتر اللون
+          if (input.colors && input.colors.length > 0) {
+            totalFilters++;
+            const colorMatch = input.colors.some(color => {
+              const keywords = COLOR_KEYWORDS[color] || [color.toLowerCase()];
+              return keywords.some(kw => nameLower.includes(kw));
+            });
+            if (colorMatch) { score += 3; matchedFilters++; }
+          }
+
+          // فلتر الحجم
+          if (input.size) {
+            totalFilters++;
+            const sizeKeywords = SIZE_KEYWORDS[input.size] || [];
+            const sizeMatch = sizeKeywords.some(kw => nameLower.includes(kw));
+            if (sizeMatch) { score += 2; matchedFilters++; }
+          }
+
+          // إذا لم تكن هناك فلاتر نوعية، كل المنتجات مقبولة
+          const isRelevant = totalFilters === 0 || matchedFilters > 0 || score > 0;
+
+          return { product, score, matchedFilters, totalFilters, isRelevant };
+        });
+
+        // ===== تصفية: إبقاء المنتجات ذات الصلة فقط =====
+        let filtered = scored.filter(s => s.isRelevant);
+
+        // إذا كانت الفلاتر صارمة جداً ولا نتائج، نرجع الكل
+        if (filtered.length === 0 && allFetched.length > 0) {
+          filtered = scored;
+        }
+
+        // ===== الترتيب =====
+        if (input.sortBy === "relevance") {
+          filtered.sort((a, b) => b.score - a.score);
+        } else if (input.sortBy === "price_asc") {
+          filtered.sort((a, b) => parseFloat(a.product.price) - parseFloat(b.product.price));
+        } else if (input.sortBy === "price_desc") {
+          filtered.sort((a, b) => parseFloat(b.product.price) - parseFloat(a.product.price));
+        }
+        // newest: الترتيب الافتراضي من API
+
+        // ===== التصفح (Pagination) =====
+        const total = filtered.length;
+        const start = (input.page - 1) * input.pageSize;
+        const pageItems = filtered.slice(start, start + input.pageSize).map(s => s.product);
+
+        return {
+          items: pageItems,
+          total,
+          page: input.page,
+          pageSize: input.pageSize,
+          hasMore: start + input.pageSize < total,
+          fetchedTotal: allFetched.length,
+        };
+      }),
+
     // مطابقة قطع الأثاث المستخرجة مع منتجات بنيان
     matchFurnitureToProducts: publicProcedure
       .input(z.object({
