@@ -168,52 +168,50 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
   const sourceName = product.sourceName || product.brand || "";
   const trustedInfo = TRUSTED_SOURCE_LABELS[sourceName];
   const hasImg = isValidImageUrl(product.imageUrl);
+  // عرض الاسم العربي إذا توفر وإلا الإنجليزي
+  const displayName = product.nameAr && product.nameAr.trim() ? product.nameAr : product.nameEn;
 
   return (
     <Card
-      className="group overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 border border-amber-100 hover:border-amber-300 bg-white rounded-2xl"
+      className="group overflow-hidden cursor-pointer hover:shadow-lg active:scale-[0.98] transition-all duration-200 border border-amber-100 hover:border-amber-300 bg-white rounded-xl"
       onClick={() => onViewDetails(product)}
     >
-      {/* صورة المنتج */}
-      <div className="relative overflow-hidden bg-stone-50" style={{ aspectRatio: '4/3' }}>
+      {/* صورة المنتج - مربعة للموبايل */}
+      <div className="relative overflow-hidden bg-stone-50 aspect-square">
         <ProductImage
           imageUrl={product.imageUrl}
-          name={product.nameAr || product.nameEn}
+          name={displayName}
           sourceName={sourceName}
         />
         {/* شارة المورد */}
-        <div className="absolute top-2 right-2">
-          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-[10px] px-1.5 py-0.5 shadow`}>
-            {trustedInfo ? `${trustedInfo.emoji} ${sourceName}` : sourceName}
+        <div className="absolute top-1.5 right-1.5">
+          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-[9px] px-1.5 py-0.5 shadow-sm leading-tight`}>
+            {trustedInfo ? `${trustedInfo.emoji} ${sourceName.split(" ")[0]}` : sourceName.split(" ")[0]}
           </Badge>
         </div>
         {/* مؤشر الصورة الحقيقية */}
         {hasImg && (
-          <div className="absolute top-2 left-2">
-            <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow">
+          <div className="absolute top-1.5 left-1.5">
+            <div className="bg-green-500/90 text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
               📸
             </div>
           </div>
         )}
-        {/* hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
       </div>
-      <CardContent className="p-3">
-        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1 text-right leading-relaxed min-h-[2.5rem]">
-          {product.nameAr || product.nameEn}
+      <CardContent className="p-2.5">
+        <h3 className="font-medium text-gray-800 text-xs line-clamp-2 mb-2 text-right leading-relaxed" style={{ minHeight: '2.2rem' }}>
+          {displayName}
         </h3>
-        <div className="flex items-center justify-between mt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-[11px] border-amber-300 text-amber-700 hover:bg-amber-50 px-2 py-1 h-7 rounded-lg"
+        <div className="flex items-center justify-between">
+          <button
+            className="text-[10px] border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-50 px-2 py-1 rounded-lg transition-colors"
             onClick={(e) => { e.stopPropagation(); onViewDetails(product); }}
           >
-            التفاصيل
-          </Button>
+            تفاصيل
+          </button>
           <div className="text-right">
-            <span className="text-base font-bold text-amber-700">{priceFormatted}</span>
-            <span className="text-[10px] text-gray-400 mr-1">{product.currency}</span>
+            <span className="text-sm font-bold text-amber-700">{priceFormatted}</span>
+            <span className="text-[9px] text-gray-400 mr-0.5">{product.currency}</span>
           </div>
         </div>
       </CardContent>
@@ -729,49 +727,48 @@ export default function FurnitureStore() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50" dir="rtl">
-      {/* رأس الصفحة */}
+      {/* رأس الصفحة - محسّن للموبايل */}
       <div className="bg-gradient-to-r from-amber-800 to-amber-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="max-w-7xl mx-auto px-3 py-4">
+          <div className="flex items-center gap-2 mb-3">
             <button
               onClick={() => navigate("/")}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors shrink-0"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <ShoppingBag className="w-6 h-6" />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold flex items-center gap-1.5 truncate">
+                <ShoppingBag className="w-5 h-5 shrink-0" />
                 متجر الأثاث المحلي
               </h1>
-              <p className="text-amber-200 text-sm mt-0.5">
-                أثاث حقيقي من متاجر الإمارات — مدعوم من منصة بنيان
+              <p className="text-amber-200 text-xs">
+                مدعوم من منصة بنيان
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={handleSearch}
-              className="bg-white text-amber-800 hover:bg-amber-50 px-5 font-medium shrink-0"
-            >
-              <Search className="w-4 h-4 ml-1" />
-              بحث
-            </Button>
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="ابحث عن أثاث، طاولات، كنب..."
-              className="bg-white/20 border-white/30 text-white placeholder:text-amber-200 text-right flex-1"
+              placeholder="ابحث عن أثاث..."
+              className="bg-white/20 border-white/30 text-white placeholder:text-amber-200 text-right flex-1 h-9 text-sm"
             />
+            <Button
+              onClick={handleSearch}
+              className="bg-white text-amber-800 hover:bg-amber-50 px-3 font-medium shrink-0 h-9"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* تصنيفات سريعة */}
+      {/* تصنيفات سريعة - محسّنة للموبايل */}
       <div className="bg-white border-b border-amber-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto py-3 scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-2">
+          <div className="flex gap-1.5 overflow-x-auto py-2.5 scrollbar-hide">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = selectedCategory === cat.keywords;
@@ -779,14 +776,14 @@ export default function FurnitureStore() {
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat.id, cat.keywords)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-all shrink-0 ${
                     isActive
                       ? "bg-amber-600 text-white shadow-md"
                       : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  {cat.label}
+                  <Icon className="w-3 h-3 shrink-0" />
+                  <span>{cat.label}</span>
                 </button>
               );
             })}
@@ -794,20 +791,22 @@ export default function FurnitureStore() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        {/* شريط الأدوات */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+      <div className="max-w-7xl mx-auto px-3 py-3">
+        {/* شريط الأدوات - محسّن للموبايل */}
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => { setPendingFilters(appliedFilters); setShowAdvancedFilters(true); }}
-              className={`border-amber-300 text-amber-700 hover:bg-amber-50 relative ${activeFilterCount > 0 ? "bg-amber-50 border-amber-500" : ""}`}
+              className={`border-amber-300 text-amber-700 hover:bg-amber-50 relative h-8 px-2.5 text-xs ${
+                activeFilterCount > 0 ? "bg-amber-50 border-amber-500" : ""
+              }`}
             >
-              <SlidersHorizontal className="w-4 h-4 ml-1" />
-              فلاتر متقدمة
+              <SlidersHorizontal className="w-3.5 h-3.5 ml-1" />
+              فلاتر
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -816,37 +815,36 @@ export default function FurnitureStore() {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              className="border-amber-300 text-amber-700 hover:bg-amber-50"
+              className="border-amber-300 text-amber-700 hover:bg-amber-50 h-8 w-8 p-0"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5" />
             </Button>
             {activeFilterCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleResetFilters}
-                className="text-gray-500 hover:text-red-500 text-xs"
+                className="text-gray-400 hover:text-red-500 h-8 w-8 p-0"
               >
-                <X className="w-3 h-3 ml-1" />
-                مسح الكل
+                <X className="w-3.5 h-3.5" />
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {data && (
-              <span className="text-sm text-gray-500">
-                {data.total.toLocaleString("ar-AE")} منتج
+              <span className="text-xs text-gray-400">
+                {data.total.toLocaleString("ar-AE")}
               </span>
             )}
             <Select value={sortBy} onValueChange={(v) => { setSortBy(v as typeof sortBy); setCurrentPage(1); }}>
-              <SelectTrigger className="w-40 border-amber-200 text-sm h-8">
+              <SelectTrigger className="w-28 border-amber-200 text-xs h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="newest">الأحدث</SelectItem>
-                <SelectItem value="relevance">الأكثر صلة</SelectItem>
-                <SelectItem value="price_asc">السعر: الأقل أولاً</SelectItem>
-                <SelectItem value="price_desc">السعر: الأعلى أولاً</SelectItem>
+                <SelectItem value="relevance">الأصلة</SelectItem>
+                <SelectItem value="price_asc">سعر ↑</SelectItem>
+                <SelectItem value="price_desc">سعر ↓</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -870,16 +868,16 @@ export default function FurnitureStore() {
 
         {/* شبكة المنتجات */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-amber-100 animate-pulse shadow-sm">
-                <div className="bg-gradient-to-br from-amber-50 to-stone-100" style={{ aspectRatio: '4/3' }} />
-                <div className="p-3 space-y-2">
-                  <div className="h-4 bg-amber-50 rounded-lg" />
-                  <div className="h-4 bg-amber-50 rounded-lg w-3/4" />
-                  <div className="flex justify-between items-center mt-3">
-                    <div className="h-7 bg-amber-50 rounded-lg w-16" />
-                    <div className="h-5 bg-amber-100 rounded-lg w-20" />
+              <div key={i} className="bg-white rounded-xl overflow-hidden border border-amber-100 animate-pulse shadow-sm">
+                <div className="bg-gradient-to-br from-amber-50 to-stone-100" style={{ aspectRatio: '1/1' }} />
+                <div className="p-2.5 space-y-1.5">
+                  <div className="h-3.5 bg-amber-50 rounded" />
+                  <div className="h-3.5 bg-amber-50 rounded w-3/4" />
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="h-6 bg-amber-50 rounded w-14" />
+                    <div className="h-4 bg-amber-100 rounded w-16" />
                   </div>
                 </div>
               </div>
@@ -887,7 +885,7 @@ export default function FurnitureStore() {
           </div>
         ) : data?.items && data.items.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
               {data.items.map((product) => (
                 <ProductCard
                   key={product.id}

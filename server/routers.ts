@@ -1971,10 +1971,15 @@ ${structuralAnalysisPrompt}
           return true;
         };
 
-        // ===== تصفية الأسعار الوهمية =====
+        // ===== تصفية الأسعار الشاذة =====
+        // نحذف الأسعار الوهمية (صفر أو أكثر من 200,000 درهم للأثاث العادي)
         allFetched = allFetched.filter(p => {
           const price = parseFloat(p.price);
-          return price > 0 && price < 999999;
+          if (isNaN(price) || price <= 0) return false;
+          // استثناء: مواد بناء ورخام وإضاءة قد تكون بسعر عالي
+          const isBuildingMaterial = ["RAK Ceramics", "Dulux UAE", "Jotun UAE"].includes(p.sourceName || "");
+          const maxPrice = isBuildingMaterial ? 999999 : 200000;
+          return price <= maxPrice;
         });
 
         // ===== إخفاء منتجات Pan Home بدون صور حقيقية =====
