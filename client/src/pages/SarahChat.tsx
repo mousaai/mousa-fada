@@ -3,28 +3,30 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Send, Camera, Upload, FileText, Sparkles, User, Bot,
-  Image as ImageIcon, X, Maximize2, ChevronDown, Home,
-  Layers, Eye, DollarSign, Map, Lightbulb
+  Send, Camera, Upload, Sparkles, User, Bot,
+  X, Home, Layers, Eye, DollarSign, Map, Lightbulb,
+  ScanLine, Check
 } from "lucide-react";
 import { Link } from "wouter";
 import { Streamdown } from "streamdown";
 import { getLoginUrl } from "@/const";
+import Live360Scanner, { type CapturedPhoto, SCAN_STEPS } from "@/components/Live360Scanner";
 
 interface ChatMessage {
   role: string;
   content: string;
+  images?: string[]; // صور مرفقة بالرسالة
 }
 
 const SESSION_TYPES = [
   { key: "general", label: "استشارة عامة", icon: Sparkles, desc: "تحدث مع م. سارة حول أي موضوع تصميمي" },
   { key: "floor_plan", label: "تحليل مخطط", icon: Map, desc: "ارفع مخططك المعماري وسارة ستحلله" },
-  { key: "camera_scan", label: "مسح بالكاميرا", icon: Camera, desc: "صوّر فضاءك وسارة ستوجهك" },
+  { key: "camera_scan", label: "مسح 360° لايف", icon: ScanLine, desc: "مسح لايف للفضاء — م. سارة توجّهك خطوة بخطوة" },
   { key: "element_design", label: "تصميم عنصر", icon: Layers, desc: "صمّم عنصراً محدداً بالتفصيل" },
 ];
 
@@ -37,16 +39,6 @@ const QUICK_PROMPTS = [
   { text: "ما الفرق بين النمط الياباني والمينيمال؟", icon: Sparkles },
 ];
 
-const CAMERA_INSTRUCTIONS = [
-  { step: 1, title: "الجدار الأمامي", desc: "صوّر الجدار المقابل لك بشكل مستقيم" },
-  { step: 2, title: "الجدار الأيمن", desc: "صوّر الجدار الأيمن بالكامل" },
-  { step: 3, title: "الجدار الأيسر", desc: "صوّر الجدار الأيسر بالكامل" },
-  { step: 4, title: "الجدار الخلفي", desc: "صوّر الجدار الخلفي خلفك" },
-  { step: 5, title: "السقف", desc: "صوّر السقف بالكامل" },
-  { step: 6, title: "الأرضية", desc: "صوّر الأرضية من أعلى" },
-  { step: 7, title: "زوايا الغرفة", desc: "صوّر الزوايا الأربع للغرفة" },
-];
-
 export default function SarahChat() {
   const { isAuthenticated } = useAuth();
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -57,10 +49,11 @@ export default function SarahChat() {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [attachedImagePreview, setAttachedImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showCameraGuide, setShowCameraGuide] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [showSessionTypes, setShowSessionTypes] = useState(true);
+  const [showLiveScanner, setShowLiveScanner] = useState(false);
+  const [scanProgress, setScanProgress] = useState<CapturedPhoto[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,51 +68,16 @@ export default function SarahChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // رسالة ترحيب تلقائية عند اختيار نوع الجلسة
+  // رسالة ترحيب تلقائية
   useEffect(() => {
     if (!showSessionTypes && messages.length === 0) {
       const welcomeMessages: Record<string, string> = {
-        general: `مرحباً! أنا م. سارة، مهندسة التصميم الداخلي والمعماري. 🌟
-
-أنا هنا لمساعدتك في كل ما يتعلق بالتصميم الداخلي — من اختيار الألوان والمواد، إلى تصميم الفضاءات الكاملة بأنماط عالمية متنوعة.
-
-كيف يمكنني مساعدتك اليوم؟`,
-        floor_plan: `مرحباً! أنا م. سارة. 📐
-
-سأساعدك في تحليل مخططك المعماري بشكل احترافي.
-
-**ما أحتاجه منك:**
-1. ارفع صورة المخطط (PDF أو صورة)
-2. أخبرني عن نوع المشروع (فيلا، شقة، مكتب...)
-3. ما هو النمط الذي تريده؟
-
-ابدأ برفع المخطط وسأحلله فوراً! 🏗️`,
-        camera_scan: `مرحباً! أنا م. سارة. 📸
-
-سأوجهك لتصوير فضاءك بالطريقة الصحيحة حتى أتمكن من تقديم توصيات دقيقة.
-
-**خطوات التصوير:**
-1. قف في منتصف الغرفة
-2. صوّر كل جدار على حدة
-3. صوّر السقف والأرضية
-4. صوّر الزوايا
-
-هل أنت جاهز للبدء؟ صوّر الجدار الأمامي أولاً! 📷`,
-        element_design: `مرحباً! أنا م. سارة. ✨
-
-سأساعدك في تصميم عنصر معماري محدد بمواصفات احترافية كاملة.
-
-**أخبرني:**
-- ما العنصر الذي تريد تصميمه؟ (أرضية، جدران، سقف، نوافذ...)
-- في أي غرفة؟
-- ما المساحة؟
-- ما النمط المطلوب؟
-- ما ميزانيتك؟
-
-لنبدأ! 🎨`,
+        general: `مرحباً! أنا م. سارة، مهندسة التصميم الداخلي والمعماري. 🌟\n\nأنا هنا لمساعدتك في كل ما يتعلق بالتصميم الداخلي — من اختيار الألوان والمواد، إلى تصميم الفضاءات الكاملة بأنماط عالمية متنوعة.\n\nكيف يمكنني مساعدتك اليوم؟`,
+        floor_plan: `مرحباً! أنا م. سارة. 📐\n\nسأساعدك في تحليل مخططك المعماري بشكل احترافي.\n\n**ما أحتاجه منك:**\n1. ارفع صورة المخطط (PDF أو صورة)\n2. أخبرني عن نوع المشروع (فيلا، شقة، مكتب...)\n3. ما هو النمط الذي تريده؟\n\nابدأ برفع المخطط وسأحلله فوراً! 🏗️`,
+        camera_scan: `مرحباً! أنا م. سارة. 📸\n\nاضغط على زر **"مسح 360° لايف"** أدناه وسأفتح الكاميرا مباشرة وأوجّهك خطوة بخطوة لتصوير كل جدار وسقف وأرضية في فضاءك.\n\nبعد اكتمال المسح سأحلل كل شيء وأقدم لك توصيات تصميمية دقيقة! 🎯`,
+        element_design: `مرحباً! أنا م. سارة. ✨\n\nسأساعدك في تصميم عنصر معماري محدد بمواصفات احترافية كاملة.\n\n**أخبرني:**\n- ما العنصر الذي تريد تصميمه؟\n- في أي غرفة؟\n- ما المساحة؟\n- ما النمط المطلوب؟\n- ما ميزانيتك؟`,
       };
-      const welcome = welcomeMessages[sessionType] || welcomeMessages.general;
-      setMessages([{ role: "assistant", content: welcome }]);
+      setMessages([{ role: "assistant", content: welcomeMessages[sessionType] || welcomeMessages.general }]);
     }
   }, [showSessionTypes, sessionType, messages.length]);
 
@@ -139,6 +97,53 @@ export default function SarahChat() {
       toast.error("فشل رفع الصورة");
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  // رفع صورة من Live360Scanner
+  const handleScannerUpload = async (base64: string, mimeType: string): Promise<string> => {
+    const result = await uploadMutation.mutateAsync({ base64, mimeType });
+    return result.url;
+  };
+
+  // اكتمال مسح 360°
+  const handleScanComplete = async (photos: CapturedPhoto[]) => {
+    setShowLiveScanner(false);
+    setScanProgress(photos);
+
+    // بناء رسالة تلقائية مع كل الصور
+    const uploadedUrls = photos.map(p => p.uploadedUrl || p.dataUrl).filter(Boolean);
+    const stepNames = photos.map(p => p.step.title).join("، ");
+
+    // إضافة رسالة المستخدم مع الصور المصغّرة
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `📸 اكتمل المسح 360° — تم تصوير: ${stepNames}`,
+      images: photos.map(p => p.dataUrl),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setIsSending(true);
+
+    try {
+      // إرسال أول صورة للتحليل (أو يمكن إرسالها كلها)
+      const primaryImageUrl = uploadedUrls[0];
+      const result = await sendMutation.mutateAsync({
+        sessionId: sessionId ?? undefined,
+        projectId: selectedProjectId ?? undefined,
+        message: `لقد أجريت مسحاً كاملاً للفضاء بـ ${photos.length} صور تغطي: ${stepNames}. أرجو تحليل الفضاء بالكامل وتقديم توصيات تصميمية شاملة تشمل: نوع الفضاء، الأبعاد التقريبية، النمط الحالي، المشاكل التصميمية، والمقترحات مع التكاليف التقديرية.`,
+        sessionType: "camera_scan",
+        imageUrl: primaryImageUrl,
+        projectContext: selectedProjectId
+          ? `المشروع: ${projects?.find((p: { id: number; name: string }) => p.id === selectedProjectId)?.name}`
+          : undefined,
+      });
+
+      if (!sessionId && result.sessionId) setSessionId(result.sessionId);
+      setMessages(prev => [...prev, { role: "assistant", content: result.reply as string }]);
+    } catch {
+      toast.error("حدث خطأ في التحليل");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -166,21 +171,14 @@ export default function SarahChat() {
         sessionType: sessionType as "general" | "floor_plan" | "camera_scan" | "element_design",
         imageUrl: imageUrl ?? undefined,
         projectContext: selectedProjectId
-          ? `المشروع: ${projects?.find(p => p.id === selectedProjectId)?.name}`
+          ? `المشروع: ${projects?.find((p: { id: number; name: string }) => p.id === selectedProjectId)?.name}`
           : undefined,
       });
 
-      if (!sessionId && result.sessionId) {
-        setSessionId(result.sessionId);
-      }
-
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: result.reply as string
-      }]);
-    } catch (err) {
+      if (!sessionId && result.sessionId) setSessionId(result.sessionId);
+      setMessages(prev => [...prev, { role: "assistant", content: result.reply as string }]);
+    } catch {
       toast.error("حدث خطأ في الإرسال");
-      console.error(err);
     } finally {
       setIsSending(false);
     }
@@ -212,6 +210,15 @@ export default function SarahChat() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+      {/* Live360Scanner Overlay */}
+      {showLiveScanner && (
+        <Live360Scanner
+          onComplete={handleScanComplete}
+          onClose={() => setShowLiveScanner(false)}
+          onUploadPhoto={handleScannerUpload}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-[#8B6914] to-[#C9A84C] text-white py-4 px-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -226,7 +233,7 @@ export default function SarahChat() {
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           </div>
           <div className="flex gap-2 items-center">
-            {projects && projects.length > 0 && (
+            {projects && (projects as Array<{ id: number; name: string }>).length > 0 && (
               <Select
                 value={selectedProjectId?.toString() || "none"}
                 onValueChange={(v) => setSelectedProjectId(v === "none" ? null : Number(v))}
@@ -267,23 +274,34 @@ export default function SarahChat() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
               {SESSION_TYPES.map(type => {
                 const Icon = type.icon;
+                const isLive = type.key === "camera_scan";
                 return (
                   <button
                     key={type.key}
                     onClick={() => {
                       setSessionType(type.key);
                       setShowSessionTypes(false);
-                      if (type.key === "camera_scan") setShowCameraGuide(true);
+                      if (isLive) {
+                        // فتح الكاميرا مباشرة
+                        setTimeout(() => setShowLiveScanner(true), 300);
+                      }
                     }}
-                    className={`p-4 rounded-2xl border-2 text-right transition-all hover:scale-105 hover:shadow-md ${
-                      sessionType === type.key
-                        ? "border-gold bg-gold/10"
+                    className={`p-4 rounded-2xl border-2 text-right transition-all hover:scale-105 hover:shadow-md relative overflow-hidden ${
+                      isLive
+                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50"
                         : "border-border hover:border-gold/40 bg-card"
                     }`}
                   >
+                    {isLive && (
+                      <div className="absolute top-2 left-2">
+                        <span className="text-[10px] font-black bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                          LIVE
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-gold/10 rounded-xl">
-                        <Icon className="w-5 h-5 text-gold" />
+                      <div className={`p-2 rounded-xl ${isLive ? "bg-amber-100" : "bg-gold/10"}`}>
+                        <Icon className={`w-5 h-5 ${isLive ? "text-amber-600" : "text-gold"}`} />
                       </div>
                       <div>
                         <div className="font-semibold text-sm text-foreground">{type.label}</div>
@@ -301,10 +319,7 @@ export default function SarahChat() {
                 {QUICK_PROMPTS.slice(0, 3).map((p, i) => (
                   <button
                     key={i}
-                    onClick={() => {
-                      setInput(p.text);
-                      setShowSessionTypes(false);
-                    }}
+                    onClick={() => { setInput(p.text); setShowSessionTypes(false); }}
                     className="text-xs bg-muted/60 hover:bg-gold/10 hover:text-gold border border-border hover:border-gold/40 rounded-full px-3 py-1.5 transition-all"
                   >
                     {p.text}
@@ -319,30 +334,58 @@ export default function SarahChat() {
       {/* منطقة المحادثة */}
       {!showSessionTypes && (
         <>
-          {/* دليل الكاميرا */}
-          {showCameraGuide && (
-            <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+          {/* شريط تقدم المسح (يظهر فقط في camera_scan) */}
+          {sessionType === "camera_scan" && scanProgress.length > 0 && (
+            <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
               <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-blue-700 text-sm flex items-center gap-2">
-                    <Camera className="w-4 h-4" />
-                    دليل التصوير الصحيح
-                  </h4>
-                  <Button size="sm" variant="ghost" onClick={() => setShowCameraGuide(false)}>
-                    <X className="w-3 h-3" />
-                  </Button>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-xs font-bold text-amber-800">
+                    مسح 360° — {scanProgress.length}/{SCAN_STEPS.length} خطوات مكتملة
+                  </p>
+                  <button
+                    onClick={() => setShowLiveScanner(true)}
+                    className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full flex items-center gap-1"
+                  >
+                    <Camera className="w-3 h-3" /> مسح جديد
+                  </button>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                  {CAMERA_INSTRUCTIONS.map(inst => (
-                    <div key={inst.step} className="text-center">
-                      <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold mx-auto mb-1">
-                        {inst.step}
+                <div className="flex gap-1">
+                  {SCAN_STEPS.map((step, i) => (
+                    <div key={step.id} className="flex-1 text-center">
+                      <div className={`h-1.5 rounded-full mb-1 ${
+                        i < scanProgress.length ? "bg-green-400" : "bg-amber-200"
+                      }`} />
+                      <div className="flex items-center justify-center">
+                        {i < scanProgress.length ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full bg-amber-200" />
+                        )}
                       </div>
-                      <div className="text-xs font-medium text-blue-700">{inst.title}</div>
-                      <div className="text-xs text-blue-500 hidden sm:block">{inst.desc}</div>
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* زر بدء المسح (يظهر في camera_scan قبل أي مسح) */}
+          {sessionType === "camera_scan" && scanProgress.length === 0 && messages.length <= 1 && (
+            <div className="px-4 py-3 bg-amber-50 border-b border-amber-200">
+              <div className="max-w-4xl mx-auto">
+                <button
+                  onClick={() => setShowLiveScanner(true)}
+                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform"
+                >
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <ScanLine className="w-4 h-4" />
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black">ابدأ المسح 360° لايف</p>
+                    <p className="text-xs text-amber-200">الكاميرا تفتح مباشرة — 7 خطوات توجيهية</p>
+                  </div>
+                  <span className="text-xs font-black bg-red-500 px-2 py-0.5 rounded-full animate-pulse">LIVE</span>
+                </button>
               </div>
             </div>
           )}
@@ -351,32 +394,38 @@ export default function SarahChat() {
           <div className="flex-1 overflow-y-auto p-4">
             <div className="max-w-4xl mx-auto space-y-4">
               {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                >
-                  {/* الأفاتار */}
+                <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.role === "user"
-                      ? "bg-gold/20"
-                      : "bg-gradient-to-br from-gold to-[#C9A84C]"
+                    msg.role === "user" ? "bg-gold/20" : "bg-gradient-to-br from-gold to-[#C9A84C]"
                   }`}>
                     {msg.role === "user"
                       ? <User className="w-4 h-4 text-gold" />
-                      : <Bot className="w-4 h-4 text-white" />
-                    }
+                      : <Bot className="w-4 h-4 text-white" />}
                   </div>
 
-                  {/* الفقاعة */}
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     msg.role === "user"
                       ? "bg-gold text-white rounded-tr-sm"
                       : "bg-card border border-border rounded-tl-sm shadow-sm"
                   }`}>
+                    {/* صور المسح 360° */}
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="flex gap-1.5 flex-wrap mb-2">
+                        {msg.images.map((imgUrl, ii) => (
+                          <img
+                            key={ii}
+                            src={imgUrl}
+                            alt={`صورة ${ii + 1}`}
+                            className="w-14 h-10 object-cover rounded-lg border-2 border-white/30 cursor-pointer"
+                            onClick={() => setExpandedImage(imgUrl)}
+                          />
+                        ))}
+                      </div>
+                    )}
                     {msg.content.startsWith("📸") ? (
                       <div>
-                        <div className="text-sm opacity-80 mb-1">📸 صورة مرفقة</div>
-                        <div className="text-sm">{msg.content.replace(/^📸 \[صورة مرفقة\]\n/, "")}</div>
+                        <div className="text-sm opacity-80 mb-1">📸 مسح مكتمل</div>
+                        <div className="text-sm">{msg.content.replace(/^📸 /, "")}</div>
                       </div>
                     ) : msg.role === "assistant" ? (
                       <div className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert">
@@ -399,7 +448,7 @@ export default function SarahChat() {
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                      <span className="text-xs text-muted-foreground mr-2">م. سارة تفكر...</span>
+                      <span className="text-xs text-muted-foreground mr-2">م. سارة تحلل...</span>
                     </div>
                   </div>
                 </div>
@@ -409,7 +458,7 @@ export default function SarahChat() {
           </div>
 
           {/* اقتراحات سريعة */}
-          {messages.length <= 1 && (
+          {messages.length <= 1 && sessionType !== "camera_scan" && (
             <div className="px-4 pb-2">
               <div className="max-w-4xl mx-auto">
                 <div className="flex flex-wrap gap-2">
@@ -459,7 +508,6 @@ export default function SarahChat() {
           <div className="border-t border-border bg-background px-4 py-3 flex-shrink-0">
             <div className="max-w-4xl mx-auto">
               <div className="flex gap-2 items-end">
-                {/* أزرار الإرفاق */}
                 <div className="flex gap-1">
                   <input
                     type="file"
@@ -482,32 +530,32 @@ export default function SarahChat() {
                     className="h-10 w-10 p-0"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploadingImage}
-                    title="رفع صورة أو ملف"
+                    title="رفع صورة"
                   >
                     {isUploadingImage
                       ? <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-                      : <Upload className="w-4 h-4" />
-                    }
+                      : <Upload className="w-4 h-4" />}
                   </Button>
+                  {/* زر المسح اللايف */}
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-10 w-10 p-0"
-                    onClick={() => cameraInputRef.current?.click()}
-                    title="التقاط صورة بالكاميرا"
+                    className="h-10 px-3 gap-1.5 text-xs font-bold border-amber-300 text-amber-700 hover:bg-amber-50"
+                    onClick={() => setShowLiveScanner(true)}
+                    title="مسح 360° لايف"
                   >
-                    <Camera className="w-4 h-4" />
+                    <ScanLine className="w-4 h-4" />
+                    <span className="hidden sm:inline">360°</span>
                   </Button>
                 </div>
 
-                {/* حقل النص */}
                 <div className="flex-1 relative">
                   <Textarea
                     ref={textareaRef}
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="اكتب رسالتك لم. سارة... (Enter للإرسال، Shift+Enter لسطر جديد)"
+                    placeholder="اكتب رسالتك لم. سارة..."
                     className="min-h-[40px] max-h-32 resize-none py-2.5 pl-10 text-sm"
                     rows={1}
                   />
@@ -519,7 +567,6 @@ export default function SarahChat() {
                   </Badge>
                 </div>
 
-                {/* زر الإرسال */}
                 <Button
                   className="btn-gold h-10 w-10 p-0 flex-shrink-0"
                   onClick={handleSend}
@@ -529,16 +576,16 @@ export default function SarahChat() {
                 </Button>
               </div>
 
-              {/* تغيير نوع الجلسة */}
               <div className="flex gap-1 mt-2 flex-wrap">
                 {SESSION_TYPES.map(type => {
                   const Icon = type.icon;
+                  const isLive = type.key === "camera_scan";
                   return (
                     <button
                       key={type.key}
                       onClick={() => {
                         setSessionType(type.key);
-                        if (type.key === "camera_scan") setShowCameraGuide(true);
+                        if (isLive) setShowLiveScanner(true);
                       }}
                       className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all ${
                         sessionType === type.key
@@ -548,11 +595,12 @@ export default function SarahChat() {
                     >
                       <Icon className="w-3 h-3" />
                       {type.label}
+                      {isLive && <span className="text-[8px] font-black bg-red-500 text-white px-1 rounded-full">LIVE</span>}
                     </button>
                   );
                 })}
                 <button
-                  onClick={() => { setShowSessionTypes(true); setMessages([]); setSessionId(null); }}
+                  onClick={() => { setShowSessionTypes(true); setMessages([]); setSessionId(null); setScanProgress([]); }}
                   className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-muted/60 text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
                 >
                   <X className="w-3 h-3" />
