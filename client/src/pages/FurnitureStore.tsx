@@ -148,9 +148,22 @@ function ProductImage({ imageUrl, name, sourceName }: { imageUrl: string; name: 
 }
 
 // ===== مكون بطاقة المنتج =====
+// موردون موثوقون بصور حقيقية
+const TRUSTED_SOURCE_LABELS: Record<string, { emoji: string; color: string }> = {
+  "Danube Home": { emoji: "🏆", color: "bg-emerald-500" },
+  "IKEA UAE": { emoji: "🏆", color: "bg-blue-600" },
+  "Indigo Living UAE": { emoji: "⭐", color: "bg-indigo-500" },
+  "Loom Collection UAE": { emoji: "⭐", color: "bg-purple-500" },
+  "The Design House Dubai": { emoji: "⭐", color: "bg-rose-500" },
+  "Pinky Furniture UAE": { emoji: "✔️", color: "bg-pink-500" },
+  "2XL Home": { emoji: "✔️", color: "bg-orange-500" },
+};
+
 function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onViewDetails: (p: BonyanProduct) => void }) {
   const price = parseFloat(product.price);
   const priceFormatted = price.toLocaleString("ar-AE", { minimumFractionDigits: 0 });
+  const sourceName = product.sourceName || product.brand || "";
+  const trustedInfo = TRUSTED_SOURCE_LABELS[sourceName];
 
   return (
     <Card
@@ -161,11 +174,11 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
         <ProductImage
           imageUrl={product.imageUrl}
           name={product.nameAr || product.nameEn}
-          sourceName={product.sourceName || product.brand}
+          sourceName={sourceName}
         />
         <div className="absolute top-2 right-2">
-          <Badge className="bg-amber-500 text-white text-xs px-2 py-0.5">
-            {product.sourceName || product.brand}
+          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-xs px-2 py-0.5`}>
+            {trustedInfo ? `${trustedInfo.emoji} ${sourceName}` : sourceName}
           </Badge>
         </div>
         {product.material && (

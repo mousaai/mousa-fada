@@ -1941,10 +1941,41 @@ ${structuralAnalysisPrompt}
           } catch { break; }
         }
 
+        // ===== تصنيف جودة الموردين =====
+        // الموردون ذوو صور حقيقية موثوقة يحصلون على نقاط إضافية
+        const TRUSTED_SOURCES: Record<string, number> = {
+          "Danube Home": 5,
+          "IKEA UAE": 5,
+          "Indigo Living UAE": 4,
+          "Loom Collection UAE": 4,
+          "The Design House Dubai": 4,
+          "Pinky Furniture UAE": 3,
+          "2XL Home": 3,
+          "RAK Ceramics": 2,
+          "Dulux UAE": 1,
+          "Jotun UAE": 1,
+        };
+
+        // دالة فحص صحة الصورة
+        const hasRealImage = (p: BonyanProduct): boolean => {
+          const img = p.imageUrl || "";
+          if (!img || !img.startsWith("http")) return false;
+          if (img.includes("lazy.png") || img.includes("placeholder") || img.includes("no-image")) return false;
+          return true;
+        };
+
         // ===== تصفية الأسعار الوهمية =====
         allFetched = allFetched.filter(p => {
           const price = parseFloat(p.price);
           return price > 0 && price < 999999;
+        });
+
+        // ===== إخفاء منتجات Pan Home بدون صور حقيقية =====
+        // Pan Home يستخدم lazy loading وصوره وهمية - نخفيها إلا إذا كانت لديها صورة حقيقية
+        allFetched = allFetched.filter(p => {
+          const src = p.sourceName || "";
+          if (src === "Pan Home" && !hasRealImage(p)) return false;
+          return true;
         });
 
         // ===== تصفية السعر server-side (لضمان الدقة حتى عند فشل API في تطبيق الفلتر) =====
@@ -2004,7 +2035,13 @@ ${structuralAnalysisPrompt}
           // إذا لم تكن هناك فلاتر نوعية، كل المنتجات مقبولة
           const isRelevant = totalFilters === 0 || matchedFilters > 0 || score > 0;
 
-          return { product, score, matchedFilters, totalFilters, isRelevant };
+          // نقاط المورد: الموردون الموثوقون يحصلون على أفضلية في العرض
+          const sourceBonus = TRUSTED_SOURCES[product.sourceName || ""] || 0;
+          // المنتجات ذات صور حقيقية تحصل على نقطة إضافية
+          const imageBonus = hasRealImage(product) ? 2 : 0;
+          const finalScore = score + sourceBonus + imageBonus;
+
+          return { product, score: finalScore, matchedFilters, totalFilters, isRelevant };
         });
 
         // ===== تصفية: إبقاء المنتجات ذات الصلة فقط =====

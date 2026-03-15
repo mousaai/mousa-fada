@@ -592,3 +592,150 @@ describe("bonyan.smartFilter", () => {
     expect(result.hasMore).toBe(false);
   });
 });
+
+// ===== اختبارات أولوية الموردين الموثوقين =====
+describe("bonyan.smartFilter - source quality ranking", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  const mockMixedSources = {
+    result: {
+      data: {
+        json: {
+          items: [
+            {
+              id: 20,
+              nameEn: "Sofa from Pan Home - lazy image",
+              nameAr: "كنبة Pan Home بدون صورة",
+              slug: "",
+              price: "1500",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://panhome.com/static/version1/images/lazy.png",
+              brand: "Pan Home",
+              material: null,
+              color: null,
+              sourceType: "scraper",
+              sourceName: "Pan Home",
+              isVerified: false,
+              categoryId: 1,
+              width: null, height: null, depth: null,
+              dimensionUnit: "cm",
+              supplierConfirmed: false,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+            {
+              id: 21,
+              nameEn: "IKEA Sofa with real image",
+              nameAr: "كنبة IKEA بصورة حقيقية",
+              slug: "ikea-sofa",
+              price: "2000",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://www.ikea.com/ae/en/images/products/sofa.jpg",
+              brand: "IKEA",
+              material: null,
+              color: null,
+              sourceType: "store",
+              sourceName: "IKEA UAE",
+              isVerified: true,
+              categoryId: 1,
+              width: 200, height: 85, depth: 90,
+              dimensionUnit: "cm",
+              supplierConfirmed: true,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+            {
+              id: 22,
+              nameEn: "Danube Home Sofa",
+              nameAr: "كنبة دانوب هوم",
+              slug: "danube-sofa",
+              price: "1800",
+              pricePerUnit: null,
+              currency: "AED",
+              imageUrl: "https://mp-sellers-files.danubehome.com/sellers/sofa.jpg",
+              brand: "Danube",
+              material: null,
+              color: null,
+              sourceType: "scraper",
+              sourceName: "Danube Home",
+              isVerified: true,
+              categoryId: 1,
+              width: 210, height: 80, depth: 88,
+              dimensionUnit: "cm",
+              supplierConfirmed: true,
+              updatedAt: "2024-01-01T00:00:00Z",
+            },
+          ],
+          total: 3,
+          page: 1,
+          limit: 50,
+        },
+      },
+    },
+  };
+
+  it("يُخفي منتجات Pan Home التي لديها صورة lazy.png وهمية", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockMixedSources,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // منتج Pan Home بصورة lazy.png يجب أن يُخفى
+    const panHomeWithLazy = result.items.find(p => p.sourceName === "Pan Home" && p.imageUrl?.includes("lazy.png"));
+    expect(panHomeWithLazy).toBeUndefined();
+  });
+
+  it("يُظهر IKEA وDanube Home لأن لديهم صور حقيقية", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockMixedSources,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    const ikeaItem = result.items.find(p => p.sourceName === "IKEA UAE");
+    const danubeItem = result.items.find(p => p.sourceName === "Danube Home");
+    expect(ikeaItem).toBeDefined();
+    expect(danubeItem).toBeDefined();
+  });
+
+  it("يرتب IKEA وDanube Home قبل الموردين غير الموثوقين عند sortBy=relevance", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockMixedSources,
+    });
+
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.bonyan.smartFilter({
+      page: 1,
+      pageSize: 20,
+      sortBy: "relevance",
+    });
+
+    // أول منتج يجب أن يكون من IKEA أو Danube (الأعلى ثقة)
+    if (result.items.length > 0) {
+      const firstSource = result.items[0].sourceName;
+      expect(["IKEA UAE", "Danube Home"]).toContain(firstSource);
+    }
+  });
+});
