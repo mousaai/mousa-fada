@@ -14,6 +14,62 @@ import {
   Palette, Layers, Ruler, Building2, TreePine, Sparkles
 } from "lucide-react";
 
+// ===== بناء رابط المورد الأصلي =====
+function buildStoreUrl(product: BonyanProduct): string | null {
+  const source = (product.sourceName || product.brand || "").toLowerCase();
+  const nameEn = (product.nameEn || "").trim();
+  const nameQuery = encodeURIComponent(nameEn);
+
+  if (source.includes("ikea")) {
+    // IKEA UAE - البحث بالاسم مباشرة
+    return `https://www.ikea.com/ae/en/search/?q=${nameQuery}`;
+  }
+  if (source.includes("danube")) {
+    return `https://www.danubehome.com/ae/en/search?q=${nameQuery}`;
+  }
+  if (source.includes("pan home") || source.includes("panhome")) {
+    return `https://panhome.com/search?q=${nameQuery}`;
+  }
+  if (source.includes("indigo")) {
+    return `https://www.indigoliving.com/uae/en/search?q=${nameQuery}`;
+  }
+  if (source.includes("bloomr")) {
+    return `https://www.bloomr.ae/search?q=${nameQuery}`;
+  }
+  if (source.includes("loom")) {
+    return `https://www.loomcollection.com/search?q=${nameQuery}`;
+  }
+  if (source.includes("furn")) {
+    return `https://www.furn.com/ae/search?q=${nameQuery}`;
+  }
+  if (source.includes("home centre") || source.includes("homecentre")) {
+    return `https://www.homecentre.com/ae/en/search?q=${nameQuery}`;
+  }
+  if (source.includes("2xl")) {
+    return `https://www.2xlhome.com/search?q=${nameQuery}`;
+  }
+  if (source.includes("marina home")) {
+    return `https://www.marinahome.com/search?q=${nameQuery}`;
+  }
+  if (source.includes("pottery barn")) {
+    return `https://www.potterybarn.ae/search/results.html?words=${nameQuery}`;
+  }
+  if (source.includes("west elm")) {
+    return `https://www.westelm.ae/search/results.html?words=${nameQuery}`;
+  }
+  if (source.includes("the one")) {
+    return `https://www.theone.com/en-ae/search?q=${nameQuery}`;
+  }
+  if (source.includes("homes r us")) {
+    return `https://www.homesrus.com/search?q=${nameQuery}`;
+  }
+  if (source.includes("pinky")) {
+    return `https://www.pinkyfurniture.com/search?q=${nameQuery}`;
+  }
+  // fallback: بحث Google
+  return `https://www.google.com/search?q=${encodeURIComponent(nameEn + " " + (product.sourceName || product.brand || "") + " UAE price")}`;
+}
+
 // ===== أنواع البيانات =====
 interface BonyanProduct {
   id: number;
@@ -199,10 +255,10 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
         )}
       </div>
       <CardContent className="p-2.5">
-        <h3 className="font-medium text-gray-800 text-xs line-clamp-2 mb-2 text-right leading-relaxed" style={{ minHeight: '2.2rem' }}>
+        <h3 className="font-medium text-gray-800 text-xs line-clamp-2 mb-1.5 text-right leading-relaxed" style={{ minHeight: '2.2rem' }}>
           {displayName}
         </h3>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <button
             className="text-[10px] border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-50 px-2 py-1 rounded-lg transition-colors"
             onClick={(e) => { e.stopPropagation(); onViewDetails(product); }}
@@ -214,6 +270,22 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
             <span className="text-[9px] text-gray-400 mr-0.5">{product.currency}</span>
           </div>
         </div>
+        {/* زر المتجر الأصلي */}
+        {(() => {
+          const storeUrl = buildStoreUrl(product);
+          return storeUrl ? (
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center gap-1 w-full bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-[10px] font-medium py-1.5 rounded-lg transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              شراء من {sourceName.split(" ")[0]}
+            </a>
+          ) : null;
+        })()}
       </CardContent>
     </Card>
   );
@@ -224,6 +296,8 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
   const price = parseFloat(product.price);
   const priceFormatted = price.toLocaleString("ar-AE", { minimumFractionDigits: 0 });
   const bonyanUrl = `https://bonyanpltf-gegfwhcg.manus.space/products/${product.slug || product.id}`;
+  const storeUrl = buildStoreUrl(product);
+  const sourceName = product.sourceName || product.brand || "";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -277,15 +351,30 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
             )}
           </div>
           <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-4">
-            <a
-              href={bonyanUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              عرض في بنيان
-            </a>
+            <div className="flex flex-col gap-2">
+              {/* زر المتجر الأصلي - الأولوية الأولى */}
+              {storeUrl && (
+                <a
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  عرض في {sourceName || "المتجر"}
+                </a>
+              )}
+              {/* زر بنيان - ثانوي */}
+              <a
+                href={bonyanUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 px-4 py-2 rounded-lg text-xs font-medium transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                عرض في بنيان
+              </a>
+            </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">السعر</p>
               <p className="text-2xl font-bold text-amber-700">

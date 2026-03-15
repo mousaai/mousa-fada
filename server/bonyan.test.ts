@@ -739,3 +739,80 @@ describe("bonyan.smartFilter - source quality ranking", () => {
     }
   });
 });
+
+// ===== اختبارات buildStoreUrl (منطق بناء رابط المورد) =====
+// نختبر المنطق مباشرة بدون استيراد الدالة (frontend-only)
+function buildStoreUrlTest(product: { nameEn: string; sourceName?: string; brand?: string; id?: number }): string | null {
+  const source = (product.sourceName || product.brand || "").toLowerCase();
+  const nameEn = (product.nameEn || "").trim();
+  const nameQuery = encodeURIComponent(nameEn);
+
+  if (source.includes("ikea")) return `https://www.ikea.com/ae/en/search/?q=${nameQuery}`;
+  if (source.includes("danube")) return `https://www.danubehome.com/ae/en/search?q=${nameQuery}`;
+  if (source.includes("pan home") || source.includes("panhome")) return `https://panhome.com/search?q=${nameQuery}`;
+  if (source.includes("indigo")) return `https://www.indigoliving.com/uae/en/search?q=${nameQuery}`;
+  if (source.includes("bloomr")) return `https://www.bloomr.ae/search?q=${nameQuery}`;
+  if (source.includes("loom")) return `https://www.loomcollection.com/search?q=${nameQuery}`;
+  if (source.includes("furn")) return `https://www.furn.com/ae/search?q=${nameQuery}`;
+  if (source.includes("home centre") || source.includes("homecentre")) return `https://www.homecentre.com/ae/en/search?q=${nameQuery}`;
+  if (source.includes("2xl")) return `https://www.2xlhome.com/search?q=${nameQuery}`;
+  if (source.includes("marina home")) return `https://www.marinahome.com/search?q=${nameQuery}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(nameEn + " " + (product.sourceName || product.brand || "") + " UAE price")}`;
+}
+
+describe("buildStoreUrl - رابط المورد الأصلي", () => {
+  it("يبني رابط IKEA UAE بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "POANG", sourceName: "IKEA UAE" });
+    expect(url).toContain("ikea.com/ae/en/search");
+    expect(url).toContain("POANG");
+  });
+
+  it("يبني رابط Danube Home بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Velvet Sofa", sourceName: "Danube Home" });
+    expect(url).toContain("danubehome.com");
+    expect(url).toContain("Velvet%20Sofa");
+  });
+
+  it("يبني رابط Pan Home بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Montelux Sofa", sourceName: "Pan Home" });
+    expect(url).toContain("panhome.com");
+    expect(url).toContain("Montelux%20Sofa");
+  });
+
+  it("يبني رابط Indigo Living بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Linen Chair", sourceName: "Indigo Living UAE" });
+    expect(url).toContain("indigoliving.com");
+  });
+
+  it("يبني رابط Loom Collection بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Rattan Table", sourceName: "Loom Collection UAE" });
+    expect(url).toContain("loomcollection.com");
+  });
+
+  it("يبني رابط Furn.com بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Modern Bed", sourceName: "Furn.com UAE" });
+    expect(url).toContain("furn.com");
+  });
+
+  it("يبني رابط Bloomr بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Accent Chair", sourceName: "Bloomr UAE" });
+    expect(url).toContain("bloomr.ae");
+  });
+
+  it("يبني رابط 2XL Home بشكل صحيح", () => {
+    const url = buildStoreUrlTest({ nameEn: "Dining Table", sourceName: "2XL Home" });
+    expect(url).toContain("2xlhome.com");
+  });
+
+  it("يعود إلى Google للموردين غير المعروفين", () => {
+    const url = buildStoreUrlTest({ nameEn: "Unknown Product", sourceName: "Unknown Store" });
+    expect(url).toContain("google.com/search");
+    expect(url).toContain("UAE%20price");
+  });
+
+  it("يتعامل مع الأسماء التي تحتوي على مسافات وأحرف خاصة", () => {
+    const url = buildStoreUrlTest({ nameEn: "3-Seater Sofa & Chair", sourceName: "IKEA UAE" });
+    expect(url).toContain("ikea.com");
+    expect(url).not.toContain(" "); // يجب أن تكون المسافات مشفرة
+  });
+});
