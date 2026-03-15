@@ -356,17 +356,74 @@ function StructuralSuggestionsCard({ suggestions }: { suggestions: StructuralSug
 
 // ===== Idea Card Component =====
 // ===== Shop The Look Component =====
-function ShopTheLookPanel({ imageUrl, designStyle, spaceType }: { imageUrl: string; designStyle: string; spaceType?: string }) {
+// الأثاث الافتراضي حسب نوع الفضاء
+// يعمل بطريقتين: (1) تحليل الصورة إذا توفرت (2) بحث مباشر بناءً على بيانات الفكرة
+const SPACE_FURNITURE_MAP: Record<string, string[]> = {
+  "صالة": ["sofa", "coffee table", "tv unit", "armchair", "rug"],
+  "غرفة معيشة": ["sofa", "coffee table", "tv unit", "armchair", "rug"],
+  "غرفة نوم": ["bed", "wardrobe", "bedside table", "dresser"],
+  "مطبخ": ["dining table", "dining chair", "kitchen cabinet"],
+  "غرفة طعام": ["dining table", "dining chair", "sideboard"],
+  "مكتب": ["desk", "office chair", "bookshelf"],
+  "مجلس": ["sofa", "armchair", "coffee table", "rug", "cushion"],
+  "مدخل": ["console table", "mirror", "coat rack"],
+  "حمام": ["bathroom vanity", "mirror", "towel rack"],
+};
+
+function ShopTheLookPanel({
+  imageUrl,
+  designStyle,
+  styleLabel,
+  materials,
+  spaceType,
+}: {
+  imageUrl: string;
+  designStyle: string;
+  styleLabel?: string;
+  materials?: string[];
+  spaceType?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPieceIdx, setSelectedPieceIdx] = useState<number | null>(null);
 
   const extractMutation = trpc.bonyan.extractFurnitureFromImage.useMutation();
   const matchMutation = trpc.bonyan.matchFurnitureToProducts.useMutation();
 
+  // البحث المباشر بدون صورة — يستخدم بيانات الفكرة مباشرة
+  const handleDirectSearch = async () => {
+    const spaceKey = Object.keys(SPACE_FURNITURE_MAP).find(k => (spaceType || "").includes(k)) || "غرفة معيشة";
+    const defaultPieces = SPACE_FURNITURE_MAP[spaceKey] || ["sofa", "coffee table", "rug"];
+    const furniturePieces = defaultPieces.slice(0, 4).map(keyword => ({
+      nameAr: keyword === "sofa" ? "كنبة" :
+               keyword === "coffee table" ? "طاولة قهوة" :
+               keyword === "tv unit" ? "وحدة تلفزيون" :
+               keyword === "armchair" ? "كرسي استراحة" :
+               keyword === "rug" ? "سجادة" :
+               keyword === "bed" ? "سرير" :
+               keyword === "wardrobe" ? "خزانة" :
+               keyword === "dining table" ? "طاولة طعام" :
+               keyword === "dining chair" ? "كرسي طعام" :
+               keyword === "desk" ? "مكتب" :
+               keyword === "bookshelf" ? "رف كتب" :
+               keyword === "mirror" ? "مرآة" : keyword,
+      nameEn: keyword,
+      description: `${styleLabel || designStyle} نمط — ${materials?.slice(0, 2).join(", ") || ""}`,
+      searchKeyword: keyword,
+      priority: "أساسي",
+    }));
+    await matchMutation.mutateAsync({ furniturePieces });
+  };
+
   const handleExtract = async () => {
     setIsOpen(true);
-    if (extractMutation.data) return; // already extracted
-    await extractMutation.mutateAsync({ imageUrl, designStyle, spaceType });
+    if (matchMutation.data || extractMutation.data) return; // already done
+    if (imageUrl) {
+      // عندما توجد صورة: تحليل الصورة بالذكاء الاصطناعي
+      await extractMutation.mutateAsync({ imageUrl, designStyle, spaceType });
+    } else {
+      // بدون صورة: بحث مباشر بناءً على نوع الفضاء والنمط
+      await handleDirectSearch();
+    }
   };
 
   const handleMatch = async (idx: number) => {
@@ -385,65 +442,88 @@ function ShopTheLookPanel({ imageUrl, designStyle, spaceType }: { imageUrl: stri
 
   const BONYAN_BASE = "https://bonyanpltf-gegfwhcg.manus.space";
 
+  const isLoading = extractMutation.isPending || matchMutation.isPending;
+  // البيانات المعروضة: إما من تحليل الصورة أو من البحث المباشر
+  const displayResults = matchMutation.data;
+  const extractedPieces = extractMutation.data?.furniturePieces || [];
+
   return (
     <div className="mt-3">
       <button
         onClick={handleExtract}
-        disabled={extractMutation.isPending}
+        disabled={isLoading}
         className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-700 to-amber-500 text-white text-sm font-bold active:scale-95 transition-transform disabled:opacity-70"
       >
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4" />
-          {extractMutation.isPending ? "جاري تحليل الصورة..." : "اشتري هذا الديكور من بنيان"}
+          {isLoading
+            ? (imageUrl ? "جاري تحليل الصورة..." : "جاري البحث في بنيان...")
+            : "اشتري هذا الديكور من بنيان"}
         </div>
         {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
 
-      {isOpen && extractMutation.data && (
+      {isOpen && (
         <div className="mt-2 bg-amber-50 rounded-2xl border border-amber-200 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-amber-800">
-              {extractMutation.data.furniturePieces.length} قطعة أثاث مكتشفة
-            </p>
-            <button
-              onClick={handleMatchAll}
-              disabled={matchMutation.isPending}
-              className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-full active:scale-95 transition-transform"
-            >
-              {matchMutation.isPending && selectedPieceIdx === null ? "جاري البحث..." : "بحث عن الكل"}
-            </button>
-          </div>
 
-          {/* قطع الأثاث المكتشفة */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {extractMutation.data.furniturePieces.map((piece, i) => (
-              <button
-                key={i}
-                onClick={() => handleMatch(i)}
-                disabled={matchMutation.isPending}
-                className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full border transition-all active:scale-95 ${
-                  selectedPieceIdx === i
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "bg-white text-amber-800 border-amber-300"
-                }`}
-              >
-                {piece.nameAr}
-                {piece.priority === "أساسي" && <span className="mr-1 text-amber-500">★</span>}
-              </button>
-            ))}
-          </div>
-
-          {/* نتائج المطابقة */}
-          {matchMutation.isPending && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+          {/* حالة التحميل */}
+          {isLoading && (
+            <div className="flex items-center justify-center gap-2 py-6">
+              <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
               <p className="text-xs text-amber-700">م. سارة تبحث في متاجر بنيان...</p>
             </div>
           )}
 
-          {matchMutation.data && !matchMutation.isPending && (
+          {/* بعد تحليل الصورة: عرض القطع المكتشفة وزر بحث عن الكل */}
+          {!isLoading && extractedPieces.length > 0 && !displayResults && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-bold text-amber-800">
+                  {extractedPieces.length} قطعة مكتشفة — اختر للبحث
+                </p>
+                <button
+                  onClick={handleMatchAll}
+                  disabled={isLoading}
+                  className="text-[10px] font-bold text-white bg-amber-600 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+                >
+                  بحث عن الكل
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {extractedPieces.map((piece, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleMatch(i)}
+                    disabled={isLoading}
+                    className={`text-[10px] font-bold px-2.5 py-1.5 rounded-full border transition-all active:scale-95 ${
+                      selectedPieceIdx === i
+                        ? "bg-amber-600 text-white border-amber-600"
+                        : "bg-white text-amber-800 border-amber-300"
+                    }`}
+                  >
+                    {piece.nameAr}
+                    {piece.priority === "أساسي" && <span className="mr-1 text-amber-400">★</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* نتائج المطابقة */}
+          {!isLoading && displayResults && (
             <div className="space-y-3">
-              {matchMutation.data.results.map((result, ri) => (
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold text-amber-800">
+                  {displayResults.totalMatches} منتج من بنيان
+                </p>
+                <button
+                  onClick={() => { matchMutation.reset(); extractMutation.reset(); }}
+                  className="text-[10px] text-amber-600 underline"
+                >
+                  بحث جديد
+                </button>
+              </div>
+              {displayResults.results.map((result, ri) => (
                 result.matches.length > 0 && (
                   <div key={ri}>
                     <p className="text-[10px] font-bold text-amber-700 mb-1.5">
@@ -461,7 +541,7 @@ function ShopTheLookPanel({ imageUrl, designStyle, spaceType }: { imageUrl: stri
                         >
                           <img
                             src={product.imageUrl}
-                            alt={product.nameAr}
+                            alt={product.nameAr || product.nameEn}
                             className="w-full h-20 object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/112x80/f5f0e8/8B6914?text=أثاث"; }}
                           />
@@ -476,7 +556,7 @@ function ShopTheLookPanel({ imageUrl, designStyle, spaceType }: { imageUrl: stri
                   </div>
                 )
               ))}
-              {matchMutation.data.totalMatches === 0 && (
+              {displayResults.totalMatches === 0 && (
                 <p className="text-xs text-amber-600 text-center py-2">لم يتم العثور على منتجات مطابقة حالياً</p>
               )}
             </div>
@@ -492,11 +572,13 @@ function IdeaCard({
   onGenerateImage,
   onFavorite,
   isFavorited,
+  spaceType,
 }: {
   idea: DesignIdea;
   onGenerateImage: (id: string) => void;
   onFavorite: (id: string) => void;
   isFavorited: boolean;
+  spaceType?: string;
 }) {
   const [showReplacement, setShowReplacement] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -687,7 +769,9 @@ function IdeaCard({
         <ShopTheLookPanel
           imageUrl={idea.imageUrl || ""}
           designStyle={idea.style}
-          spaceType={undefined}
+          styleLabel={idea.styleLabel}
+          materials={idea.materials}
+          spaceType={spaceType}
         />
 
         {/* Lightbox */}
@@ -1831,6 +1915,7 @@ export default function SmartCapture() {
                 onGenerateImage={handleGenerateImage}
                 onFavorite={toggleFavorite}
                 isFavorited={favorites.has(idea.id)}
+                spaceType={spaceAnalysis?.spaceType}
               />
             ))}
 
