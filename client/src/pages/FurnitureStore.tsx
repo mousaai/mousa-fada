@@ -148,12 +148,15 @@ function ProductImage({ imageUrl, name, sourceName }: { imageUrl: string; name: 
 }
 
 // ===== مكون بطاقة المنتج =====
-// موردون موثوقون بصور حقيقية
+// موردون موثوقون بصور حقيقية 100%
 const TRUSTED_SOURCE_LABELS: Record<string, { emoji: string; color: string }> = {
-  "Danube Home": { emoji: "🏆", color: "bg-emerald-500" },
-  "IKEA UAE": { emoji: "🏆", color: "bg-blue-600" },
-  "Indigo Living UAE": { emoji: "⭐", color: "bg-indigo-500" },
-  "Loom Collection UAE": { emoji: "⭐", color: "bg-purple-500" },
+  // صور 100% حقيقية
+  "Furn.com UAE": { emoji: "🏆", color: "bg-emerald-600" },
+  "Loom Collection UAE": { emoji: "🏆", color: "bg-purple-600" },
+  "Indigo Living UAE": { emoji: "🏆", color: "bg-indigo-600" },
+  "Bloomr UAE": { emoji: "🏆", color: "bg-teal-600" },
+  "Danube Home": { emoji: "⭐", color: "bg-emerald-500" },
+  "IKEA UAE": { emoji: "⭐", color: "bg-blue-600" },
   "The Design House Dubai": { emoji: "⭐", color: "bg-rose-500" },
   "Pinky Furniture UAE": { emoji: "✔️", color: "bg-pink-500" },
   "2XL Home": { emoji: "✔️", color: "bg-orange-500" },
@@ -164,51 +167,53 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
   const priceFormatted = price.toLocaleString("ar-AE", { minimumFractionDigits: 0 });
   const sourceName = product.sourceName || product.brand || "";
   const trustedInfo = TRUSTED_SOURCE_LABELS[sourceName];
+  const hasImg = isValidImageUrl(product.imageUrl);
 
   return (
     <Card
-      className="group overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 border border-amber-100 hover:border-amber-300 bg-white"
+      className="group overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 border border-amber-100 hover:border-amber-300 bg-white rounded-2xl"
       onClick={() => onViewDetails(product)}
     >
-      <div className="relative overflow-hidden bg-gray-50 aspect-square">
+      {/* صورة المنتج */}
+      <div className="relative overflow-hidden bg-stone-50" style={{ aspectRatio: '4/3' }}>
         <ProductImage
           imageUrl={product.imageUrl}
           name={product.nameAr || product.nameEn}
           sourceName={sourceName}
         />
+        {/* شارة المورد */}
         <div className="absolute top-2 right-2">
-          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-xs px-2 py-0.5`}>
+          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-[10px] px-1.5 py-0.5 shadow`}>
             {trustedInfo ? `${trustedInfo.emoji} ${sourceName}` : sourceName}
           </Badge>
         </div>
-        {product.material && (
-          <div className="absolute bottom-2 left-2">
-            <Badge variant="secondary" className="bg-white/90 text-gray-700 text-[10px] px-1.5 py-0.5">
-              {product.material}
-            </Badge>
+        {/* مؤشر الصورة الحقيقية */}
+        {hasImg && (
+          <div className="absolute top-2 left-2">
+            <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow">
+              📸
+            </div>
           </div>
         )}
+        {/* hover overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
       </div>
       <CardContent className="p-3">
-        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1 text-right leading-relaxed">
+        <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1 text-right leading-relaxed min-h-[2.5rem]">
           {product.nameAr || product.nameEn}
         </h3>
-        <p className="text-xs text-gray-500 text-right mb-2">{product.brand}</p>
-        {product.color && (
-          <p className="text-xs text-amber-600 text-right mb-2 line-clamp-1">{product.color}</p>
-        )}
-        <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center justify-between mt-2">
           <Button
             size="sm"
             variant="outline"
-            className="text-xs border-amber-300 text-amber-700 hover:bg-amber-50 px-2 py-1 h-7"
+            className="text-[11px] border-amber-300 text-amber-700 hover:bg-amber-50 px-2 py-1 h-7 rounded-lg"
             onClick={(e) => { e.stopPropagation(); onViewDetails(product); }}
           >
             التفاصيل
           </Button>
           <div className="text-right">
-            <span className="text-lg font-bold text-amber-700">{priceFormatted}</span>
-            <span className="text-xs text-gray-500 mr-1">{product.currency}</span>
+            <span className="text-base font-bold text-amber-700">{priceFormatted}</span>
+            <span className="text-[10px] text-gray-400 mr-1">{product.currency}</span>
           </div>
         </div>
       </CardContent>
@@ -867,12 +872,15 @@ export default function FurnitureStore() {
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl overflow-hidden border border-amber-100 animate-pulse">
-                <div className="aspect-square bg-amber-50" />
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-amber-100 animate-pulse shadow-sm">
+                <div className="bg-gradient-to-br from-amber-50 to-stone-100" style={{ aspectRatio: '4/3' }} />
                 <div className="p-3 space-y-2">
-                  <div className="h-4 bg-amber-50 rounded" />
-                  <div className="h-3 bg-amber-50 rounded w-2/3" />
-                  <div className="h-6 bg-amber-50 rounded w-1/2" />
+                  <div className="h-4 bg-amber-50 rounded-lg" />
+                  <div className="h-4 bg-amber-50 rounded-lg w-3/4" />
+                  <div className="flex justify-between items-center mt-3">
+                    <div className="h-7 bg-amber-50 rounded-lg w-16" />
+                    <div className="h-5 bg-amber-100 rounded-lg w-20" />
+                  </div>
                 </div>
               </div>
             ))}

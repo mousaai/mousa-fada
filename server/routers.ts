@@ -1911,8 +1911,8 @@ ${structuralAnalysisPrompt}
         const priceFilter = input.priceRange ? PRICE_RANGES[input.priceRange] : null;
 
         // ===== جلب كمية كبيرة من بنيان =====
-        // نجلب 3 صفحات (150 منتج) لضمان نتائج كافية بعد التصفية
-        const FETCH_PAGES = 3;
+        // نجلب 6 صفحات (300 منتج) لضمان نتائج كافية مع صور حقيقية
+        const FETCH_PAGES = 6;
         const FETCH_LIMIT = 50;
         let allFetched: BonyanProduct[] = [];
 
@@ -1942,18 +1942,25 @@ ${structuralAnalysisPrompt}
         }
 
         // ===== تصنيف جودة الموردين =====
-        // الموردون ذوو صور حقيقية موثوقة يحصلون على نقاط إضافية
+        // الموردون ذوو صور حقيقية 100% يحصلون على أعلى الأولويات
         const TRUSTED_SOURCES: Record<string, number> = {
+          // صور حقيقية 100% - أعلى أولوية
+          "Furn.com UAE": 6,
+          "Loom Collection UAE": 6,
+          "Indigo Living UAE": 6,
+          "Bloomr UAE": 6,
+          // Danube Home (sourceName=null في بنيان)
           "Danube Home": 5,
           "IKEA UAE": 5,
-          "Indigo Living UAE": 4,
-          "Loom Collection UAE": 4,
           "The Design House Dubai": 4,
           "Pinky Furniture UAE": 3,
-          "2XL Home": 3,
-          "RAK Ceramics": 2,
+          // 2XL Home صور جزئية 28%
+          "2XL Home": 2,
+          "RAK Ceramics": 1,
           "Dulux UAE": 1,
           "Jotun UAE": 1,
+          // Pan Home صور وهمية - أدنى أولوية
+          "Pan Home": 0,
         };
 
         // دالة فحص صحة الصورة
@@ -2037,8 +2044,8 @@ ${structuralAnalysisPrompt}
 
           // نقاط المورد: الموردون الموثوقون يحصلون على أفضلية في العرض
           const sourceBonus = TRUSTED_SOURCES[product.sourceName || ""] || 0;
-          // المنتجات ذات صور حقيقية تحصل على نقطة إضافية
-          const imageBonus = hasRealImage(product) ? 2 : 0;
+          // المنتجات ذات صور حقيقية تحصل على نقاط إضافية كبيرة
+          const imageBonus = hasRealImage(product) ? 4 : -3;
           const finalScore = score + sourceBonus + imageBonus;
 
           return { product, score: finalScore, matchedFilters, totalFilters, isRelevant };
