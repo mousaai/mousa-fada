@@ -177,22 +177,38 @@ function isValidImageUrl(url: string | null | undefined): boolean {
   return url.startsWith('http');
 }
 
+// ===== بناء رابط الـ proxy للصور =====
+function getProxiedImageUrl(imageUrl: string): string {
+  if (!isValidImageUrl(imageUrl)) return "";
+  return `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`;
+}
+
 // ===== مكون صورة المنتج مع fallback ذكي =====
 function ProductImage({ imageUrl, name, sourceName }: { imageUrl: string; name: string; sourceName: string }) {
-  const [imgSrc, setImgSrc] = React.useState<string | null>(
-    isValidImageUrl(imageUrl) ? imageUrl : null
-  );
+  const proxiedUrl = isValidImageUrl(imageUrl) ? getProxiedImageUrl(imageUrl) : null;
+  const [imgSrc, setImgSrc] = React.useState<string | null>(proxiedUrl);
+  const [triedDirect, setTriedDirect] = React.useState(false);
 
   // نص placeholder يعرض اسم المنتج
   const shortName = name.split(' ').slice(0, 3).join(' ');
-  const placeholderUrl = `https://placehold.co/400x400/f5f0e8/8B6914?text=${encodeURIComponent(shortName)}`;
+
+  const handleError = () => {
+    // إذا فشل الـ proxy، جرب الرابط المباشر
+    if (!triedDirect && isValidImageUrl(imageUrl)) {
+      setTriedDirect(true);
+      setImgSrc(imageUrl);
+    } else {
+      setImgSrc(null);
+    }
+  };
 
   return imgSrc ? (
     <img
       src={imgSrc}
       alt={name}
       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-      onError={() => setImgSrc(null)}
+      loading="lazy"
+      onError={handleError}
     />
   ) : (
     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100 p-3">

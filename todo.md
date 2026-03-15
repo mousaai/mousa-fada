@@ -314,3 +314,9 @@
 - [x] زر "شراء من {sourceName}" في بطاقة المنتج وزرين في modal التفاصيل
 - [x] فتح الرابط في تاب جديد + إصلاح ترتيب bloomr/loom
 - [x] 81 اختبار ناجح (10 اختبارات جديدة buildStoreUrl)
+
+## الإصدار 22.7 — إصلاح صور IKEA وغيرها (Image Proxy)
+- [x] بناء /api/image-proxy endpoint في الخادم يدعم 15 مورد + cloudfront/amazonaws
+- [x] تحديث ProductImage لاستخدام proxy مع fallback للرابط المباشر
+- [x] الـ proxy يعمل (200 OK) لـ 2XL Home وcloudfront وغيرها
+- [x] اكتشاف: IKEA في بنيان imageUrl=null (مشكلة في بيانات بنيان نفسها)

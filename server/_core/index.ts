@@ -35,6 +35,67 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // ===== Image Proxy - لتحميل صور المنتجات بـ Referer صحيح =====
+  app.get("/api/image-proxy", async (req, res) => {
+    const url = req.query.url as string;
+    if (!url) {
+      return res.status(400).send("Missing url parameter");
+    }
+    // التحقق من أن الرابط من مصادر موثوقة فقط
+    const allowedDomains = [
+      "ikea.com", "ikeacdn.com", "ingka.com",
+      "danubehome.com",
+      "panhome.com",
+      "indigoliving.com",
+      "loomcollection.com",
+      "furn.com",
+      "bloomr.ae",
+      "homecentre.com",
+      "2xlhome.com",
+      "marinahome.com",
+      "bonyan.co", "bonyanpltf",
+      "media.bonyan", "cdn.bonyan",
+      "potterybarn.ae", "westelm.ae",
+      "homesrus.com", "theone.com",
+      "pinkyfurniture.com",
+      "cloudfront.net", "amazonaws.com",
+      "imgix.net", "shopify.com",
+    ];
+    let isAllowed = false;
+    try {
+      const parsed = new URL(url);
+      isAllowed = allowedDomains.some(d => parsed.hostname.includes(d));
+    } catch {
+      return res.status(400).send("Invalid URL");
+    }
+    if (!isAllowed) {
+      return res.status(403).send("Domain not allowed");
+    }
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Referer": new URL(url).origin + "/",
+          "Accept": "image/webp,image/avif,image/*,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+          "Cache-Control": "no-cache",
+        },
+      });
+      if (!response.ok) {
+        return res.status(response.status).send("Failed to fetch image");
+      }
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      const buffer = await response.arrayBuffer();
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "public, max-age=86400"); // cache 24h
+      res.set("Access-Control-Allow-Origin", "*");
+      return res.send(Buffer.from(buffer));
+    } catch (err) {
+      console.error("Image proxy error:", err);
+      return res.status(500).send("Proxy error");
+    }
+  });
   // tRPC API
   app.use(
     "/api/trpc",
