@@ -10,7 +10,7 @@ import {
   DollarSign, Palette, ChevronDown, ChevronUp, Heart,
   Share2, ZoomIn, Video, ScanLine, Box, ImageIcon,
   Plus, Minus, Check, RotateCcw, Layers, AlertTriangle,
-  Building2, Home, Info, Star
+  Building2, Home, Info, Star, ShoppingBag
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -1694,6 +1694,23 @@ export default function SmartCapture() {
                 isFavorited={favorites.has(idea.id)}
               />
             ))}
+
+            {/* زر متجر الأثاث المحلي من بنيان */}
+            <button
+              onClick={() => navigate("/furniture")}
+              className="w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-gradient-to-r from-amber-700 to-amber-500 text-white shadow-lg active:scale-95 transition-transform mt-1"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div className="text-right">
+                  <p className="font-black text-sm">اشتري الأثاث من متاجر محلية</p>
+                  <p className="text-[11px] text-amber-200">منتجات حقيقية من الإمارات — بنيان</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white/70" />
+            </button>
 
             {/* Share / Save */}
             <div className="grid grid-cols-2 gap-3 mt-2">

@@ -18,6 +18,7 @@ import QuickAnalyze from "./pages/QuickAnalyze";
 import DesignIdeas from "./pages/DesignIdeas";
 import SmartCapture from "./pages/SmartCapture";
 import VoiceDesigner from "./pages/VoiceDesigner";
+import FurnitureStore from "./pages/FurnitureStore";
 
 function Router() {
   return (
@@ -41,6 +42,8 @@ function Router() {
       <Route path={"/capture"} component={SmartCapture} />
       <Route path={"/voice-designer"} component={VoiceDesigner} />
       <Route path={"/draw"} component={VoiceDesigner} />
+      <Route path={"/furniture"} component={FurnitureStore} />
+      <Route path={"/store"} component={FurnitureStore} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -19,6 +19,31 @@ import {
 } from "./db";
 import { nanoid } from "nanoid";
 
+// ===== نوع بيانات منتجات بنيان =====
+interface BonyanProduct {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  slug: string;
+  price: string;
+  pricePerUnit: string | null;
+  currency: string;
+  imageUrl: string;
+  brand: string;
+  material: string | null;
+  color: string | null;
+  sourceType: string;
+  sourceName: string;
+  isVerified: boolean;
+  categoryId: number;
+  width: number | null;
+  height: number | null;
+  depth: number | null;
+  dimensionUnit: string;
+  supplierConfirmed: boolean;
+  updatedAt: string;
+}
+
 // ===== أنماط التصميم العالمية =====
 const GLOBAL_STYLES: Record<string, { name: string; description: string; keywords: string }> = {
   modern: { name: "عصري حديث", description: "خطوط نظيفة، مواد معاصرة، ألوان محايدة", keywords: "minimalist, clean lines, contemporary" },
@@ -1585,6 +1610,133 @@ ${structuralAnalysisPrompt}
         };
       }
     }),
+
+  // ===== منصة بنيان: البحث في المنتجات المحلية =====
+  bonyan: router({
+    // البحث في منتجات بنيان
+    searchProducts: publicProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        category: z.string().optional(),
+        page: z.number().default(1),
+        limit: z.number().default(12),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        sortBy: z.enum(["newest", "price_asc", "price_desc"]).default("newest"),
+      }))
+      .query(async ({ input }) => {
+        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const params = new URLSearchParams();
+        const inputObj: Record<string, unknown> = {
+          page: input.page,
+          limit: input.limit,
+        };
+        if (input.search) inputObj.search = input.search;
+        if (input.category) inputObj.category = input.category;
+        params.set("input", JSON.stringify({ json: inputObj }));
+
+        const res = await fetch(`${BONYAN_API}/products.list?${params.toString()}`);
+        if (!res.ok) throw new Error("فشل الاتصال بمنصة بنيان");
+        const data = await res.json() as { result: { data: { json: { items: BonyanProduct[]; total: number; page: number; limit: number } } } };
+        let items: BonyanProduct[] = data?.result?.data?.json?.items || [];
+        const total: number = data?.result?.data?.json?.total || 0;
+
+        // تصفية حسب السعر
+        if (input.minPrice !== undefined) items = items.filter((p: BonyanProduct) => parseFloat(p.price) >= input.minPrice!);
+        if (input.maxPrice !== undefined) items = items.filter((p: BonyanProduct) => parseFloat(p.price) <= input.maxPrice!);
+
+        // ترتيب
+        if (input.sortBy === "price_asc") items.sort((a: BonyanProduct, b: BonyanProduct) => parseFloat(a.price) - parseFloat(b.price));
+        else if (input.sortBy === "price_desc") items.sort((a: BonyanProduct, b: BonyanProduct) => parseFloat(b.price) - parseFloat(a.price));
+
+        return { items, total, page: input.page, limit: input.limit };
+      }),
+
+    // توصيات أثاث حقيقية بناءً على تحليل الغرفة
+    getRecommendations: publicProcedure
+      .input(z.object({
+        spaceType: z.string(), // نوع الفضاء (صالة/غرفة نوم/مطبخ...)
+        designStyle: z.string(), // نمط التصميم
+        materials: z.array(z.string()).optional(), // المواد المقترحة من التحليل
+        furnitureNeeds: z.array(z.string()).optional(), // قطع الأثاث المطلوبة
+        budgetMax: z.number().optional(), // الحد الأقصى للميزانية
+      }))
+      .mutation(async ({ input }) => {
+        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+
+        // تحديد كلمات البحث بناءً على نوع الفضاء والنمط
+        const spaceKeywords: Record<string, string[]> = {
+          "صالة": ["sofa", "coffee table", "tv unit", "armchair"],
+          "غرفة معيشة": ["sofa", "coffee table", "tv unit", "armchair"],
+          "غرفة نوم": ["bed", "wardrobe", "bedside", "dresser"],
+          "مطبخ": ["kitchen", "dining table", "dining chair"],
+          "غرفة طعام": ["dining table", "dining chair", "sideboard"],
+          "مكتب": ["desk", "office chair", "bookshelf"],
+          "مجلس": ["sofa", "armchair", "coffee table", "rug"],
+        };
+
+        // تحديد كلمات البحث
+        const spaceKey = Object.keys(spaceKeywords).find(k => input.spaceType.includes(k)) || "صالة";
+        const searchTerms = input.furnitureNeeds?.length
+          ? input.furnitureNeeds.slice(0, 3)
+          : spaceKeywords[spaceKey] || ["furniture"];
+
+        // البحث عن كل نوع من الأثاث
+        const allResults: BonyanProduct[] = [];
+        for (const term of searchTerms.slice(0, 3)) {
+          try {
+            const params = new URLSearchParams();
+            params.set("input", JSON.stringify({ json: { page: 1, limit: 4, search: term } }));
+            const res = await fetch(`${BONYAN_API}/products.list?${params.toString()}`);
+            if (res.ok) {
+              const data = await res.json() as { result: { data: { json: { items: BonyanProduct[] } } } };
+              const items: BonyanProduct[] = data?.result?.data?.json?.items || [];
+              allResults.push(...items.slice(0, 3));
+            }
+          } catch { /* skip */ }
+        }
+
+        // تصفية حسب الميزانية
+        const filtered = input.budgetMax
+          ? allResults.filter((p: BonyanProduct) => parseFloat(p.price) <= input.budgetMax! / searchTerms.length)
+          : allResults;
+
+        // استخدام AI لتنظيم التوصيات
+        const productsDesc = filtered.slice(0, 12).map((p: BonyanProduct) =>
+          `${p.nameAr || p.nameEn} - ${p.price} ${p.currency} - ${p.brand}`
+        ).join("\n");
+
+        const aiResponse = await invokeLLM({
+          messages: [
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. تنظمين قائمة الأثاث المقترح من متجر حقيقي. ردودك بالعربية بصيغة JSON فقط." },
+            { role: "user", content: `نوع الفضاء: ${input.spaceType}\nنمط التصميم: ${input.designStyle}\n\nالمنتجات المتاحة من متجر بنيان:\n${productsDesc}\n\nنظّمي هذه المنتجات وأضيفي تعليقاً لكل منتج يشرح لماذا يناسب هذا الفضاء والنمط. أعيدي JSON:\n{"recommendations": [{"productIndex": 0, "reason": "سبب التوصية", "category": "الأثاث/الإضاءة/الديكور", "priority": "أساسي/اختياري"}]}` }
+          ],
+          response_format: { type: "json_object" },
+        });
+
+        const rawContent = aiResponse.choices[0]?.message?.content;
+        const aiText = typeof rawContent === "string" ? rawContent : "{}";
+        let aiData: { recommendations?: Array<{ productIndex: number; reason: string; category: string; priority: string }> } = {};
+        try { aiData = JSON.parse(aiText); } catch { aiData = {}; }
+
+        const recommendations = (aiData.recommendations || []).map((rec: { productIndex: number; reason: string; category: string; priority: string }) => ({
+          product: filtered[rec.productIndex] || filtered[0],
+          reason: rec.reason,
+          category: rec.category,
+          priority: rec.priority,
+        })).filter((r: { product: BonyanProduct | undefined }) => r.product);
+
+        return {
+          recommendations: recommendations.length > 0 ? recommendations : filtered.slice(0, 6).map((p: BonyanProduct) => ({
+            product: p,
+            reason: `يناسب ${input.spaceType} بنمط ${input.designStyle}`,
+            category: "أثاث",
+            priority: "أساسي",
+          })),
+          totalFound: filtered.length,
+        };
+      }),
+  }),
 
   // ===== Generate Floor Plan 3D =====
   generateFloorPlan3D: publicProcedure

@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2, Layers } from "lucide-react";
+import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2, Layers, ShoppingBag } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -292,6 +292,16 @@ export default function Home() {
               <Mic className="w-6 h-6 text-[#8B6914]" />
             </div>
             <span className="text-xs font-bold text-[#5C3D11] text-center">تحدث مع<br />م. سارة</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/furniture")}
+            className="flex flex-col items-center gap-2 bg-gradient-to-br from-amber-600/15 to-amber-400/10 rounded-2xl p-4 shadow-sm border border-amber-400/40 active:scale-95 transition-transform"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-600/20 flex items-center justify-center">
+              <ShoppingBag className="w-6 h-6 text-amber-700" />
+            </div>
+            <span className="text-xs font-bold text-amber-800 text-center">متجر<br />الأثاث</span>
           </button>
 
           <button
