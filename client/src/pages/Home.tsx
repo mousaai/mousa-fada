@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
-import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, Wand2, Layers, ShoppingBag } from "lucide-react";
+import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, ShoppingBag } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -252,69 +252,34 @@ export default function Home() {
           <span className="text-white font-bold text-sm">تحليل الآن</span>
         </button>
 
-        {/* 4 Quick Action Buttons */}
-        <div className="w-full grid grid-cols-4 gap-2">
+        {/* 2 Unique Quick Action Buttons — not duplicated in bottom nav */}
+        <div className="w-full grid grid-cols-2 gap-3">
+          {/* ارسم بصوتك — وظيفة فريدة غير موجودة في الشريط السفلي */}
           <button
             onClick={() => navigate("/voice-designer")}
-            className="flex flex-col items-center gap-2 bg-gradient-to-br from-[#5C3D11]/10 to-[#C9A84C]/10 rounded-2xl p-3 shadow-sm border border-[#5C3D11]/30 active:scale-95 transition-transform"
+            className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#5C3D11]/20 flex items-center justify-center">
-              <Layers className="w-5 h-5 text-[#5C3D11]" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#5C3D11]/15 to-[#C9A84C]/15 flex items-center justify-center">
+              <Mic className="w-7 h-7 text-[#8B6914]" />
             </div>
-            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">ارسم<br />بصوتك</span>
+            <div className="text-center">
+              <p className="text-sm font-bold text-[#5C3D11]">ارسم بصوتك</p>
+              <p className="text-[10px] text-[#8B6914]/60 mt-0.5">صف فضاءك وسارة تصمّمه</p>
+            </div>
           </button>
 
-          <button
-            onClick={() => navigate("/design-ideas")}
-            className="flex flex-col items-center gap-2 bg-gradient-to-br from-[#C9A84C]/10 to-[#8B6914]/10 rounded-2xl p-3 shadow-sm border border-[#C9A84C]/30 active:scale-95 transition-transform"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/20 flex items-center justify-center">
-              <Wand2 className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">أفكار<br />تصميمية</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/design-studio")}
-            className="flex flex-col items-center gap-2 bg-white rounded-2xl p-3 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#C9A84C]/10 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#C9A84C]" />
-            </div>
-            <span className="text-[10px] font-bold text-[#5C3D11] text-center leading-tight">استوديو<br />التصميم</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/sarah-chat")}
-            className="flex flex-col items-center gap-2 bg-white rounded-2xl p-4 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[#8B6914]/10 flex items-center justify-center">
-              <Mic className="w-6 h-6 text-[#8B6914]" />
-            </div>
-            <span className="text-xs font-bold text-[#5C3D11] text-center">تحدث مع<br />م. سارة</span>
-          </button>
-
+          {/* متجر الأثاث — وظيفة فريدة غير موجودة في الشريط السفلي */}
           <button
             onClick={() => navigate("/furniture")}
-            className="flex flex-col items-center gap-2 bg-gradient-to-br from-amber-600/15 to-amber-400/10 rounded-2xl p-4 shadow-sm border border-amber-400/40 active:scale-95 transition-transform"
+            className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-amber-200 active:scale-95 transition-transform"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-600/20 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-amber-700" />
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center">
+              <ShoppingBag className="w-7 h-7 text-amber-700" />
             </div>
-            <span className="text-xs font-bold text-amber-800 text-center">متجر<br />الأثاث</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (!isAuthenticated) { window.location.href = getLoginUrl(); return; }
-              navigate("/projects");
-            }}
-            className="flex flex-col items-center gap-2 bg-white rounded-2xl p-4 shadow-sm border border-[#e8d9c0] active:scale-95 transition-transform"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[#5C3D11]/10 flex items-center justify-center">
-              <FolderOpen className="w-6 h-6 text-[#5C3D11]" />
+            <div className="text-center">
+              <p className="text-sm font-bold text-amber-800">متجر الأثاث</p>
+              <p className="text-[10px] text-amber-700/60 mt-0.5">أثاث حقيقي من متاجر محلية</p>
             </div>
-            <span className="text-xs font-bold text-[#5C3D11] text-center">مشاريعي</span>
           </button>
         </div>
 
