@@ -277,3 +277,9 @@
 - [x] تحديث FurnitureStore.tsx لاستخدام النظام الجديد
 - [x] تصفية السعر server-side لضمان دقة نطاق السعر حتى عند فشل API
 - [x] 68 اختبار ناجح (10 اختبارات جديدة لـ smartFilter)
+
+## الإصدار 22.2 — إصلاح صور المنتجات (Pan Home lazy.png)
+- [x] تشخيص: Pan Home يُرجع lazy.png (placeholder) بدلاً من الصورة الحقيقية
+- [x] إضافة دالة isValidImageUrl تكتشف صور lazy loading الوهمية
+- [x] مكون ProductImage ذكي: يعرض الصورة الحقيقية أو placeholder أنيق باسم المنتج
+- [x] تطبيق الإصلاح في بطاقة المنتج وفي نافذة التفاصيل

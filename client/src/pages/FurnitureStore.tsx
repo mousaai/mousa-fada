@@ -111,6 +111,42 @@ const SIZE_FILTERS = [
   { id: "large", label: "كبير", desc: "مناسب للمساحات الكبيرة", maxDim: 999 },
 ];
 
+// ===== دالة مساعدة لفحص صحة رابط الصورة =====
+function isValidImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  // استبعاد صور lazy loading الوهمية من Pan Home وغيرها
+  if (url.includes('lazy.png') || url.includes('placeholder') || url.includes('no-image')) return false;
+  // استبعاد الروابط القصيرة جداً
+  if (url.length < 20) return false;
+  return url.startsWith('http');
+}
+
+// ===== مكون صورة المنتج مع fallback ذكي =====
+function ProductImage({ imageUrl, name, sourceName }: { imageUrl: string; name: string; sourceName: string }) {
+  const [imgSrc, setImgSrc] = React.useState<string | null>(
+    isValidImageUrl(imageUrl) ? imageUrl : null
+  );
+
+  // نص placeholder يعرض اسم المنتج
+  const shortName = name.split(' ').slice(0, 3).join(' ');
+  const placeholderUrl = `https://placehold.co/400x400/f5f0e8/8B6914?text=${encodeURIComponent(shortName)}`;
+
+  return imgSrc ? (
+    <img
+      src={imgSrc}
+      alt={name}
+      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      onError={() => setImgSrc(null)}
+    />
+  ) : (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100 p-3">
+      <div className="text-4xl mb-2 opacity-40">🛋️</div>
+      <p className="text-xs text-center text-amber-800/70 font-medium leading-tight line-clamp-3">{shortName}</p>
+      <p className="text-[10px] text-amber-600/50 mt-1">{sourceName}</p>
+    </div>
+  );
+}
+
 // ===== مكون بطاقة المنتج =====
 function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onViewDetails: (p: BonyanProduct) => void }) {
   const price = parseFloat(product.price);
@@ -122,13 +158,10 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
       onClick={() => onViewDetails(product)}
     >
       <div className="relative overflow-hidden bg-gray-50 aspect-square">
-        <img
-          src={product.imageUrl}
-          alt={product.nameAr || product.nameEn}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "https://placehold.co/400x400/f5f0e8/c9a96e?text=صورة+غير+متاحة";
-          }}
+        <ProductImage
+          imageUrl={product.imageUrl}
+          name={product.nameAr || product.nameEn}
+          sourceName={product.sourceName || product.brand}
         />
         <div className="absolute top-2 right-2">
           <Badge className="bg-amber-500 text-white text-xs px-2 py-0.5">
@@ -183,13 +216,10 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative bg-gray-50 aspect-video">
-          <img
-            src={product.imageUrl}
-            alt={product.nameAr || product.nameEn}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://placehold.co/600x400/f5f0e8/c9a96e?text=صورة+غير+متاحة";
-            }}
+          <ProductImage
+            imageUrl={product.imageUrl}
+            name={product.nameAr || product.nameEn}
+            sourceName={product.sourceName || product.brand}
           />
           <button
             onClick={onClose}
