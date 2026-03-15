@@ -219,10 +219,72 @@ function ProductImage({ imageUrl, name, sourceName }: { imageUrl: string; name: 
   );
 }
 
+// ===== لوغوهات الشركات =====
+const SOURCE_LOGOS: Record<string, { logo: string; bg: string; text: string }> = {
+  "IKEA UAE":              { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Ikea_logo.svg/200px-Ikea_logo.svg.png", bg: "#0058A3", text: "#FFDA1A" },
+  "Danube Home":           { logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Danube_Home_logo.svg/200px-Danube_Home_logo.svg.png", bg: "#E31837", text: "#fff" },
+  "Pan Home":              { logo: "https://www.panhome.com/media/logo/stores/1/pan-home-logo.png", bg: "#1a1a1a", text: "#fff" },
+  "2XL Home":              { logo: "https://www.2xlhome.com/skin/frontend/2xl/default/images/logo.png", bg: "#F97316", text: "#fff" },
+  "Indigo Living UAE":     { logo: "https://www.indigoliving.com/skin/frontend/indigo/default/images/logo.png", bg: "#4338CA", text: "#fff" },
+  "Loom Collection UAE":   { logo: "https://loomcollection.com/cdn/shop/files/Loom_logo_black.png", bg: "#7C3AED", text: "#fff" },
+  "Bloomr UAE":            { logo: "https://bloomr.ae/cdn/shop/files/bloomr-logo.png", bg: "#0D9488", text: "#fff" },
+  "Furn.com UAE":          { logo: "https://www.furn.com/skin/frontend/furn/default/images/logo.png", bg: "#059669", text: "#fff" },
+  "The Design House Dubai":{ logo: "https://thedesignhouse.ae/wp-content/uploads/2020/01/TDH-Logo.png", bg: "#BE185D", text: "#fff" },
+  "Pinky Furniture UAE":   { logo: "https://pinkyfurniture.com/wp-content/uploads/2021/01/pinky-logo.png", bg: "#EC4899", text: "#fff" },
+  "Home Centre":           { logo: "https://www.homecentre.com/medias/HC-Logo.png", bg: "#DC2626", text: "#fff" },
+  "Marina Home":           { logo: "https://www.marinahome.com/skin/frontend/marinahome/default/images/logo.png", bg: "#1E40AF", text: "#fff" },
+  "Pottery Barn UAE":      { logo: "https://www.potterybarn.ae/img/logo.png", bg: "#92400E", text: "#fff" },
+  "West Elm UAE":          { logo: "https://www.westelm.ae/img/logo.png", bg: "#1F2937", text: "#fff" },
+  "Homes R Us":            { logo: "https://www.homesrus.com/media/logo/stores/1/logo.png", bg: "#065F46", text: "#fff" },
+};
+
+// مكون لوغو الشركة
+function SourceLogo({ sourceName, size = "sm" }: { sourceName: string; size?: "sm" | "md" | "lg" }) {
+  const info = SOURCE_LOGOS[sourceName];
+  const sizeClass = size === "sm" ? "h-5 max-w-[52px]" : size === "md" ? "h-7 max-w-[80px]" : "h-9 max-w-[110px]";
+  const [logoFailed, setLogoFailed] = React.useState(false);
+
+  // اسم مختصر للعرض
+  const shortName = sourceName
+    .replace(" UAE", "")
+    .replace(" Home", "")
+    .replace(" Collection", "")
+    .replace(" Living", "")
+    .replace(" Furniture", "")
+    .replace(" Dubai", "")
+    .trim();
+
+  if (info && !logoFailed) {
+    return (
+      <div
+        className="flex items-center justify-center rounded px-1.5 py-0.5"
+        style={{ backgroundColor: info.bg }}
+      >
+        <img
+          src={info.logo}
+          alt={sourceName}
+          className={`${sizeClass} object-contain`}
+          onError={() => setLogoFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  // fallback: نص ملون
+  const bgColor = info?.bg || "#D97706";
+  return (
+    <div
+      className={`flex items-center justify-center rounded px-2 py-0.5 text-white font-bold ${size === "sm" ? "text-[9px]" : size === "md" ? "text-xs" : "text-sm"}`}
+      style={{ backgroundColor: bgColor }}
+    >
+      {shortName}
+    </div>
+  );
+}
+
 // ===== مكون بطاقة المنتج =====
 // موردون موثوقون بصور حقيقية 100%
 const TRUSTED_SOURCE_LABELS: Record<string, { emoji: string; color: string }> = {
-  // صور 100% حقيقية
   "Furn.com UAE": { emoji: "🏆", color: "bg-emerald-600" },
   "Loom Collection UAE": { emoji: "🏆", color: "bg-purple-600" },
   "Indigo Living UAE": { emoji: "🏆", color: "bg-indigo-600" },
@@ -255,11 +317,9 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
           name={displayName}
           sourceName={sourceName}
         />
-        {/* شارة المورد */}
-        <div className="absolute top-1.5 right-1.5">
-          <Badge className={`${trustedInfo ? trustedInfo.color : "bg-amber-500"} text-white text-[9px] px-1.5 py-0.5 shadow-sm leading-tight`}>
-            {trustedInfo ? `${trustedInfo.emoji} ${sourceName.split(" ")[0]}` : sourceName.split(" ")[0]}
-          </Badge>
+        {/* لوغو المورد */}
+        <div className="absolute top-1.5 right-1.5 shadow-md rounded">
+          <SourceLogo sourceName={sourceName} size="sm" />
         </div>
         {/* مؤشر الصورة الحقيقية */}
         {hasImg && (
@@ -333,13 +393,18 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
           >
             <X className="w-4 h-4 text-gray-600" />
           </button>
-          <Badge className="absolute top-3 right-3 bg-amber-500 text-white">
-            {product.sourceName || product.brand}
-          </Badge>
+          <div className="absolute top-3 right-3 shadow-md rounded">
+            <SourceLogo sourceName={product.sourceName || product.brand || ""} size="md" />
+          </div>
         </div>
         <div className="p-5" dir="rtl">
-          <h2 className="text-xl font-bold text-gray-800 mb-1">{product.nameAr || product.nameEn}</h2>
-          <p className="text-gray-500 text-sm mb-4">{product.brand}</p>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-gray-800 flex-1">{product.nameAr || product.nameEn}</h2>
+          </div>
+          <div className="flex items-center gap-2 mb-4">
+            <SourceLogo sourceName={product.sourceName || product.brand || ""} size="lg" />
+            <p className="text-gray-500 text-sm">{product.sourceName || product.brand}</p>
+          </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             {product.material && (
               <div className="bg-amber-50 rounded-lg p-3">

@@ -320,3 +320,6 @@
 - [x] تحديث ProductImage لاستخدام proxy مع fallback للرابط المباشر
 - [x] الـ proxy يعمل (200 OK) لـ 2XL Home وcloudfront وغيرها
 - [x] اكتشاف: IKEA في بنيان imageUrl=null (مشكلة في بيانات بنيان نفسها)
+
+## الإصدار 22.8 — لوغو مصدر الشركة
+- [ ] إضافة لوغو/أيقونة الشركة في ProductCard وProductModal
