@@ -125,14 +125,14 @@ export default function SarahChat() {
     setIsSending(true);
 
     try {
-      // إرسال أول صورة للتحليل (أو يمكن إرسالها كلها)
-      const primaryImageUrl = uploadedUrls[0];
+      // إرسال كل الصور المرفوعة لم. سارة دفعة واحدة
       const result = await sendMutation.mutateAsync({
         sessionId: sessionId ?? undefined,
         projectId: selectedProjectId ?? undefined,
-        message: `لقد أجريت مسحاً كاملاً للفضاء بـ ${photos.length} صور تغطي: ${stepNames}. أرجو تحليل الفضاء بالكامل وتقديم توصيات تصميمية شاملة تشمل: نوع الفضاء، الأبعاد التقريبية، النمط الحالي، المشاكل التصميمية، والمقترحات مع التكاليف التقديرية.`,
+        message: `لقد أجريت مسحاً 360° كاملاً للفضاء بـ ${photos.length} صورة تغطي: ${stepNames}. الصور مرفقة في الرسالة. أرجو تحليل الفضاء بالكامل وتقديم توصيات تصميمية شاملة تشمل: نوع الفضاء، الأبعاد التقريبية، النمط الحالي، المشاكل التصميمية، والمقترحات مع التكاليف التقديرية.`,
         sessionType: "camera_scan",
-        imageUrl: primaryImageUrl,
+        imageUrl: uploadedUrls[0] ?? undefined,
+        imageUrls: uploadedUrls.length > 1 ? uploadedUrls : undefined, // إرسال كل الصور
         projectContext: selectedProjectId
           ? `المشروع: ${projects?.find((p: { id: number; name: string }) => p.id === selectedProjectId)?.name}`
           : undefined,

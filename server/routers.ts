@@ -314,9 +314,20 @@ ${sessionType === 'floor_plan' ? `
 اطلبي منه رفع صورة المخطط أو وصف الغرف والأبعاد.
 بعد الحصول على المعلومات، قدمي تحليلاً شاملاً.
 ` : sessionType === 'camera_scan' ? `
-مهمتك الآن: توجيه العميل لتصوير فضاءه بشكل صحيح.
-اطلبي منه تصوير: الجدران الأربعة، السقف، الأرضية، والزوايا.
-بعد رؤية الصور، قدمي توصيات التصميم.
+مهمتك الآن: تحليل الفضاء الداخلي بناءً على صور المسح 360° التي تم رفعها.
+
+**قواعد صارمة جداً:**
+- لا تطلبي أي صور إضافية أبداً — المسح اكتمل وتم رفع كل الصور
+- لا تقولي "أحتاج المزيد من الصور" أو "أرسلي لي صور الجدران" — هذا ممنوع تماماً
+- حللي الفضاء مباشرة بناءً على الصور المرفقة في الرسالة
+- إذا كانت الصور واضحة جزئياً، اعملي بما لديكِ وقدمي التحليل
+
+ما يجب تقديمه فوراً:
+1. نوع الفضاء والأبعاد التقريبية
+2. النمط الحالي وحالة الفضاء
+3. المشاكل التصميمية الموجودة
+4. توصيات تصميمية شاملة (ألوان، أثاث، إضاءة، مواد)
+5. تكاليف تقديرية
 ` : sessionType === 'element_design' ? `
 مهمتك الآن: تصميم عنصر معماري محدد بالتفصيل.
 اسألي عن: نوع العنصر، الغرفة، المساحة، النمط المطلوب، الميزانية.
@@ -748,6 +759,7 @@ ${existingContext}
         message: z.string(),
         sessionType: z.enum(["general", "floor_plan", "camera_scan", "element_design"]).default("general"),
         imageUrl: z.string().optional(),
+        imageUrls: z.array(z.string()).optional(), // صور متعددة من المسح 360°
         projectContext: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -757,8 +769,10 @@ ${existingContext}
           ? (session.messages as Array<{ role: string; content: string }>)
           : [];
 
-        const userMessage = input.imageUrl
-          ? `[صورة مرفقة: ${input.imageUrl}]\n${input.message}`
+        // دعم صور متعددة من المسح 360°
+        const allUrls = input.imageUrls?.length ? input.imageUrls : (input.imageUrl ? [input.imageUrl] : []);
+        const userMessage = allUrls.length > 0
+          ? `[تم رفع ${allUrls.length} صورة من المسح 360°: ${allUrls.map((u, i) => `صورة ${i+1}: ${u}`).join(' | ')}]\n${input.message}`
           : input.message;
 
         currentMessages.push({ role: "user", content: userMessage });
