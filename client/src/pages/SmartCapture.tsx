@@ -1604,6 +1604,7 @@ export default function SmartCapture() {
   // Captured images
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [primaryImage, setPrimaryImage] = useState<string | null>(null);
+  const [primaryImageS3Url, setPrimaryImageS3Url] = useState<string | null>(null); // S3 URL للصورة الأصلية
 
   // Results
   const [ideas, setIdeas] = useState<DesignIdea[]>([]);
@@ -1767,10 +1768,25 @@ export default function SmartCapture() {
     startAnalysis([thumb]);
   };
 
-  const startAnalysis = (images: string[]) => {
+  const startAnalysis = async (images: string[]) => {
     setStep("analyzing");
     const budget = BUDGET_MAP[budgetLevel];
     const customAmount = budgetAmount ? parseInt(budgetAmount.replace(/,/g, "")) : null;
+
+    // تتبع S3 URL للصورة الأصلية (إذا كانت URL وليست base64)
+    try {
+      const img = images[0];
+      if (img && !img.startsWith("data:")) {
+        // URL عادي (من S3 مباشرة) — نحفظه للاستخدام في توليد الصور
+        setPrimaryImageS3Url(img);
+      } else {
+        // base64 — سيتم إرساله كـ b64Json في generateVisualization مباشرة
+        setPrimaryImageS3Url(null);
+      }
+    } catch {
+      setPrimaryImageS3Url(null);
+    }
+
     // بناء بيانات المرجع إذا كان مفعّلاً
     const referenceData = (useReference && refAnalysisResult) ? {
       referenceId: refAnalysisResult.id,
@@ -1894,6 +1910,7 @@ export default function SmartCapture() {
     setSelectedMode(null);
     setCapturedImages([]);
     setPrimaryImage(null);
+    setPrimaryImageS3Url(null);
     setIdeas([]);
     setSpaceAnalysis(null);
     setStructuralSuggestions([]);

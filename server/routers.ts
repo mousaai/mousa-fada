@@ -1128,20 +1128,36 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       // إذا كان هناك برومبت مخصص (من analyzeAndGenerateIdeas)، استخدمه مباشرة
       // وإلا أنشئ برومبت يحافظ على البنية الأصلية
       const structuralNote = input.structuralElements?.length
-        ? `CRITICAL CONSTRAINT: Preserve EXACT positions of: ${input.structuralElements.map(e => `${e.element} at ${e.position}`).join(", ")}. Do NOT move doors, windows, stairs, or change room dimensions.`
-        : "CRITICAL: Preserve EXACT room layout - keep all doors, windows, stairs, and structural elements in their EXACT original positions. Do NOT change room dimensions or architectural structure.";
+        ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${input.structuralElements.map(e => `${e.element} at ${e.position}`).join("; ")}. These MUST remain in EXACT same positions and sizes.`
+        : "ABSOLUTE CONSTRAINT: ALL doors, windows, columns, and structural openings MUST stay in their EXACT original positions and sizes from the reference photo. Do NOT move, resize, or remove any opening.";
 
-      const prompt = input.imagePrompt || `Photorealistic architectural interior render, ${styleName} style interior design. ${structuralNote} Apply new: color palette (${colorDesc}), premium materials (${materialsDesc}), updated furniture and decor, new wall finishes, new flooring, new ceiling treatment, new lighting. Same camera angle and perspective as original. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text.`;
+      const prompt = input.imagePrompt
+        ? `${input.imagePrompt}\n\nCRITICAL REFERENCE PHOTO INSTRUCTION: The attached image is the ORIGINAL ROOM PHOTO. You MUST use it as the structural blueprint. Keep IDENTICAL: room shape, room dimensions, camera angle, camera height, zoom level, perspective, and ALL door/window/column positions. Only change: colors, materials, furniture style, wall finish, flooring, ceiling, lighting, and decor.`
+        : `Photorealistic architectural interior redesign. CRITICAL: The attached image is the ORIGINAL ROOM - use it as structural blueprint. ${structuralNote} Apply ONLY these changes: ${styleName} style, color palette (${colorDesc}), materials (${materialsDesc}), updated furniture, new wall finishes, new flooring, new ceiling, new lighting. IDENTICAL camera angle and perspective as original photo. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, no people, no text.`;
+
+      // استخراج base64 من data URL إذا كانت الصورة base64، وإلا استخدم URL مباشرة
+      const isBase64DataUrl = input.imageUrl.startsWith("data:");
+      let originalImageEntry: { url?: string; b64Json?: string; mimeType?: string };
+      if (isBase64DataUrl) {
+        // data:image/jpeg;base64,XXXX → استخراج الـ base64 والـ mimeType
+        const [header, b64Data] = input.imageUrl.split(",");
+        const mimeMatch = header.match(/data:([^;]+);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+        originalImageEntry = { b64Json: b64Data, mimeType };
+      } else {
+        // URL عادي من S3
+        originalImageEntry = { url: input.imageUrl, mimeType: "image/jpeg" };
+      }
 
       try {
-        // استخدام image editing مع الصورة الأصلية كمرجع للحفاظ على البنية
+        // إرسال الصورة الأصلية كـ originalImage للحفاظ على البنية الكاملة
         const { url } = await generateImage({
           prompt,
-          originalImages: [{ url: input.imageUrl, mimeType: "image/jpeg" }]
+          originalImages: [originalImageEntry]
         });
         return { imageUrl: url, success: true };
       } catch (error) {
-        console.error("Image generation error:", error);
+        console.error("Image generation error with original:", error);
         // fallback: توليد بدون صورة مرجعية
         try {
           const { url } = await generateImage({ prompt });
