@@ -360,3 +360,9 @@
 - [x] إضافة قسم "الألوان المفضّلة" اختياري في شاشة الفلتر (12 لون جاهز، متعدد الاختيار)
 - [x] تمرير النمط والألوان المختارة إلى analyzeAndGenerateIdeas في system prompt
 - [x] إضافة preferredStyle + preferredColors في input schema لـ analyzeAndGenerateIdeas
+
+## الإصدار 24.2 — إصلاح نهائي لتحليل المرجع
+- [x] تشخيص الخطأ: المستخدم غير مسجّل دخول يحاول استخدام protectedProcedure
+- [x] إضافة trpc.auth.me.useQuery في SmartCapture لفحص حالة الدخول
+- [x] عرض رسالة "يجب تسجيل الدخول أولاً" عند محاولة تفعيل ميزة تقليد النمط بدون تسجيل دخول
+- [x] تحسين رسائل الخطأ في analyzeRefMutation لتوضيح سبب الفشل

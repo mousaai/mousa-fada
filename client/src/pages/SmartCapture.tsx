@@ -1404,6 +1404,7 @@ function VideoRecorder({
 // ===== Main Page =====
 export default function SmartCapture() {
   const [, navigate] = useLocation();
+  const { data: currentUser } = trpc.auth.me.useQuery();
 
   // UI state
   const [step, setStep] = useState<"select" | "capture" | "filter" | "analyzing" | "results">("select");
@@ -1466,7 +1467,15 @@ export default function SmartCapture() {
       setSelectedRefId(data.id ?? null);
       toast.success("تم حفظ المرجع بنجاح!");
     },
-    onError: () => toast.error("فشل تحليل المرجع"),
+    onError: (err) => {
+      console.error("[analyzeRefMutation error]", err);
+      const msg = err?.message || "";
+      if (msg.includes("UNAUTHORIZED") || msg.includes("401") || msg.includes("auth")) {
+        toast.error("يجب تسجيل الدخول أولاً لاستخدام هذه الخاصية");
+      } else {
+        toast.error("فشل تحليل المرجع. تأكد من اتصالك وحاول مجدداً");
+      }
+    },
   });
   const refListQuery = trpc.designReference.list.useQuery(undefined, { enabled: useReference });
 
@@ -1600,14 +1609,16 @@ export default function SmartCapture() {
     try {
       const base64 = dataUrl.split(",")[1];
       const mimeType = dataUrl.split(";")[0].split(":")[1] || "image/jpeg";
+      console.log("[handleRefImageReady] Uploading image, base64 length:", base64?.length, "mimeType:", mimeType);
       const result = await uploadImageMutation.mutateAsync({ base64, mimeType });
+      console.log("[handleRefImageReady] Upload success, url:", result.url);
       setRefImageUrl(result.url);
       setRefImageKey(result.key);
       analyzeRefMutation.mutate({ imageUrl: result.url, imageKey: result.key });
-    } catch {
-      // فالباك: استخدام data URL مباشرة
-      setRefImageUrl(dataUrl);
-      analyzeRefMutation.mutate({ imageUrl: dataUrl });
+    } catch (uploadErr) {
+      console.error("[handleRefImageReady] Upload failed:", uploadErr);
+      // إظهار رسالة خطأ واضحة بدلاً من إرسال data URL للـ LLM
+      toast.error("تعذّر رفع الصورة. تأكد من اتصالك بالإنترنت وحاول مجدداً");
     }
   };
 
@@ -2004,7 +2015,13 @@ export default function SmartCapture() {
             <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
               {/* رأس القسم */}
               <button
-                onClick={() => setUseReference(!useReference)}
+                onClick={() => {
+                  if (!useReference && !currentUser) {
+                    toast.error("يجب تسجيل الدخول أولاً لاستخدام ميزة تقليد النمط");
+                    return;
+                  }
+                  setUseReference(!useReference);
+                }}
                 className="w-full flex items-center justify-between px-4 py-3.5"
               >
                 <div className="flex items-center gap-2">
