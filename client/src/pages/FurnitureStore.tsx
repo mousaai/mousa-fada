@@ -911,6 +911,7 @@ export default function FurnitureStore() {
               <h1 className="text-lg font-bold flex items-center gap-1.5 truncate">
                 <ShoppingBag className="w-5 h-5 shrink-0" />
                 متجر الأثاث المحلي
+                <span className="text-[10px] font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full shrink-0">تجريبي</span>
               </h1>
               <p className="text-amber-200 text-xs">
                 مدعوم من منصة بنيان
@@ -932,6 +933,15 @@ export default function FurnitureStore() {
               <Search className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Beta Banner */}
+      <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2.5 flex items-center gap-2">
+        <span className="text-base">🧪</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-yellow-800">هذه الخاصية تجريبية حالياً</p>
+          <p className="text-[10px] text-yellow-700/80">ستكون متاحة بشكل كامل ومحسّن قريباً — نعتذر عن أي نقص في التجربة</p>
         </div>
       </div>
 

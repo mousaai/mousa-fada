@@ -16,7 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 // ===== Types =====
-type CaptureMode = "single" | "panorama" | "animation3d" | "video360";
+type CaptureMode = "single";
 
 interface ReplacementCost {
   item: string;
@@ -86,47 +86,7 @@ interface DesignIdea {
 }
 
 // ===== Capture Mode Selector =====
-const CAPTURE_MODES: {
-  id: CaptureMode;
-  label: string;
-  sublabel: string;
-  icon: React.ReactNode;
-  color: string;
-  desc: string;
-}[] = [
-  {
-    id: "single",
-    label: "صورة واحدة",
-    sublabel: "اتجاه واحد",
-    icon: <Camera className="w-7 h-7" />,
-    color: "#C9A84C",
-    desc: "التقط صورة واحدة للغرفة من أي زاوية",
-  },
-  {
-    id: "panorama",
-    label: "بانوراما",
-    sublabel: "زاوية 180°",
-    icon: <ScanLine className="w-7 h-7" />,
-    color: "#4CAF50",
-    desc: "صورة بانوراما عريضة للغرفة كاملة",
-  },
-  {
-    id: "animation3d",
-    label: "3D Animation",
-    sublabel: "جولة كاملة",
-    icon: <Box className="w-7 h-7" />,
-    color: "#9C27B0",
-    desc: "صوّر 4 زوايا للحصول على تصميم ثلاثي الأبعاد",
-  },
-  {
-    id: "video360",
-    label: "فيديو 360°",
-    sublabel: "جولة فيديو",
-    icon: <Video className="w-7 h-7" />,
-    color: "#F44336",
-    desc: "سجّل فيديو يدور حول الغرفة",
-  },
-];
+// Only single mode is active now
 
 // ===== Image compression helper =====
 function compressImage(dataUrl: string, maxWidth = 1280, quality = 0.85): Promise<string> {
@@ -971,14 +931,7 @@ function LiveCamera({
           <X className="w-5 h-5" />
         </button>
         <div className="text-center">
-          <span className="text-white font-bold text-sm">
-            {mode === "animation3d" ? `${capturedCount}/${targetCount} زوايا` : "التقط صورة"}
-          </span>
-          {mode === "animation3d" && (
-            <p className="text-white/60 text-[10px]">
-              {["أمام", "يسار", "خلف", "يمين"][capturedCount] || "اكتمل"}
-            </p>
-          )}
+          <span className="text-white font-bold text-sm">التقط صورة</span>
           {/* Zoom indicator */}
           <p className="text-[#C9A84C] text-[10px] font-bold">
             {zoom < 1 ? `عريض ${zoom.toFixed(1)}×` : `زوم ${zoom.toFixed(1)}×`}
@@ -1453,7 +1406,7 @@ export default function SmartCapture() {
   const [, navigate] = useLocation();
 
   // UI state
-  const [step, setStep] = useState<"select" | "capture" | "analyzing" | "results">("select");
+  const [step, setStep] = useState<"select" | "capture" | "filter" | "analyzing" | "results">("select");
   const [selectedMode, setSelectedMode] = useState<CaptureMode | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
@@ -1471,6 +1424,8 @@ export default function SmartCapture() {
   // Filters
   const [ideasCount, setIdeasCount] = useState(3);
   const [budgetLevel, setBudgetLevel] = useState<"economy" | "mid" | "luxury" | "premium">("mid");
+  const [budgetAmount, setBudgetAmount] = useState<string>("");
+  const [allowDoorChanges, setAllowDoorChanges] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1482,8 +1437,7 @@ export default function SmartCapture() {
     premium: { min: 150000, max: 500000, label: "بريميوم", range: "150k+" },
   };
 
-  // Target count for 3D animation mode
-  const targetCount = selectedMode === "animation3d" ? 4 : 1;
+  const targetCount = 1;
 
   const analyzeAndGenerateMutation = trpc.analyzeAndGenerateIdeas.useMutation({
     onSuccess: (data) => {
@@ -1547,13 +1501,15 @@ export default function SmartCapture() {
     },
   });
 
-  const handleModeSelect = (mode: CaptureMode) => {
-    setSelectedMode(mode);
-    if (mode === "video360") {
-      setShowVideo(true);
-    } else {
-      setShowCamera(true);
-    }
+  const handleModeSelect = (_mode: CaptureMode) => {
+    setSelectedMode("single");
+    setShowCamera(true);
+    setStep("capture");
+  };
+
+  const handleStartCapture = () => {
+    setSelectedMode("single");
+    setShowCamera(true);
     setStep("capture");
   };
 
@@ -1562,14 +1518,9 @@ export default function SmartCapture() {
     setCapturedImages(newImages);
     if (newImages.length === 1) setPrimaryImage(dataUrl);
 
-    // For 3D animation, need 4 shots
-    if (selectedMode === "animation3d" && newImages.length < 4) {
-      return;
-    }
-
-    // Done capturing
+    // بعد التصوير نعرض شاشة الفلتر أولاً
     setShowCamera(false);
-    startAnalysis(newImages);
+    setStep("filter");
   };
 
   const handleVideoCapture = (thumb: string) => {
@@ -1582,13 +1533,15 @@ export default function SmartCapture() {
   const startAnalysis = (images: string[]) => {
     setStep("analyzing");
     const budget = BUDGET_MAP[budgetLevel];
+    // إذا حدد المستخدم مبلغاً محدداً، استخدمه كمرجع
+    const customAmount = budgetAmount ? parseInt(budgetAmount.replace(/,/g, "")) : null;
     analyzeAndGenerateMutation.mutate({
       imageUrl: images[0],
       imageUrls: images.length > 1 ? images : undefined,
-      captureMode: selectedMode || "single",
+      captureMode: "single",
       count: ideasCount,
-      budgetMin: budget.min,
-      budgetMax: budget.max,
+      budgetMin: customAmount ? Math.round(customAmount * 0.7) : budget.min,
+      budgetMax: customAmount ? Math.round(customAmount * 1.3) : budget.max,
     });
   };
 
@@ -1630,7 +1583,8 @@ export default function SmartCapture() {
       setPrimaryImage(dataUrl);
       setCapturedImages([dataUrl]);
       setSelectedMode("single");
-      startAnalysis([dataUrl]);
+      // عرض شاشة الفلتر أولاً قبل التحليل
+      setStep("filter");
     };
     reader.readAsDataURL(file);
   };
@@ -1651,23 +1605,12 @@ export default function SmartCapture() {
   return (
     <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir="rtl">
       {/* Camera overlays */}
-      {showCamera && selectedMode && selectedMode !== "panorama" && (
+      {showCamera && selectedMode && (
         <LiveCamera
-          mode={selectedMode}
+          mode="single"
           capturedCount={capturedImages.length}
           targetCount={targetCount}
           onCapture={handleCapture}
-          onClose={() => { setShowCamera(false); setStep("select"); setCapturedImages([]); }}
-        />
-      )}
-      {showCamera && selectedMode === "panorama" && (
-        <PanoramaCapture
-          onCapture={(images) => {
-            setShowCamera(false);
-            setPrimaryImage(images[0]);
-            setCapturedImages(images);
-            startAnalysis(images);
-          }}
           onClose={() => { setShowCamera(false); setStep("select"); setCapturedImages([]); }}
         />
       )}
@@ -1688,6 +1631,7 @@ export default function SmartCapture() {
           <p className="font-bold text-[#5C3D11]">
             {step === "select" ? "كيف تريد التصوير؟" :
              step === "capture" ? "التقط الفضاء" :
+             step === "filter" ? "خصّص تصميمك" :
              step === "analyzing" ? "م. سارة تحلل..." : "أفكار م. سارة"}
           </p>
           {step === "results" && (
@@ -1720,25 +1664,19 @@ export default function SmartCapture() {
               <p className="text-sm text-[#8B6914]/70 mt-1">اختر طريقة التصوير وسأقدم لك أفكاراً فورية</p>
             </div>
 
-            {/* Mode cards */}
-            <div className="grid grid-cols-2 gap-3">
-              {CAPTURE_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => handleModeSelect(mode.id)}
-                  className="flex flex-col items-center gap-3 p-5 rounded-3xl border-2 border-[#e8d9c0] bg-white active:scale-95 transition-all hover:border-[#C9A84C]"
-                >
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white"
-                    style={{ backgroundColor: mode.color + "22", color: mode.color }}>
-                    {mode.icon}
-                  </div>
-                  <div className="text-center">
-                    <p className="font-black text-[#5C3D11] text-sm">{mode.label}</p>
-                    <p className="text-[10px] text-[#8B6914]/60 mt-0.5">{mode.sublabel}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {/* زر التصوير الوحيد */}
+            <button
+              onClick={handleStartCapture}
+              className="flex flex-col items-center gap-4 p-8 rounded-3xl border-2 border-[#C9A84C] bg-gradient-to-br from-amber-50 to-white active:scale-95 transition-all shadow-sm"
+            >
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "#C9A84C22", color: "#C9A84C" }}>
+                <Camera className="w-10 h-10" />
+              </div>
+              <div className="text-center">
+                <p className="font-black text-[#5C3D11] text-lg">صوّر غرفتك</p>
+                <p className="text-xs text-[#8B6914]/60 mt-1">التقط صورة واحدة من أي زاوية</p>
+              </div>
+            </button>
 
             {/* Or upload */}
             <div className="flex items-center gap-3">
@@ -1794,6 +1732,126 @@ export default function SmartCapture() {
           </div>
         )}
 
+        {/* ===== STEP 1.5: Filter Screen ===== */}
+        {step === "filter" && (
+          <div className="flex-1 flex flex-col gap-5">
+            {/* معاينة الصورة */}
+            {primaryImage && (
+              <div className="relative rounded-2xl overflow-hidden h-40">
+                <img src={primaryImage} className="w-full h-full object-cover" alt="preview" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-3 right-3">
+                  <span className="text-white text-xs font-bold">جاهزة للتحليل ✨</span>
+                </div>
+              </div>
+            )}
+
+            <div className="text-center">
+              <h2 className="text-xl font-black text-[#5C3D11]">خصّص تصميمك</h2>
+              <p className="text-xs text-[#8B6914]/70 mt-1">حدد تفضيلاتك قبل التحليل</p>
+            </div>
+
+            {/* الميزانية */}
+            <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
+              <p className="text-sm font-bold text-[#5C3D11] mb-3">💰 الميزانية</p>
+              <div className="grid grid-cols-4 gap-1.5 mb-3">
+                {(Object.entries(BUDGET_MAP) as [typeof budgetLevel, typeof BUDGET_MAP[typeof budgetLevel]][]).map(([key, val]) => (
+                  <button key={key} onClick={() => setBudgetLevel(key)}
+                    className={`py-2.5 rounded-xl text-[10px] font-bold transition-all border-2 ${
+                      budgetLevel === key
+                        ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]"
+                        : "border-[#e8d9c0] text-[#5C3D11]"
+                    }`}>
+                    <div>{val.label}</div>
+                    <div className="text-[8px] opacity-60 mt-0.5">{val.range}</div>
+                  </button>
+                ))}
+              </div>
+              {/* حقل المبلغ المحدد */}
+              <div className="mt-3">
+                <p className="text-xs text-[#8B6914] mb-1.5">أو حدّد مبلغاً تقريبياً (درهم)</p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={budgetAmount}
+                    onChange={(e) => setBudgetAmount(e.target.value)}
+                    placeholder="مثال: 35000"
+                    className="w-full border-2 border-[#e8d9c0] rounded-xl px-3 py-2.5 text-sm text-right text-[#5C3D11] placeholder:text-[#8B6914]/40 focus:border-[#C9A84C] focus:outline-none"
+                  />
+                  {budgetAmount && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#8B6914]/60">AED</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* تغيير الأبواب */}
+            <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#5C3D11]">🚪 تغيير مواقع الأبواب والنوافذ</p>
+                  <p className="text-[10px] text-[#8B6914]/60 mt-0.5">هل تريد م. سارة اقتراح تغيير مواقعها؟</p>
+                </div>
+                <button
+                  onClick={() => setAllowDoorChanges(!allowDoorChanges)}
+                  className={`w-12 h-6 rounded-full transition-all relative ${
+                    allowDoorChanges ? "bg-[#C9A84C]" : "bg-gray-200"
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    allowDoorChanges ? "left-6" : "left-0.5"
+                  }`} />
+                </button>
+              </div>
+              {!allowDoorChanges && (
+                <p className="text-[10px] text-[#8B6914]/50 mt-2 bg-[#f0e8d8] rounded-lg px-2 py-1.5">
+                  ✅ ستحافظ م. سارة على البنية المعمارية كما هي
+                </p>
+              )}
+              {allowDoorChanges && (
+                <p className="text-[10px] text-amber-700 mt-2 bg-amber-50 rounded-lg px-2 py-1.5">
+                  ⚠️ ستقترح م. سارة تغييرات معمارية محتملة في التصميم
+                </p>
+              )}
+            </div>
+
+            {/* عدد الأفكار */}
+            <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-[#5C3D11]">✨ عدد الأفكار</p>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setIdeasCount((c) => Math.max(2, c - 1))}
+                    className="w-8 h-8 rounded-full border-2 border-[#e8d9c0] flex items-center justify-center active:scale-90 transition-transform">
+                    <Minus className="w-3.5 h-3.5 text-[#8B6914]" />
+                  </button>
+                  <span className="text-lg font-black text-[#5C3D11] w-6 text-center">{ideasCount}</span>
+                  <button onClick={() => setIdeasCount((c) => Math.min(6, c + 1))}
+                    className="w-8 h-8 rounded-full border-2 border-[#e8d9c0] flex items-center justify-center active:scale-90 transition-transform">
+                    <Plus className="w-3.5 h-3.5 text-[#8B6914]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* زر التحليل */}
+            <button
+              onClick={() => startAnalysis(capturedImages)}
+              className="w-full py-4 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-black text-base rounded-2xl active:scale-95 transition-transform shadow-lg flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+              ابدأ التحليل
+            </button>
+
+            {/* زر الرجوع */}
+            <button
+              onClick={() => { setStep("select"); setCapturedImages([]); setPrimaryImage(null); }}
+              className="w-full py-3 border-2 border-[#e8d9c0] text-[#8B6914] font-bold text-sm rounded-2xl active:scale-95 transition-transform"
+            >
+              ← إعادة التصوير
+            </button>
+          </div>
+        )}
+
         {/* ===== STEP 2: Analyzing ===== */}
         {step === "analyzing" && (
           <div className="flex-1 flex flex-col items-center justify-center gap-6">
@@ -1839,7 +1897,7 @@ export default function SmartCapture() {
                 <div className="absolute bottom-3 right-3 left-3 flex items-end justify-between">
                   <div>
                     <span className="text-[10px] text-white/70">الصورة الأصلية</span>
-                    <p className="text-white font-bold text-sm">{CAPTURE_MODES.find(m => m.id === selectedMode)?.label || "صورة"}</p>
+                    <p className="text-white font-bold text-sm">صورة واحدة</p>
                   </div>
                   <button onClick={reset} className="flex items-center gap-1 px-2.5 py-1.5 bg-white/20 backdrop-blur rounded-xl text-white text-[10px] font-bold">
                     <RotateCcw className="w-3 h-3" /> تصوير جديد

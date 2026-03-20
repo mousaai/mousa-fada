@@ -271,8 +271,10 @@ export default function Home() {
           {/* متجر الأثاث — وظيفة فريدة غير موجودة في الشريط السفلي */}
           <button
             onClick={() => navigate("/furniture")}
-            className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-amber-200 active:scale-95 transition-transform"
+            className="relative flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-amber-200 active:scale-95 transition-transform"
           >
+            {/* Beta badge */}
+            <span className="absolute top-2 left-2 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">تجريبي</span>
             <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center">
               <ShoppingBag className="w-7 h-7 text-amber-700" />
             </div>
