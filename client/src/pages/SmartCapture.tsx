@@ -1542,6 +1542,7 @@ export default function SmartCapture() {
       count: ideasCount,
       budgetMin: customAmount ? Math.round(customAmount * 0.7) : budget.min,
       budgetMax: customAmount ? Math.round(customAmount * 1.3) : budget.max,
+      allowDoorChanges,
     });
   };
 
@@ -1692,36 +1693,6 @@ export default function SmartCapture() {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
-
-            {/* Quick filters */}
-            <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-[#5C3D11]">الميزانية</p>
-                <span className="text-xs text-[#8B6914] bg-[#f0e8d8] px-2 py-0.5 rounded-full">{budget.label}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {(Object.entries(BUDGET_MAP) as [typeof budgetLevel, typeof BUDGET_MAP[typeof budgetLevel]][]).map(([key, val]) => (
-                  <button key={key} onClick={() => setBudgetLevel(key)}
-                    className={`py-2 rounded-xl text-[10px] font-bold transition-all border-2 ${budgetLevel === key ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"}`}>
-                    {val.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <p className="text-sm font-bold text-[#5C3D11]">عدد الأفكار</p>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setIdeasCount((c) => Math.max(2, c - 1))}
-                    className="w-7 h-7 rounded-full border-2 border-[#e8d9c0] flex items-center justify-center active:scale-90 transition-transform">
-                    <Minus className="w-3 h-3 text-[#8B6914]" />
-                  </button>
-                  <span className="text-base font-black text-[#5C3D11] w-4 text-center">{ideasCount}</span>
-                  <button onClick={() => setIdeasCount((c) => Math.min(6, c + 1))}
-                    className="w-7 h-7 rounded-full border-2 border-[#e8d9c0] flex items-center justify-center active:scale-90 transition-transform">
-                    <Plus className="w-3 h-3 text-[#8B6914]" />
-                  </button>
-                </div>
-              </div>
-            </div>
 
             {/* Architectural integrity note */}
             <div className="bg-[#C9A84C]/10 rounded-2xl p-3 border border-[#C9A84C]/20">

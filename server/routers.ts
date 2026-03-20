@@ -1297,9 +1297,10 @@ ${colorText}
       count: z.number().min(2).max(6).default(3),
       budgetMin: z.number().default(20000),
       budgetMax: z.number().default(60000),
+      allowDoorChanges: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax } = input;
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges } = input;
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1316,12 +1317,24 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
+      const doorChangeRule = allowDoorChanges
+        ? "العميل يسمح باقتراح تغيير مواقع الأبواب والنوافذ كمقترحات اختيارية فقط في structuralSuggestions."
+        : "STRICT RULE: العميل لا يريد تغيير مواقع الأبواب والنوافذ والأعمدة والفتحات إطلاقاً. يجب أن تبقى في نفس مواقعها الدقيقة في جميع التصاميم المولّدة. لا تقترح تغييرها حتى في structuralSuggestions.";
+
       const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومتخصصة في التصميم الداخلي بخبرة 20 سنة. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
 - علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
-- الجدوى الاقتصادية: التكاليف الدقيقة بالسوق السعودي، الجداول الزمنية
+- الجدوى الاقتصادية: التكاليف الدقيقة بالسوق الخليجي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
-قاعدتكِ الذهبية المطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط مع تغيير المواد فقط. لا تتغير زاوية الكاميرا، لا تتغير الزوم، لا تتغير اتجاه الصورة، لا تتغير أبعاد الغرفة، لا تتغير مواقع الفتحات. التغييرات البنيوية تُقدّم كمقترحات ذكية منفصلة بسبب هندسي واضح، ليس كتغيير تلقائي. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+
+قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
+1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
+2. نفس الأبعاد بالضبط — لا تغيير في أبعاد الغرفة أو نسبها
+3. نفس مواقع الفتحات بالضبط — الأبواب والنوافذ والأعمدة في نفس أماكنها
+4. التغييرات المسموحة فقط: الألوان، الأثاث، الجدران، الأرضية، الإضاءة، الديكور
+5. ${doorChangeRule}
+
+ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
 
       // تحليل العناصر البنيوية من الصورة
       const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:
@@ -1351,8 +1364,9 @@ ${colorText}
 - فرص التحسين البنيوي مع سبب هندسي واضح`;
 
       const userPrompt = `حللي هذه الصورة (${modeDesc[captureMode]}) بعين خبيرة معمارية متخصصة.
-الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} ريال سعودي
+الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} درهم إماراتي
 عدد الأفكار المطلوبة: ${count}
+تعليمات العميل: ${doorChangeRule}
 
 ${structuralAnalysisPrompt}
 
@@ -1495,9 +1509,12 @@ ${structuralAnalysisPrompt}
           const mats = (idea.materials as string[] || []).join(", ");
           
           // برومبت معماري دقيق يحافظ على كل شيء
+          const doorConstraint = allowDoorChanges
+            ? "Preserve structural openings unless specifically noted."
+            : "CRITICAL: ALL doors, windows, columns, and openings MUST stay in their EXACT original positions and sizes. Do NOT move, resize, or remove any opening. This is non-negotiable.";
           const structuralNote = keepElements
-            ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${keepElements}. These elements MUST remain in EXACT same positions, sizes, and proportions.`
-            : "ABSOLUTE CONSTRAINT: Preserve ALL structural elements (doors, windows, cabinets, stairs) in their EXACT original positions and sizes.";
+            ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${keepElements}. These elements MUST remain in EXACT same positions, sizes, and proportions. ${doorConstraint}`
+            : `ABSOLUTE CONSTRAINT: Preserve ALL structural elements (doors, windows, cabinets, stairs) in their EXACT original positions and sizes. ${doorConstraint}`;
           
           const cameraNote = `CAMERA CONSTRAINT: Use IDENTICAL camera setup as original photo - ${cameraDesc}. Do NOT change zoom level, camera angle, or perspective. The output must look like the SAME photo with only materials/colors changed.`;
           
