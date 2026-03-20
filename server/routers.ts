@@ -1309,9 +1309,11 @@ ${colorText}
         highlights: z.array(z.string()).optional(),
         imageUrl: z.string().optional(),
       }).optional(),
+      preferredStyle: z.string().optional(),   // نمط مفضّل اختياري
+      preferredColors: z.array(z.string()).optional(), // ألوان مفضّلة اختيارية
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData } = input;
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData, preferredStyle, preferredColors } = input;
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1337,6 +1339,14 @@ ${colorText}
         ? `\n\nتعليمات مهمة جداً: العميل اختار مرجع تصميم محدد يريد تقليده في غرفته. يجب أن تكون الأفكار المقترحة مستوحاة بشكل كبير من هذا المرجع:\n- النمط: ${referenceData.styleLabel || referenceData.styleKey || ''}\n- الوصف: ${referenceData.description || ''}\n- المزاج اللوني: ${referenceData.colorMood || ''}\n- الألوان: ${(referenceData.palette || []).map((c) => c.name).join('\u060c ')}\n- الخامات: ${(referenceData.materials || []).join('\u060c ')}\n- العناصر المميزة: ${(referenceData.highlights || []).join('\u060c ')}\nقاعدة: طبّقي هذا النمط والألوان والخامات على الغرفة الحالية مع الحفاظ على بنيتها المعمارية.`
         : "";
 
+      // بناء تعليمات النمط والألوان المفضّلة
+      const styleInstruction = preferredStyle
+        ? `\n\nتفضيل النمط: العميل يفضّل نمط "${preferredStyle}" — يجب أن تكون معظم الأفكار أو كلها في هذا النمط أو مستوحاة منه.`
+        : "";
+      const colorsInstruction = preferredColors && preferredColors.length > 0
+        ? `\n\nتفضيل الألوان: العميل يفضّل الألوان التالية: ${preferredColors.join('، ')} — استخدميها كألوان أساسية أو مكمّلة في التصاميم.`
+        : "";
+
       const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومتخصصة في التصميم الداخلي بخبرة 20 سنة. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
 - علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
@@ -1350,7 +1360,7 @@ ${colorText}
 4. التغييرات المسموحة فقط: الألوان، الأثاث، الجدران، الأرضية، الإضاءة، الديكور
 5. ${doorChangeRule}
 
-ردودكِ دائماً بالعربية بصيغة JSON فقط.${referenceInstruction}`;
+ردودكِ دائماً بالعربية بصيغة JSON فقط.${referenceInstruction}${styleInstruction}${colorsInstruction}`;
 
       // تحليل العناصر البنيوية من الصورة
       const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:

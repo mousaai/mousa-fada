@@ -1428,6 +1428,10 @@ export default function SmartCapture() {
   const [allowDoorChanges, setAllowDoorChanges] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Preferred style & colors (optional filters)
+  const [preferredStyle, setPreferredStyle] = useState<string | null>(null);
+  const [preferredColors, setPreferredColors] = useState<string[]>([]);
+
   // Design Reference state
   const [showRefCamera, setShowRefCamera] = useState(false);
   const [refFileRef] = useState(() => ({ current: null as HTMLInputElement | null }));
@@ -1582,29 +1586,26 @@ export default function SmartCapture() {
       budgetMax: customAmount ? Math.round(customAmount * 1.3) : budget.max,
       allowDoorChanges,
       referenceData,
+      preferredStyle: preferredStyle || undefined,
+      preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
     });
   };
 
   // معالجة صورة المرجع (base64 → S3 → تحليل)
+  const uploadImageMutation = trpc.upload.image.useMutation();
+
   const handleRefImageReady = async (dataUrl: string) => {
     setShowRefCamera(false);
-    // رفع الصورة إلى S3 عبر السيرفر
+    // رفع الصورة إلى S3 عبر trpc.upload.image
     try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const formData = new FormData();
-      formData.append("file", blob, "reference.jpg");
-      const res = await fetch("/api/upload-image", { method: "POST", body: formData });
-      if (res.ok) {
-        const { url, key } = await res.json() as { url: string; key: string };
-        setRefImageUrl(url);
-        setRefImageKey(key);
-        analyzeRefMutation.mutate({ imageUrl: url, imageKey: key });
-      } else {
-        // فالباك: استخدام data URL مباشرة
-        setRefImageUrl(dataUrl);
-        analyzeRefMutation.mutate({ imageUrl: dataUrl });
-      }
+      const base64 = dataUrl.split(",")[1];
+      const mimeType = dataUrl.split(";")[0].split(":")[1] || "image/jpeg";
+      const result = await uploadImageMutation.mutateAsync({ base64, mimeType });
+      setRefImageUrl(result.url);
+      setRefImageKey(result.key);
+      analyzeRefMutation.mutate({ imageUrl: result.url, imageKey: result.key });
     } catch {
+      // فالباك: استخدام data URL مباشرة
       setRefImageUrl(dataUrl);
       analyzeRefMutation.mutate({ imageUrl: dataUrl });
     }
@@ -1883,6 +1884,120 @@ export default function SmartCapture() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* قسم النمط المفضّل (اختياري) */}
+            <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+              <button
+                onClick={() => setPreferredStyle(preferredStyle ? null : "modern")}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-[#C9A84C]" />
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#5C3D11]">النمط المفضّل</p>
+                    <p className="text-[10px] text-[#8B6914]/60">اختياري — حدّدي الطابع الذي تريدينه</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-all relative ${
+                  preferredStyle ? "bg-[#C9A84C]" : "bg-gray-200"
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    preferredStyle ? "left-6" : "left-0.5"
+                  }`} />
+                </div>
+              </button>
+              {preferredStyle && (
+                <div className="px-4 pb-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: "modern", label: "عصري", icon: "🏙️" },
+                      { key: "gulf", label: "خليجي", icon: "🌙" },
+                      { key: "classical", label: "كلاسيكي", icon: "🏛️" },
+                      { key: "minimal", label: "مينيمال", icon: "⬜" },
+                      { key: "industrial", label: "صناعي", icon: "🔩" },
+                      { key: "bohemian", label: "بوهيمي", icon: "🌿" },
+                      { key: "scandinavian", label: "سكاندنافي", icon: "❄️" },
+                      { key: "luxury", label: "فاخر", icon: "✨" },
+                      { key: "moroccan", label: "مغربي", icon: "🕌" },
+                    ].map(({ key, label, icon }) => (
+                      <button key={key} onClick={() => setPreferredStyle(key)}
+                        className={`py-2.5 rounded-xl text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${
+                          preferredStyle === key
+                            ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]"
+                            : "border-[#e8d9c0] text-[#5C3D11]"
+                        }`}>
+                        <span className="text-base">{icon}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* قسم الألوان المفضّلة (اختياري) */}
+            <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+              <button
+                onClick={() => setPreferredColors(preferredColors.length > 0 ? [] : ["أبيض"])}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-rose-400" />
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#5C3D11]">الألوان المفضّلة</p>
+                    <p className="text-[10px] text-[#8B6914]/60">اختياري — حدّدي الألوان التي تريدينها</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-all relative ${
+                  preferredColors.length > 0 ? "bg-[#C9A84C]" : "bg-gray-200"
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    preferredColors.length > 0 ? "left-6" : "left-0.5"
+                  }`} />
+                </div>
+              </button>
+              {preferredColors.length > 0 && (
+                <div className="px-4 pb-4">
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { name: "أبيض", hex: "#F5F5F5" },
+                      { name: "بيج", hex: "#F5F0E8" },
+                      { name: "رمادي", hex: "#9E9E9E" },
+                      { name: "أسود", hex: "#212121" },
+                      { name: "ذهبي", hex: "#C9A84C" },
+                      { name: "بني", hex: "#8B4513" },
+                      { name: "أخضر", hex: "#4CAF50" },
+                      { name: "أزرق", hex: "#2196F3" },
+                      { name: "وردي", hex: "#E91E63" },
+                      { name: "برتقالي", hex: "#FF9800" },
+                      { name: "خشبي", hex: "#795548" },
+                      { name: "نعناعي", hex: "#9C27B0" },
+                    ].map(({ name, hex }) => {
+                      const isSelected = preferredColors.includes(name);
+                      return (
+                        <button key={name}
+                          onClick={() => setPreferredColors(prev =>
+                            isSelected ? prev.filter(c => c !== name) : [...prev, name]
+                          )}
+                          className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
+                            isSelected ? "border-[#C9A84C] bg-[#C9A84C]/10" : "border-[#e8d9c0]"
+                          }`}>
+                          <div className="w-8 h-8 rounded-full border border-gray-200 shadow-sm"
+                            style={{ backgroundColor: hex }} />
+                          <span className="text-[9px] text-[#5C3D11] font-medium">{name}</span>
+                          {isSelected && <Check className="w-3 h-3 text-[#C9A84C]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {preferredColors.length > 0 && (
+                    <p className="text-[10px] text-[#8B6914]/60 mt-2 text-center">
+                      تم اختيار {preferredColors.length} لون: {preferredColors.join("، ")}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* قسم تقليد نمط معين (اختياري) */}
