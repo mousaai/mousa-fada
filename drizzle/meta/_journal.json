@@ -29,6 +29,13 @@
       "when": 1773147963759,
       "tag": "0003_majestic_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1774027125794,
+      "tag": "0004_outstanding_stick",
+      "breakpoints": true
     }
   ]
 }

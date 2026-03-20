@@ -208,3 +208,25 @@ export const reports = mysqlTable("reports", {
 
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = typeof reports.$inferInsert;
+
+// ===== جدول مراجع التصميم (صور الإلهام المحفوظة) =====
+export const designReferences = mysqlTable("designReferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  imageUrl: text("imageUrl").notNull(),
+  imageKey: varchar("imageKey", { length: 500 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  spaceType: varchar("spaceType", { length: 100 }),
+  styleLabel: varchar("styleLabel", { length: 100 }),
+  styleKey: varchar("styleKey", { length: 50 }),
+  description: text("description"),
+  colorMood: varchar("colorMood", { length: 100 }),
+  palette: json("palette"),       // [{name, hex}]
+  materials: json("materials"),   // string[]
+  highlights: json("highlights"), // string[] — أبرز ما يميز الفضاء
+  analysisData: json("analysisData"), // كامل بيانات التحليل
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DesignReference = typeof designReferences.$inferSelect;
+export type InsertDesignReference = typeof designReferences.$inferInsert;

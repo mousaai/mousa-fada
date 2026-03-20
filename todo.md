@@ -343,3 +343,13 @@
 - [x] الإبقاء فقط على: زر التصوير + زر رفع الصورة + ملاحظة البنية المعمارية
 - [x] تعزيز system prompt في analyzeAndGenerateIdeas: إلزام صارم بالحفاظ على مواقع الأبواب/الأعمدة/الفتحات بالضبط في كل التصاميم المولّدة
 - [x] إضافة تعليمات allowDoorChanges في system prompt + imagePrompt: إذا false → قاعدة صارمة لعدم تغيير مواقع الأبواب والنوافذ والأعمدة
+
+## الإصدار 24.0 — ميزة "تقليد نمط معين" الاختيارية
+- [x] إضافة جدول design_references في drizzle/schema.ts وتطبيق migration
+- [x] إضافة helper functions في db.ts: createDesignReference + getUserDesignReferences + deleteDesignReference
+- [x] إضافة router designReference في routers.ts: analyze + list + delete procedures
+- [x] تحديث analyzeAndGenerateIdeas لقبول referenceData وتضمينه في system prompt
+- [x] إضافة قسم "تقليد نمط معين" الاختياري في شاشة الفلتر بثلاث طرق: تصوير + رفع صورة + رابط URL
+- [x] عرض المراجع المحفوظة مسبقاً كصور مصغرة قابلة للاختيار
+- [x] عرض نتيجة التحليل: العنوان + النمط + المزاج اللوني + نقاط اللون + زر إلغاء
+- [x] زر التحليل يتغير نصه ليعكس وجود المرجع ("ابدأ التحليل والتقليد")

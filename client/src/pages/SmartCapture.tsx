@@ -1428,6 +1428,22 @@ export default function SmartCapture() {
   const [allowDoorChanges, setAllowDoorChanges] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Design Reference state
+  const [showRefCamera, setShowRefCamera] = useState(false);
+  const [refFileRef] = useState(() => ({ current: null as HTMLInputElement | null }));
+  const [refImageUrl, setRefImageUrl] = useState<string | null>(null);
+  const [refImageKey, setRefImageKey] = useState<string | null>(null);
+  const [refUrlInput, setRefUrlInput] = useState("");
+  const [showRefUrlInput, setShowRefUrlInput] = useState(false);
+  const [selectedRefId, setSelectedRefId] = useState<number | null>(null);
+  const [useReference, setUseReference] = useState(false); // هل يريد تقليد مرجع؟
+  const [refAnalysisResult, setRefAnalysisResult] = useState<{
+    id?: number; title?: string; spaceType?: string; styleLabel?: string;
+    styleKey?: string; description?: string; colorMood?: string;
+    palette?: Array<{ name: string; hex: string }>; materials?: string[];
+    highlights?: string[]; imageUrl?: string;
+  } | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const BUDGET_MAP = {
@@ -1438,6 +1454,17 @@ export default function SmartCapture() {
   };
 
   const targetCount = 1;
+
+  // Design Reference mutations
+  const analyzeRefMutation = trpc.designReference.analyze.useMutation({
+    onSuccess: (data) => {
+      setRefAnalysisResult(data);
+      setSelectedRefId(data.id ?? null);
+      toast.success("تم حفظ المرجع بنجاح!");
+    },
+    onError: () => toast.error("فشل تحليل المرجع"),
+  });
+  const refListQuery = trpc.designReference.list.useQuery(undefined, { enabled: useReference });
 
   const analyzeAndGenerateMutation = trpc.analyzeAndGenerateIdeas.useMutation({
     onSuccess: (data) => {
@@ -1533,8 +1560,19 @@ export default function SmartCapture() {
   const startAnalysis = (images: string[]) => {
     setStep("analyzing");
     const budget = BUDGET_MAP[budgetLevel];
-    // إذا حدد المستخدم مبلغاً محدداً، استخدمه كمرجع
     const customAmount = budgetAmount ? parseInt(budgetAmount.replace(/,/g, "")) : null;
+    // بناء بيانات المرجع إذا كان مفعّلاً
+    const referenceData = (useReference && refAnalysisResult) ? {
+      referenceId: refAnalysisResult.id,
+      styleLabel: refAnalysisResult.styleLabel,
+      styleKey: refAnalysisResult.styleKey,
+      description: refAnalysisResult.description,
+      colorMood: refAnalysisResult.colorMood,
+      palette: refAnalysisResult.palette,
+      materials: refAnalysisResult.materials,
+      highlights: refAnalysisResult.highlights,
+      imageUrl: refAnalysisResult.imageUrl,
+    } : undefined;
     analyzeAndGenerateMutation.mutate({
       imageUrl: images[0],
       imageUrls: images.length > 1 ? images : undefined,
@@ -1543,7 +1581,50 @@ export default function SmartCapture() {
       budgetMin: customAmount ? Math.round(customAmount * 0.7) : budget.min,
       budgetMax: customAmount ? Math.round(customAmount * 1.3) : budget.max,
       allowDoorChanges,
+      referenceData,
     });
+  };
+
+  // معالجة صورة المرجع (base64 → S3 → تحليل)
+  const handleRefImageReady = async (dataUrl: string) => {
+    setShowRefCamera(false);
+    // رفع الصورة إلى S3 عبر السيرفر
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const formData = new FormData();
+      formData.append("file", blob, "reference.jpg");
+      const res = await fetch("/api/upload-image", { method: "POST", body: formData });
+      if (res.ok) {
+        const { url, key } = await res.json() as { url: string; key: string };
+        setRefImageUrl(url);
+        setRefImageKey(key);
+        analyzeRefMutation.mutate({ imageUrl: url, imageKey: key });
+      } else {
+        // فالباك: استخدام data URL مباشرة
+        setRefImageUrl(dataUrl);
+        analyzeRefMutation.mutate({ imageUrl: dataUrl });
+      }
+    } catch {
+      setRefImageUrl(dataUrl);
+      analyzeRefMutation.mutate({ imageUrl: dataUrl });
+    }
+  };
+
+  const handleRefFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const raw = e.target?.result as string;
+      const compressed = await compressImage(raw, 1280, 0.85);
+      await handleRefImageReady(compressed);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRefUrlSubmit = () => {
+    if (!refUrlInput.trim()) return;
+    setRefImageUrl(refUrlInput.trim());
+    analyzeRefMutation.mutate({ imageUrl: refUrlInput.trim() });
+    setShowRefUrlInput(false);
   };
 
   const handleGenerateImage = useCallback((ideaId: string) => {
@@ -1804,13 +1885,182 @@ export default function SmartCapture() {
               </div>
             </div>
 
+            {/* قسم تقليد نمط معين (اختياري) */}
+            <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+              {/* رأس القسم */}
+              <button
+                onClick={() => setUseReference(!useReference)}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-[#C9A84C]" />
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#5C3D11]">تقليد نمط معين</p>
+                    <p className="text-[10px] text-[#8B6914]/60">اختياري — صوّر فضاءً أعجبك وستقلده م. سارة في غرفتك</p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
+                  useReference ? "bg-[#C9A84C]" : "bg-gray-200"
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    useReference ? "left-6" : "left-0.5"
+                  }`} />
+                </div>
+              </button>
+
+              {/* محتوى القسم عند التفعيل */}
+              {useReference && (
+                <div className="px-4 pb-4 border-t border-[#f0e8d8] pt-3 space-y-3">
+
+                  {/* إذا تم تحليل مرجع بالفعل */}
+                  {refAnalysisResult && (
+                    <div className="bg-[#f0e8d8] rounded-xl p-3 border border-[#C9A84C]/30">
+                      <div className="flex items-start gap-2">
+                        {refImageUrl && (
+                          <img src={refImageUrl} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" alt="ref" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Check className="w-3.5 h-3.5 text-[#C9A84C] flex-shrink-0" />
+                            <p className="text-xs font-bold text-[#5C3D11] truncate">{refAnalysisResult.title}</p>
+                          </div>
+                          <p className="text-[10px] text-[#8B6914]">{refAnalysisResult.styleLabel} • {refAnalysisResult.colorMood}</p>
+                          <div className="flex gap-1 mt-1.5">
+                            {(refAnalysisResult.palette || []).slice(0, 4).map((c, i) => (
+                              <div key={i} className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: c.hex }} />
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => { setRefAnalysisResult(null); setRefImageUrl(null); setSelectedRefId(null); }}
+                          className="p-1 text-[#8B6914]/60 hover:text-red-500"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* تحليل جاري */}
+                  {analyzeRefMutation.isPending && (
+                    <div className="flex items-center gap-2 bg-amber-50 rounded-xl p-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-[#C9A84C] border-t-transparent animate-spin" />
+                      <p className="text-xs text-[#8B6914]">م. سارة تحلّل المرجع...</p>
+                    </div>
+                  )}
+
+                  {/* طرق إضافة مرجع */}
+                  {!refAnalysisResult && !analyzeRefMutation.isPending && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-[#8B6914] font-medium">أضف مرجع تصميم:</p>
+
+                      {/* صوّر مرجع */}
+                      <button
+                        onClick={() => setShowRefCamera(true)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-[#C9A84C]/30 bg-[#C9A84C]/5 text-[#5C3D11] text-sm font-medium active:scale-95 transition-transform"
+                      >
+                        <Camera className="w-4 h-4 text-[#C9A84C]" />
+                        صوّر فضاءً أعجبك
+                      </button>
+
+                      {/* رفع من المعرض */}
+                      <button
+                        onClick={() => { const el = document.getElementById("ref-file-input") as HTMLInputElement; el?.click(); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-[#C9A84C]/30 bg-transparent text-[#5C3D11] text-sm font-medium active:scale-95 transition-transform"
+                      >
+                        <ImageIcon className="w-4 h-4 text-[#C9A84C]" />
+                        رفع صورة من المعرض
+                      </button>
+                      <input id="ref-file-input" type="file" accept="image/*" className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleRefFileUpload(e.target.files[0])} />
+
+                      {/* رابط URL */}
+                      <button
+                        onClick={() => setShowRefUrlInput(!showRefUrlInput)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-[#C9A84C]/30 bg-transparent text-[#5C3D11] text-sm font-medium active:scale-95 transition-transform"
+                      >
+                        <Layers className="w-4 h-4 text-[#C9A84C]" />
+                        لصق رابط صورة من الإنترنت
+                      </button>
+                      {showRefUrlInput && (
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            value={refUrlInput}
+                            onChange={(e) => setRefUrlInput(e.target.value)}
+                            placeholder="https://..."
+                            className="flex-1 border-2 border-[#e8d9c0] rounded-xl px-3 py-2 text-sm text-right text-[#5C3D11] focus:border-[#C9A84C] focus:outline-none"
+                          />
+                          <button
+                            onClick={handleRefUrlSubmit}
+                            className="px-3 py-2 bg-[#C9A84C] text-white rounded-xl text-sm font-bold"
+                          >
+                            تحليل
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* المراجع المحفوظة مسبقاً */}
+                  {refListQuery.data && refListQuery.data.length > 0 && !refAnalysisResult && !analyzeRefMutation.isPending && (
+                    <div className="mt-2">
+                      <p className="text-[10px] text-[#8B6914]/60 mb-2">أو اختر من مراجعك المحفوظة:</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {refListQuery.data.slice(0, 5).map((ref) => (
+                          <button
+                            key={ref.id}
+                            onClick={() => {
+                              setSelectedRefId(ref.id);
+                              setRefImageUrl(ref.imageUrl);
+                              setRefAnalysisResult({
+                                id: ref.id,
+                                title: ref.title,
+                                spaceType: ref.spaceType ?? undefined,
+                                styleLabel: ref.styleLabel ?? undefined,
+                                styleKey: ref.styleKey ?? undefined,
+                                description: ref.description ?? undefined,
+                                colorMood: ref.colorMood ?? undefined,
+                                palette: (ref.palette as Array<{ name: string; hex: string }>) || [],
+                                materials: (ref.materials as string[]) || [],
+                                highlights: (ref.highlights as string[]) || [],
+                                imageUrl: ref.imageUrl,
+                              });
+                            }}
+                            className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                              selectedRefId === ref.id ? "border-[#C9A84C] scale-105" : "border-[#e8d9c0]"
+                            }`}
+                          >
+                            <img src={ref.imageUrl} className="w-full h-full object-cover" alt={ref.title} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* كاميرا المرجع */}
+            {showRefCamera && (
+              <div className="fixed inset-0 z-50">
+                <LiveCamera
+                  mode="single"
+                  capturedCount={0}
+                  targetCount={1}
+                  onCapture={async (dataUrl) => { await handleRefImageReady(dataUrl); }}
+                  onClose={() => setShowRefCamera(false)}
+                />
+              </div>
+            )}
+
             {/* زر التحليل */}
             <button
               onClick={() => startAnalysis(capturedImages)}
               className="w-full py-4 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-black text-base rounded-2xl active:scale-95 transition-transform shadow-lg flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              ابدأ التحليل
+              {useReference && refAnalysisResult ? "ابدأ التحليل والتقليد" : "ابدأ التحليل"}
             </button>
 
             {/* زر الرجوع */}

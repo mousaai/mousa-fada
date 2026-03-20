@@ -2,7 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, projects, analyses, designElements, perspectives, chatSessions,
-  arScans, marketPrices, moodBoards, reports,
+  arScans, marketPrices, moodBoards, reports, designReferences,
   InsertProject, InsertAnalysis, InsertDesignElement, InsertPerspective, InsertChatSession,
   InsertArScan, InsertMarketPrice, InsertMoodBoard, InsertReport
 } from "../drizzle/schema";
@@ -313,4 +313,38 @@ export async function getProjectReports(projectId: number, userId: number) {
   return db.select().from(reports)
     .where(and(eq(reports.projectId, projectId), eq(reports.userId, userId)))
     .orderBy(desc(reports.createdAt));
+}
+
+// ===== استعلامات مراجع التصميم =====
+export async function createDesignReference(data: import("../drizzle/schema").InsertDesignReference) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(designReferences).values(data);
+  const result = await db.select().from(designReferences)
+    .where(eq(designReferences.userId, data.userId))
+    .orderBy(desc(designReferences.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getUserDesignReferences(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(designReferences)
+    .where(eq(designReferences.userId, userId))
+    .orderBy(desc(designReferences.createdAt));
+}
+
+export async function getDesignReferenceById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(designReferences)
+    .where(and(eq(designReferences.id, id), eq(designReferences.userId, userId)))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function deleteDesignReference(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(designReferences).where(and(eq(designReferences.id, id), eq(designReferences.userId, userId)));
 }

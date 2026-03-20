@@ -1298,9 +1298,20 @@ ${colorText}
       budgetMin: z.number().default(20000),
       budgetMax: z.number().default(60000),
       allowDoorChanges: z.boolean().default(false),
+      referenceData: z.object({
+        referenceId: z.number().optional(),
+        styleLabel: z.string().optional(),
+        styleKey: z.string().optional(),
+        description: z.string().optional(),
+        colorMood: z.string().optional(),
+        palette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+        materials: z.array(z.string()).optional(),
+        highlights: z.array(z.string()).optional(),
+        imageUrl: z.string().optional(),
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges } = input;
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData } = input;
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1321,6 +1332,11 @@ ${colorText}
         ? "العميل يسمح باقتراح تغيير مواقع الأبواب والنوافذ كمقترحات اختيارية فقط في structuralSuggestions."
         : "STRICT RULE: العميل لا يريد تغيير مواقع الأبواب والنوافذ والأعمدة والفتحات إطلاقاً. يجب أن تبقى في نفس مواقعها الدقيقة في جميع التصاميم المولّدة. لا تقترح تغييرها حتى في structuralSuggestions.";
 
+      // بناء تعليمات المرجع إذا وجد
+      const referenceInstruction = referenceData
+        ? `\n\nتعليمات مهمة جداً: العميل اختار مرجع تصميم محدد يريد تقليده في غرفته. يجب أن تكون الأفكار المقترحة مستوحاة بشكل كبير من هذا المرجع:\n- النمط: ${referenceData.styleLabel || referenceData.styleKey || ''}\n- الوصف: ${referenceData.description || ''}\n- المزاج اللوني: ${referenceData.colorMood || ''}\n- الألوان: ${(referenceData.palette || []).map((c) => c.name).join('\u060c ')}\n- الخامات: ${(referenceData.materials || []).join('\u060c ')}\n- العناصر المميزة: ${(referenceData.highlights || []).join('\u060c ')}\nقاعدة: طبّقي هذا النمط والألوان والخامات على الغرفة الحالية مع الحفاظ على بنيتها المعمارية.`
+        : "";
+
       const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومتخصصة في التصميم الداخلي بخبرة 20 سنة. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
 - علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
@@ -1334,7 +1350,7 @@ ${colorText}
 4. التغييرات المسموحة فقط: الألوان، الأثاث، الجدران، الأرضية، الإضاءة، الديكور
 5. ${doorChangeRule}
 
-ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+ردودكِ دائماً بالعربية بصيغة JSON فقط.${referenceInstruction}`;
 
       // تحليل العناصر البنيوية من الصورة
       const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:
@@ -2160,6 +2176,109 @@ ${structuralAnalysisPrompt}
           totalMatches,
           priceRange: totalMatches > 0 ? { min: minPrice, max: maxPrice } : null,
         };
+      }),
+  }),
+
+  // ===== مراجع التصميم (صور الإلهام) =====
+  designReference: router({
+    // تحليل صورة إلهام وحفظها كمرجع
+    analyze: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string(),   // URL الصورة (مرفوعة على S3 أو رابط خارجي)
+        imageKey: z.string().optional(),
+        title: z.string().optional(), // اسم اختياري يعطيه المستخدم
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const userId = ctx.user.id;
+
+        // م. سارة تحلل الصورة وتصف النمط والألوان والمواد
+        const messages: Message[] = [
+          {
+            role: "system",
+            content: `أنتِ م. سارة، خبيرة التصميم الداخلي. مهمتك تحليل صور الفضاءات الداخلية التي يعجب بها العميل وتصفها بدقة حتى يمكن تقليدها لاحقاً في فضاء آخر. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url" as const, image_url: { url: input.imageUrl, detail: "high" as const } },
+              {
+                type: "text" as const,
+                text: `حللي هذا الفضاء الداخلي بدقة عالية لأتمكن من تقليده في غرفتي. أعيدي JSON بهذا الشكل بالضبط:
+{
+  "title": "اسم وصفي مختصر للفضاء (مثل: مكتب عصري بألوان محايدة)",
+  "spaceType": "نوع الفضاء (غرفة معيشة/مكتب/غرفة نوم/مطبخ/غرفة طعام/مجلس/ممر)",
+  "styleLabel": "اسم النمط بالعربية (عصري/خليجي/كلاسيكي/مينيمال/صناعي/بوهيمي/اسكندنافي/فاخر)",
+  "styleKey": "اسم النمط بالإنجليزية (modern/gulf/classical/minimal/industrial/bohemian/scandinavian/luxury)",
+  "description": "وصف تفصيلي للفضاء في 3-4 جمل يشرح الأجواء والطابع العام",
+  "colorMood": "المزاج اللوني العام (دافئ/بارد/محايد/داكن/فاتح/ملوّن)",
+  "palette": [{"name": "اسم اللون", "hex": "#XXXXXX"}],
+  "materials": ["قائمة الخامات الرئيسية"],
+  "highlights": ["أبرز 3-5 عناصر تميز هذا الفضاء وتجعله مميزاً"]
+}`,
+              },
+            ] as Array<ImageContent | TextContent>,
+          },
+        ];
+
+        const aiResponse = await invokeLLM({
+          messages,
+          response_format: { type: "json_object" },
+        });
+
+        const rawContent = aiResponse.choices[0]?.message?.content;
+        const aiText = typeof rawContent === "string" ? rawContent : "{}";
+        let analysisData: {
+          title?: string;
+          spaceType?: string;
+          styleLabel?: string;
+          styleKey?: string;
+          description?: string;
+          colorMood?: string;
+          palette?: Array<{ name: string; hex: string }>;
+          materials?: string[];
+          highlights?: string[];
+        } = {};
+        try { analysisData = JSON.parse(aiText); } catch { analysisData = {}; }
+
+        // حفظ المرجع في قاعدة البيانات
+        const { createDesignReference } = await import("./db");
+        const saved = await createDesignReference({
+          userId,
+          imageUrl: input.imageUrl,
+          imageKey: input.imageKey,
+          title: input.title || analysisData.title || "مرجع تصميم",
+          spaceType: analysisData.spaceType,
+          styleLabel: analysisData.styleLabel,
+          styleKey: analysisData.styleKey,
+          description: analysisData.description,
+          colorMood: analysisData.colorMood,
+          palette: analysisData.palette || [],
+          materials: analysisData.materials || [],
+          highlights: analysisData.highlights || [],
+          analysisData,
+        });
+
+        return {
+          id: saved?.id,
+          ...analysisData,
+          imageUrl: input.imageUrl,
+        };
+      }),
+
+    // جلب مراجع التصميم المحفوظة للمستخدم
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getUserDesignReferences } = await import("./db");
+        return getUserDesignReferences(ctx.user.id);
+      }),
+
+    // حذف مرجع
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const { deleteDesignReference } = await import("./db");
+        await deleteDesignReference(input.id, ctx.user.id);
+        return { success: true };
       }),
   }),
 
