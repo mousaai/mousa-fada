@@ -1311,9 +1311,14 @@ ${colorText}
       }).optional(),
       preferredStyle: z.string().optional(),   // نمط مفضّل اختياري
       preferredColors: z.array(z.string()).optional(), // ألوان مفضّلة اختيارية
+      roomDimensions: z.object({ // أبعاد الغرفة الاختيارية لدقة جدول الكميات
+        length: z.number().optional(), // الطول بالمتر
+        width: z.number().optional(),  // العرض بالمتر
+        height: z.number().optional(), // الارتفاع بالمتر
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData, preferredStyle, preferredColors } = input;
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData, preferredStyle, preferredColors, roomDimensions } = input;
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1363,7 +1368,16 @@ ${colorText}
 ردودكِ دائماً بالعربية بصيغة JSON فقط.${referenceInstruction}${styleInstruction}${colorsInstruction}`;
 
       // تحليل العناصر البنيوية من الصورة
-      const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:
+      const hasDimsFromUser = !!(roomDimensions?.length && roomDimensions?.width);
+      const dimEstimationNote = hasDimsFromUser
+        ? `\n\n⚠️ أبعاد الغرفة مُدخلة من العميل (أولوية قصوى): طول ${roomDimensions!.length}م × عرض ${roomDimensions!.width}م${roomDimensions?.height ? ` × ارتفاع ${roomDimensions!.height}م` : ''} = مساحة ${(roomDimensions!.length! * roomDimensions!.width!).toFixed(1)}م². استخدمي هذه الأبعاد الدقيقة لحساب جدول الكميات.`
+        : `\n\n📐 تقدير الأبعاد من الصورة (مطلوب): استخدمي تقنيات التحليل الهندسي البصري لتقدير أبعاد الغرفة من الصورة:
+- تحليل نقطة التلاشي (vanishing point) وخطوط المنظور
+- مقارنة العناصر المرجعية المعروفة (باب قياسي 90×200سم، مقعد 45سم، طاولة 75سم)
+- تحليل نسب الأثاث إلى مساحة الغرفة
+- تقدير ارتفاع السقف من نسبة الجدار المرئي
+أضيفي في spaceAnalysis: estimatedLength (م), estimatedWidth (م), estimatedHeight (م), dimensionConfidence (0-100%)`;
+      const structuralAnalysisPrompt = `المرحلة الأولى: حللي العناصر البنيوية والتصميمية بدقة رقمية عالية:${dimEstimationNote}
 
 المنظور والكاميرا:
 - زاوية التصوير (مستوى الكاميرا: منخفضة/متوسطة/عالية)
@@ -1376,10 +1390,13 @@ ${colorText}
 - كل نافذة: عرض تقريبي، ارتفاع، موقعها من الأرض (منخفض/متوسط/عالي)
 - كل خزانة/دولاب: عرضها، ارتفاعها، موقعها (يسار/يمين/كلا الجانبين)، لونها
 
-أبعاد الغرفة:
+أبعاد الغرفة (تقدير هندسي دقيق من الصورة):
 - شكل الغرفة (مربع/مستطيل/معقد)
-- نسبة العرض إلى الطول (ضيقة/عادية/واسعة)
-- ارتفاع السقف (منخفض/عادي/عالي)
+- الطول التقديري بالمتر (استناداً لمراجع بصرية)
+- العرض التقديري بالمتر
+- ارتفاع السقف التقديري بالمتر
+- نسبة العرض إلى الطول
+- درجة الثقة في التقدير (0-100%)
 
 العناصر البنيوية الثابتة:
 - موقع وحجم الأبواب والنوافذ
@@ -1389,6 +1406,10 @@ ${colorText}
 - المشاكل الهندسية الملاحظة (إضاءة سيئة، تدفق حركة خاطئ، مساحة مهدرة)
 - فرص التحسين البنيوي مع سبب هندسي واضح`;
 
+      // حساب المساحة من الأبعاد إذا توفرت
+      const dimNote = roomDimensions?.length && roomDimensions?.width
+        ? `\n\nℹ️ أبعاد الغرفة المدخلة من العميل: طول ${roomDimensions.length}م × عرض ${roomDimensions.width}م${roomDimensions.height ? ` × ارتفاع ${roomDimensions.height}م` : ''} = مساحة ${(roomDimensions.length * roomDimensions.width).toFixed(1)}م². استخدمي هذه الأبعاد لحساب جدول الكميات بدقة عالية.`
+        : '';
       const userPrompt = `حللي هذه الصورة (${modeDesc[captureMode]}) بعين خبيرة معمارية متخصصة.
 الميزانية: ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()} درهم إماراتي
 عدد الأفكار المطلوبة: ${count}
@@ -1404,6 +1425,10 @@ ${structuralAnalysisPrompt}
   "spaceAnalysis": {
     "spaceType": "نوع الفضاء (صالة/غرفة/مطبخ...)",
     "estimatedArea": "المساحة التقديرية بالمتر المربع",
+    "estimatedLength": 5.5,
+    "estimatedWidth": 4.0,
+    "estimatedHeight": 2.8,
+    "dimensionConfidence": 75,
     "cameraAnalysis": {
       "cameraHeight": "منخفضة/متوسطة/عالية",
       "viewingAngle": "من الباب/من الزاوية/من الوسط",
@@ -1454,10 +1479,42 @@ ${structuralAnalysisPrompt}
         {"item": "الجدران", "currentEstimate": "2,000 ر.س", "replacementCost": "4,000 - 7,000 ر.س", "notes": "وصف تفصيلي"},
         {"item": "الأرضيات", "currentEstimate": "5,000 ر.س", "replacementCost": "8,000 - 15,000 ر.س", "notes": "وصف تفصيلي"}
       ],
-      "imagePrompt": "سيتم توليده تلقائياً"
+      "imagePrompt": "سيتم توليده تلقائياً",
+      "boq": [
+        {
+          "category": "أعمال الأرضيات",
+          "items": [
+            {"name": "بلاط بورسلين 60×60","unit": "م²","qty": 25,"unitPriceMin": 80,"unitPriceMax": 150,"notes": "شامل التركيب"}
+          ]
+        },
+        {
+          "category": "أعمال الجدران",
+          "items": [
+            {"name": "دهان جدران طبقتين","unit": "م²","qty": 60,"unitPriceMin": 15,"unitPriceMax": 30,"notes": "دهان + عمالة"}
+          ]
+        },
+        {
+          "category": "الأثاث والمفروشات",
+          "items": [
+            {"name": "أريكة جلوس","unit": "طقم","qty": 1,"unitPriceMin": 3000,"unitPriceMax": 8000,"notes": ""}
+          ]
+        },
+        {
+          "category": "الإضاءة",
+          "items": [
+            {"name": "سبوت إضاءة LED","unit": "وحدة","qty": 8,"unitPriceMin": 50,"unitPriceMax": 150,"notes": ""}
+          ]
+        },
+        {
+          "category": "الستائر والمفروشات",
+          "items": [
+            {"name": "ستائر","unit": "م طولي","qty": 6,"unitPriceMin": 200,"unitPriceMax": 600,"notes": "شامل التركيب"}
+          ]
+        }
+      ]
     }
   ]
-}`;
+}${dimNote}`;
 
       const messages = [
         { role: "system" as const, content: systemPrompt },
@@ -1521,6 +1578,26 @@ ${structuralAnalysisPrompt}
           })
           .join("; ");
 
+        // ===== حساب جدول الكميات الهندسي =====
+        const { calculateBOQ, estimateDimensionsFromAnalysis } = await import("./boqCalculator");
+        const spaceAnalysisData = parsed.spaceAnalysis || {};
+        const hasDimensions = roomDimensions?.length && roomDimensions?.width;
+        // أولوية: 1) أبعاد مدخلة يدوياً 2) تقدير AI من الصورة 3) تقدير خوارزمي
+        const aiEstL = spaceAnalysisData.estimatedLength ? parseFloat(String(spaceAnalysisData.estimatedLength)) : null;
+        const aiEstW = spaceAnalysisData.estimatedWidth ? parseFloat(String(spaceAnalysisData.estimatedWidth)) : null;
+        const aiEstH = spaceAnalysisData.estimatedHeight ? parseFloat(String(spaceAnalysisData.estimatedHeight)) : null;
+        const hasAiDims = aiEstL && aiEstW && aiEstL > 1 && aiEstW > 1;
+        const dims = hasDimensions
+          ? { length: roomDimensions!.length!, width: roomDimensions!.width!, height: roomDimensions?.height || aiEstH || 2.8 }
+          : hasAiDims
+          ? { length: aiEstL!, width: aiEstW!, height: aiEstH || 2.8 }
+          : estimateDimensionsFromAnalysis(
+              spaceAnalysisData.estimatedArea,
+              spaceAnalysisData.roomShape,
+              spaceAnalysisData.spaceType
+            );
+        const boqSource = hasDimensions ? "exact" : (hasAiDims ? "estimated" : "estimated");
+
         const ideas = (parsed.ideas || []).map((idea: Record<string, unknown>) => {
           const styleMap: Record<string, string> = {
             modern: "modern contemporary", gulf: "Arabian Gulf luxury",
@@ -1547,7 +1624,39 @@ ${structuralAnalysisPrompt}
           const roomNote = roomDesc ? `ROOM GEOMETRY: ${roomDesc}. Maintain EXACT room proportions and ceiling height.` : "";
           
           const generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} Apply ONLY these changes: ${styleName} style colors and materials. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style. New wall finish, new flooring, new ceiling treatment, new lighting. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
-          return { ...idea, imagePrompt: generatedPrompt };
+
+          // حساب جدول الكميات الهندسي لهذه الفكرة
+          // بنود AI الخام من النموذج — نحولها إلى BOQCategory[] بإضافة الحقول المفقودة
+          type RawBoqItem = { name: string; unit: string; qty: number; unitPriceMin: number; unitPriceMax: number; notes: string };
+          type RawBoqCat = { category: string; items: RawBoqItem[] };
+          const rawBoqCats = idea.boq as RawBoqCat[] | undefined;
+          const aiBoqRaw = rawBoqCats?.map((cat) => ({
+            category: cat.category,
+            icon: undefined as string | undefined,
+            items: (cat.items || []).map((item) => ({
+              name: item.name,
+              unit: item.unit,
+              qty: item.qty || 1,
+              unitPriceMin: item.unitPriceMin || 0,
+              unitPriceMax: item.unitPriceMax || 0,
+              notes: item.notes || "",
+              totalMin: Math.round((item.qty || 1) * (item.unitPriceMin || 0)),
+              totalMax: Math.round((item.qty || 1) * (item.unitPriceMax || 0)),
+              basis: "تقدير م. سارة",
+            })),
+            subtotalMin: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMin || 0)), 0),
+            subtotalMax: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMax || 0)), 0),
+          }));
+          const boqResult = calculateBOQ(
+            dims,
+            String(idea.style || "modern"),
+            String(idea.scenario || "surface"),
+            String(spaceAnalysisData.spaceType || ""),
+            aiBoqRaw,
+            boqSource
+          );
+
+          return { ...idea, imagePrompt: generatedPrompt, boq: boqResult };
         });
 
         return {

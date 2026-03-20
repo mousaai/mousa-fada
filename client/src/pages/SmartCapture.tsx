@@ -64,6 +64,37 @@ interface SpaceAnalysis {
   currentMaterials: string[];
 }
 
+// ===== BOQ Types =====
+interface BOQItem {
+  name: string;
+  unit: string;
+  qty: number;
+  unitPriceMin: number;
+  unitPriceMax: number;
+  totalMin: number;
+  totalMax: number;
+  notes: string;
+  basis: string;
+}
+interface BOQCategory {
+  category: string;
+  icon?: string;
+  items: BOQItem[];
+  subtotalMin: number;
+  subtotalMax: number;
+}
+interface BOQResult {
+  categories: BOQCategory[];
+  grandTotalMin: number;
+  grandTotalMax: number;
+  area: number;
+  perimeter: number;
+  wallArea: number;
+  ceilingArea: number;
+  source: "exact" | "estimated";
+  disclaimer: string;
+}
+
 interface DesignIdea {
   id: string;
   title: string;
@@ -83,6 +114,7 @@ interface DesignIdea {
   imagePrompt: string;
   imageUrl?: string;
   isGeneratingImage?: boolean;
+  boq?: BOQResult;
 }
 
 // ===== Capture Mode Selector =====
@@ -543,6 +575,8 @@ function IdeaCard({
   const [showReplacement, setShowReplacement] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [lightbox, setLightbox] = useState(false);
+  const [showBOQ, setShowBOQ] = useState(false);
+  const [expandedBOQCat, setExpandedBOQCat] = useState<string | null>(null);
 
   const scenario = SCENARIO_COLORS[idea.scenario] || SCENARIO_COLORS.surface;
 
@@ -723,6 +757,161 @@ function IdeaCard({
             <Wand2 className="w-3.5 h-3.5" />
             توليد الصورة التصورية (مع الحفاظ على البنية)
           </button>
+        )}
+
+        {/* جدول الكميات الهندسي */}
+        {idea.boq && (
+          <div className="mt-3">
+            <button
+              onClick={() => setShowBOQ(!showBOQ)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-500 text-white text-sm font-bold active:scale-95 transition-transform"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">📋</span>
+                <span>جدول الكميات (BOQ)</span>
+                {idea.boq.source === "estimated" && (
+                  <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full">تقديري</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black bg-white/20 px-2 py-1 rounded-full">
+                  {idea.boq.grandTotalMin.toLocaleString()} – {idea.boq.grandTotalMax.toLocaleString()} د.إ
+                </span>
+                {showBOQ ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </button>
+
+            {showBOQ && (
+              <div className="mt-2 bg-emerald-50 rounded-2xl border border-emerald-200 overflow-hidden">
+                {/* معلومات الغرفة */}
+                <div className="px-4 py-3 bg-emerald-100/50 border-b border-emerald-200">
+                  {/* مصدر الأبعاد */}
+                  <div className={`flex items-center justify-center gap-1.5 mb-2 px-2 py-1 rounded-lg text-[9px] font-bold ${
+                    idea.boq.source === 'exact'
+                      ? 'bg-emerald-200 text-emerald-800'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    <span>{idea.boq.source === 'exact' ? '📍' : '🧠'}</span>
+                    <span>{idea.boq.source === 'exact' ? 'أبعاد دقيقة (مدخلة يدوياً)' : 'أبعاد مقدّرة بالذكاء الاصطناعي من الصورة'}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[9px] text-emerald-600 font-bold">مساحة الأرضية</p>
+                      <p className="text-sm font-black text-emerald-800">{idea.boq.area}م²</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-emerald-600 font-bold">مساحة الجدران</p>
+                      <p className="text-sm font-black text-emerald-800">{idea.boq.wallArea}م²</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-emerald-600 font-bold">المحيط</p>
+                      <p className="text-sm font-black text-emerald-800">{idea.boq.perimeter}م</p>
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-emerald-600 mt-2 text-center">{idea.boq.disclaimer}</p>
+                  {idea.boq.source === 'estimated' && (
+                    <p className="text-[8px] text-amber-600 mt-1 text-center">
+                      💡 لدقة أعلى: أدخل أبعاد الغرفة يدوياً في خيارات التخصيص
+                    </p>
+                  )}
+                </div>
+
+                {/* الفئات */}
+                <div className="divide-y divide-emerald-100">
+                  {idea.boq.categories.map((cat, ci) => (
+                    <div key={ci}>
+                      <button
+                        onClick={() => setExpandedBOQCat(expandedBOQCat === cat.category ? null : cat.category)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-emerald-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{cat.icon || '📦'}</span>
+                          <span className="text-xs font-bold text-emerald-800">{cat.category}</span>
+                          <span className="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                            {cat.items.length} بند
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-emerald-700">
+                            {(cat.subtotalMin || 0).toLocaleString()} – {(cat.subtotalMax || 0).toLocaleString()}
+                          </span>
+                          {expandedBOQCat === cat.category
+                            ? <ChevronUp className="w-3 h-3 text-emerald-600" />
+                            : <ChevronDown className="w-3 h-3 text-emerald-600" />}
+                        </div>
+                      </button>
+
+                      {expandedBOQCat === cat.category && (
+                        <div className="px-4 pb-3">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[10px]">
+                              <thead>
+                                <tr className="border-b border-emerald-200">
+                                  <th className="text-right py-1.5 text-emerald-700 font-bold w-2/5">البند</th>
+                                  <th className="text-center py-1.5 text-emerald-700 font-bold">الوحدة</th>
+                                  <th className="text-center py-1.5 text-emerald-700 font-bold">الكمية</th>
+                                  <th className="text-center py-1.5 text-emerald-700 font-bold">سعر الوحدة</th>
+                                  <th className="text-center py-1.5 text-emerald-700 font-bold">الإجمالي</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cat.items.map((item, ii) => (
+                                  <tr key={ii} className="border-b border-emerald-50 hover:bg-emerald-50/50">
+                                    <td className="py-1.5 text-emerald-900 font-medium leading-tight">
+                                      <div>{item.name}</div>
+                                      {item.basis && (
+                                        <div className="text-[8px] text-emerald-500 mt-0.5">{item.basis}</div>
+                                      )}
+                                    </td>
+                                    <td className="text-center py-1.5 text-emerald-700">{item.unit}</td>
+                                    <td className="text-center py-1.5 font-bold text-emerald-800">{item.qty}</td>
+                                    <td className="text-center py-1.5 text-emerald-700">
+                                      {item.unitPriceMin.toLocaleString()}–{item.unitPriceMax.toLocaleString()}
+                                    </td>
+                                    <td className="text-center py-1.5 font-black text-emerald-800">
+                                      {item.totalMin.toLocaleString()}–{item.totalMax.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="bg-emerald-100">
+                                  <td colSpan={4} className="py-1.5 px-1 text-right font-black text-emerald-800">مجموع {cat.category}</td>
+                                  <td className="text-center py-1.5 font-black text-emerald-800">
+                                    {(cat.subtotalMin || 0).toLocaleString()}–{(cat.subtotalMax || 0).toLocaleString()}
+                                  </td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          {cat.items.some(i => i.notes) && (
+                            <div className="mt-2 space-y-1">
+                              {cat.items.filter(i => i.notes).map((item, ii) => (
+                                <p key={ii} className="text-[9px] text-emerald-600">
+                                  <span className="font-bold">{item.name}:</span> {item.notes}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* الإجمالي الكلي */}
+                <div className="px-4 py-3 bg-emerald-700 text-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold">إجمالي جدول الكميات</span>
+                    <span className="text-sm font-black">
+                      {idea.boq.grandTotalMin.toLocaleString()} – {idea.boq.grandTotalMax.toLocaleString()} د.إ
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-white/60 mt-1">★ الأسعار تقديرية وفق متوسط سوق الإمارات 2024-2025 • لا تشمل ضريبة القيمة المضافة</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Shop The Look — استخراج مصدر الأثاث من بنيان */}
@@ -1433,6 +1622,12 @@ export default function SmartCapture() {
   const [preferredStyle, setPreferredStyle] = useState<string | null>(null);
   const [preferredColors, setPreferredColors] = useState<string[]>([]);
 
+  // أبعاد الغرفة الاختيارية لجدول الكميات
+  const [roomLength, setRoomLength] = useState<string>("");
+  const [roomWidth, setRoomWidth] = useState<string>("");
+  const [roomHeight, setRoomHeight] = useState<string>("");
+  const [showRoomDims, setShowRoomDims] = useState(false);
+
   // Design Reference state
   const [showRefCamera, setShowRefCamera] = useState(false);
   const [refFileRef] = useState(() => ({ current: null as HTMLInputElement | null }));
@@ -1501,6 +1696,8 @@ export default function SmartCapture() {
           imagePrompt: idea.imagePrompt || "",
           imageUrl: undefined,
           isGeneratingImage: false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          boq: idea.boq as any,
         })));
       }
       // حفظ التحليل المعماري
@@ -1586,6 +1783,14 @@ export default function SmartCapture() {
       highlights: refAnalysisResult.highlights,
       imageUrl: refAnalysisResult.imageUrl,
     } : undefined;
+    // أبعاد الغرفة إذا أدخلها المستخدم
+    const roomDimensions = (roomLength && roomWidth)
+      ? {
+          length: parseFloat(roomLength),
+          width: parseFloat(roomWidth),
+          height: roomHeight ? parseFloat(roomHeight) : undefined,
+        }
+      : undefined;
     analyzeAndGenerateMutation.mutate({
       imageUrl: images[0],
       imageUrls: images.length > 1 ? images : undefined,
@@ -1597,6 +1802,7 @@ export default function SmartCapture() {
       referenceData,
       preferredStyle: preferredStyle || undefined,
       preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
+      roomDimensions,
     });
   };
 
@@ -2167,6 +2373,91 @@ export default function SmartCapture() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* أبعاد الغرفة — اختياري لدقة جدول الكميات */}
+            <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+              <button
+                onClick={() => setShowRoomDims(!showRoomDims)}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📏</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#5C3D11]">أبعاد الغرفة</p>
+                    <p className="text-[10px] text-[#8B6914]/60">
+                      {(roomLength && roomWidth)
+                        ? `✅ ${roomLength}م × ${roomWidth}م${roomHeight ? ` × ${roomHeight}م` : ''} = ${(parseFloat(roomLength || '0') * parseFloat(roomWidth || '0')).toFixed(1)}م²`
+                        : 'اختياري — لحساب جدول الكميات بدقة عالية'}
+                    </p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
+                  showRoomDims ? "bg-[#C9A84C]" : "bg-gray-200"
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    showRoomDims ? "left-6" : "left-0.5"
+                  }`} />
+                </div>
+              </button>
+
+              {showRoomDims && (
+                <div className="px-4 pb-4 border-t border-[#f0e8d8] pt-3">
+                  <p className="text-[10px] text-[#8B6914]/70 mb-3 leading-relaxed">
+                    أدخل أبعاد الغرفة لتحسب كميات الأرضيات والأصباغ والستائر بدقة هندسية عالية
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-[#8B6914] font-bold block mb-1">📏 الطول (م)</label>
+                      <input
+                        type="number"
+                        value={roomLength}
+                        onChange={(e) => setRoomLength(e.target.value)}
+                        placeholder="5.5"
+                        step="0.1"
+                        min="1"
+                        max="50"
+                        className="w-full border-2 border-[#e8d9c0] rounded-xl px-2 py-2 text-sm text-center text-[#5C3D11] placeholder:text-[#8B6914]/30 focus:border-[#C9A84C] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#8B6914] font-bold block mb-1">📏 العرض (م)</label>
+                      <input
+                        type="number"
+                        value={roomWidth}
+                        onChange={(e) => setRoomWidth(e.target.value)}
+                        placeholder="4.0"
+                        step="0.1"
+                        min="1"
+                        max="50"
+                        className="w-full border-2 border-[#e8d9c0] rounded-xl px-2 py-2 text-sm text-center text-[#5C3D11] placeholder:text-[#8B6914]/30 focus:border-[#C9A84C] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#8B6914] font-bold block mb-1">⬆️ الارتفاع (م)</label>
+                      <input
+                        type="number"
+                        value={roomHeight}
+                        onChange={(e) => setRoomHeight(e.target.value)}
+                        placeholder="2.8"
+                        step="0.1"
+                        min="2"
+                        max="10"
+                        className="w-full border-2 border-[#e8d9c0] rounded-xl px-2 py-2 text-sm text-center text-[#5C3D11] placeholder:text-[#8B6914]/30 focus:border-[#C9A84C] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  {roomLength && roomWidth && (
+                    <div className="mt-3 bg-emerald-50 rounded-xl px-3 py-2 border border-emerald-200">
+                      <p className="text-[10px] text-emerald-700 font-bold text-center">
+                        ✅ مساحة الأرضية: {(parseFloat(roomLength) * parseFloat(roomWidth)).toFixed(1)}م²
+                        {roomHeight && ` • مساحة الجدران: ${(2 * (parseFloat(roomLength) + parseFloat(roomWidth)) * parseFloat(roomHeight)).toFixed(1)}م²`}
+                      </p>
+                      <p className="text-[9px] text-emerald-600 text-center mt-0.5">سيتم حساب جدول الكميات بناءً على هذه الأبعاد</p>
                     </div>
                   )}
                 </div>
