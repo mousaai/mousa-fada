@@ -78,26 +78,26 @@ interface HistoryEntry { elements: DrawElement[]; }
 type RoomPresetOpening = { side: "top" | "bottom" | "left" | "right"; pos: number; width: number; type: "door" | "window"; doorType?: DoorType; windowType?: WindowType; };
 const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: string; icon?: string; openings?: RoomPresetOpening[] }[] = [
   // ===== مجالس =====
-  { label: "مجلس 6×8", cat: "مجالس", w: 6, h: 8, color: "#E8D5B7", icon: "🛋️",
+  { label: "مجلس 6×8", cat: "مجالس", w: 6, h: 8, color: "#D4A96A", icon: "🛋️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
       { side: "left", pos: 0.3, width: 1.5, type: "window", windowType: "panoramic" },
       { side: "right", pos: 0.3, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
-  { label: "مجلس 5×6", cat: "مجالس", w: 5, h: 6, color: "#E8D5B7", icon: "🛋️",
+  { label: "مجلس 5×6", cat: "مجالس", w: 5, h: 6, color: "#D4A96A", icon: "🛋️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
       { side: "left", pos: 0.4, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مجلس 4×5", cat: "مجالس", w: 4, h: 5, color: "#E8D5B7", icon: "🛋️",
+  { label: "مجلس 4×5", cat: "مجالس", w: 4, h: 5, color: "#D4A96A", icon: "🛋️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مجلس خليجي 7×9", cat: "مجالس", w: 7, h: 9, color: "#E8D5B7", icon: "🏛️",
+  { label: "مجلس خليجي 7×9", cat: "مجالس", w: 7, h: 9, color: "#D4A96A", icon: "🏛️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.5, type: "door", doorType: "double" },
       { side: "left", pos: 0.3, width: 2.0, type: "window", windowType: "panoramic" },
@@ -105,66 +105,66 @@ const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: s
       { side: "top", pos: 0.5, width: 1.2, type: "door", doorType: "single" },
     ]
   },
-  { label: "غرفة ضيوف 4×4", cat: "مجالس", w: 4, h: 4, color: "#EDE0C8", icon: "🪑",
+  { label: "غرفة ضيوف 4×4", cat: "مجالس", w: 4, h: 4, color: "#C9A84C", icon: "🪑",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
-  { label: "ديوانية 5×7", cat: "مجالس", w: 5, h: 7, color: "#E8D5B7", icon: "🏠",
+  { label: "ديوانية 5×7", cat: "مجالس", w: 5, h: 7, color: "#D4A96A", icon: "🏠",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
       { side: "left", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
   // ===== معيشة =====
-  { label: "معيشة 5×6", cat: "معيشة", w: 5, h: 6, color: "#D4E8D5", icon: "📺",
+  { label: "معيشة 5×6", cat: "معيشة", w: 5, h: 6, color: "#5BA85E", icon: "📺",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
-  { label: "معيشة 4×5", cat: "معيشة", w: 4, h: 5, color: "#D4E8D5", icon: "📺",
+  { label: "معيشة 4×5", cat: "معيشة", w: 4, h: 5, color: "#5BA85E", icon: "📺",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
-  { label: "معيشة 4×4", cat: "معيشة", w: 4, h: 4, color: "#D4E8D5", icon: "📺",
+  { label: "معيشة 4×4", cat: "معيشة", w: 4, h: 4, color: "#5BA85E", icon: "📺",
     openings: [
       { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "left", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
-  { label: "معيشة مفتوحة 6×7", cat: "معيشة", w: 6, h: 7, color: "#C8E0C8", icon: "🏡",
+  { label: "معيشة مفتوحة 6×7", cat: "معيشة", w: 6, h: 7, color: "#3D8B40", icon: "🏡",
     openings: [
       { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 2.0, type: "window", windowType: "panoramic" },
       { side: "left", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
-  { label: "معيشة 3×5", cat: "معيشة", w: 3, h: 5, color: "#D4E8D5", icon: "📺",
+  { label: "معيشة 3×5", cat: "معيشة", w: 3, h: 5, color: "#5BA85E", icon: "📺",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
   // ===== غرف نوم =====
-  { label: "ماستر 4×5", cat: "نوم", w: 4, h: 5, color: "#D5D4E8", icon: "🛏️",
+  { label: "ماستر 4×5", cat: "نوم", w: 4, h: 5, color: "#7B68C8", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
       { side: "right", pos: 0.3, width: 0.8, type: "door", doorType: "single" },
     ]
   },
-  { label: "ماستر 5×6", cat: "نوم", w: 5, h: 6, color: "#D5D4E8", icon: "🛏️",
+  { label: "ماستر 5×6", cat: "نوم", w: 5, h: 6, color: "#7B68C8", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
       { side: "right", pos: 0.3, width: 0.8, type: "door", doorType: "single" },
     ]
   },
-  { label: "ماستر 6×7", cat: "نوم", w: 6, h: 7, color: "#C8C8E8", icon: "🛏️",
+  { label: "ماستر 6×7", cat: "نوم", w: 6, h: 7, color: "#5B4BAA", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.3, width: 1.0, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 2.0, type: "window", windowType: "panoramic" },
@@ -172,107 +172,107 @@ const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: s
       { side: "left", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
     ]
   },
-  { label: "غرفة نوم 4×4", cat: "نوم", w: 4, h: 4, color: "#E8D5D5", icon: "🛏️",
+  { label: "غرفة نوم 4×4", cat: "نوم", w: 4, h: 4, color: "#C06080", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
-  { label: "غرفة نوم 3×4", cat: "نوم", w: 3, h: 4, color: "#E8D5D5", icon: "🛏️",
+  { label: "غرفة نوم 3×4", cat: "نوم", w: 3, h: 4, color: "#C06080", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
     ]
   },
-  { label: "غرفة نوم 3×3", cat: "نوم", w: 3, h: 3, color: "#E8D5D5", icon: "🛏️",
+  { label: "غرفة نوم 3×3", cat: "نوم", w: 3, h: 3, color: "#C06080", icon: "🛏️",
     openings: [
       { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "left", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
     ]
   },
-  { label: "غرفة أطفال 3×3.5", cat: "نوم", w: 3, h: 3.5, color: "#F0D8D8", icon: "🧸",
+  { label: "غرفة أطفال 3×3.5", cat: "نوم", w: 3, h: 3.5, color: "#E07090", icon: "🧸",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
     ]
   },
-  { label: "غرفة مراهق 4×4.5", cat: "نوم", w: 4, h: 4.5, color: "#D8E0F0", icon: "🎮",
+  { label: "غرفة مراهق 4×4.5", cat: "نوم", w: 4, h: 4.5, color: "#4A7AC8", icon: "🎮",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
   // ===== حمامات =====
-  { label: "حمام ماستر 2×3", cat: "حمام", w: 2, h: 3, color: "#D5E8E4", icon: "🚿",
+  { label: "حمام ماستر 2×3", cat: "حمام", w: 2, h: 3, color: "#2A9D8F", icon: "🚿",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "حمام ماستر 2.5×3", cat: "حمام", w: 2.5, h: 3, color: "#D5E8E4", icon: "🛁",
+  { label: "حمام ماستر 2.5×3", cat: "حمام", w: 2.5, h: 3, color: "#2A9D8F", icon: "🛁",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#D5E8E4", icon: "🚿",
+  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#2A9D8F", icon: "🚿",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#D5E8E4", icon: "🚿",
+  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#2A9D8F", icon: "🚿",
     openings: [{ side: "right", pos: 0.5, width: 0.7, type: "door", doorType: "single" }]
   },
-  { label: "حمام ضيوف 1.5×1.5", cat: "حمام", w: 1.5, h: 1.5, color: "#D5E8E4", icon: "🚽",
+  { label: "حمام ضيوف 1.5×1.5", cat: "حمام", w: 1.5, h: 1.5, color: "#2A9D8F", icon: "🚽",
     openings: [{ side: "right", pos: 0.5, width: 0.7, type: "door", doorType: "single" }]
   },
-  { label: "حمام صغير 1×1.5", cat: "حمام", w: 1, h: 1.5, color: "#D5E8E4", icon: "🚽",
+  { label: "حمام صغير 1×1.5", cat: "حمام", w: 1, h: 1.5, color: "#2A9D8F", icon: "🚽",
     openings: [{ side: "right", pos: 0.5, width: 0.6, type: "door", doorType: "single" }]
   },
-  { label: "حمام مشترك 2×3", cat: "حمام", w: 2, h: 3, color: "#C8E0DC", icon: "🛁",
+  { label: "حمام مشترك 2×3", cat: "حمام", w: 2, h: 3, color: "#1A8070", icon: "🛁",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
   // ===== دريسينج =====
-  { label: "دريسينج 3×3", cat: "دريسينج", w: 3, h: 3, color: "#E4D5E8", icon: "👗",
+  { label: "دريسينج 3×3", cat: "دريسينج", w: 3, h: 3, color: "#9B59B6", icon: "👗",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" }]
   },
-  { label: "دريسينج 2×3", cat: "دريسينج", w: 2, h: 3, color: "#E4D5E8", icon: "👗",
+  { label: "دريسينج 2×3", cat: "دريسينج", w: 2, h: 3, color: "#9B59B6", icon: "👗",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" }]
   },
-  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#E4D5E8", icon: "👗",
+  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#9B59B6", icon: "👗",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" }]
   },
-  { label: "دريسينج 4×4", cat: "دريسينج", w: 4, h: 4, color: "#D8C8E0", icon: "👔",
+  { label: "دريسينج 4×4", cat: "دريسينج", w: 4, h: 4, color: "#7D3C98", icon: "👔",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.0, type: "door", doorType: "double" },
     ]
   },
-  { label: "غرفة ملابس 3×4", cat: "دريسينج", w: 3, h: 4, color: "#E4D5E8", icon: "👘",
+  { label: "غرفة ملابس 3×4", cat: "دريسينج", w: 3, h: 4, color: "#9B59B6", icon: "👘",
     openings: [{ side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "sliding" }]
   },
   // ===== مطابخ =====
-  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E07B39", icon: "🍳",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مطبخ 2×4", cat: "مطبخ", w: 2, h: 4, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 2×4", cat: "مطبخ", w: 2, h: 4, color: "#E07B39", icon: "🍳",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مطبخ 3×3", cat: "مطبخ", w: 3, h: 3, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 3×3", cat: "مطبخ", w: 3, h: 3, color: "#E07B39", icon: "🍳",
     openings: [
       { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "left", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مطبخ مفتوح 4×5", cat: "مطبخ", w: 4, h: 5, color: "#F0EAD8", icon: "🍽️",
+  { label: "مطبخ مفتوح 4×5", cat: "مطبخ", w: 4, h: 5, color: "#A0845C", icon: "🍽️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "panoramic" },
     ]
   },
-  { label: "مطبخ 2×3", cat: "مطبخ", w: 2, h: 3, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 2×3", cat: "مطبخ", w: 2, h: 3, color: "#E07B39", icon: "🍳",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
     ]
   },
-  { label: "مطبخ 4×4", cat: "مطبخ", w: 4, h: 4, color: "#E0DCC8", icon: "🍽️",
+  { label: "مطبخ 4×4", cat: "مطبخ", w: 4, h: 4, color: "#C96A28", icon: "🍽️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
@@ -280,120 +280,120 @@ const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: s
     ]
   },
   // ===== ردهات وممرات =====
-  { label: "ردهة 3×4", cat: "ردهة", w: 3, h: 4, color: "#F0EAD8", icon: "🚶",
+  { label: "ردهة 3×4", cat: "ردهة", w: 3, h: 4, color: "#A0845C", icon: "🚶",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 1.2, type: "door", doorType: "single" },
     ]
   },
-  { label: "ردهة 4×5", cat: "ردهة", w: 4, h: 5, color: "#F0EAD8", icon: "🚶",
+  { label: "ردهة 4×5", cat: "ردهة", w: 4, h: 5, color: "#A0845C", icon: "🚶",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.5, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 1.2, type: "door", doorType: "single" },
       { side: "left", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
     ]
   },
-  { label: "ممر 1.2×4", cat: "ردهة", w: 1.2, h: 4, color: "#F0EAD8", icon: "↕️" },
-  { label: "ممر 1.5×5", cat: "ردهة", w: 1.5, h: 5, color: "#F0EAD8", icon: "↕️" },
-  { label: "ممر 1.2×6", cat: "ردهة", w: 1.2, h: 6, color: "#F0EAD8", icon: "↕️" },
-  { label: "مدخل 3×3", cat: "ردهة", w: 3, h: 3, color: "#E8E0D5", icon: "🚪",
+  { label: "ممر 1.2×4", cat: "ردهة", w: 1.2, h: 4, color: "#A0845C", icon: "↕️" },
+  { label: "ممر 1.5×5", cat: "ردهة", w: 1.5, h: 5, color: "#A0845C", icon: "↕️" },
+  { label: "ممر 1.2×6", cat: "ردهة", w: 1.2, h: 6, color: "#A0845C", icon: "↕️" },
+  { label: "مدخل 3×3", cat: "ردهة", w: 3, h: 3, color: "#8B6914", icon: "🚪",
     openings: [{ side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" }]
   },
-  { label: "صالة 4×4", cat: "ردهة", w: 4, h: 4, color: "#E8E0D5", icon: "🏠",
+  { label: "صالة 4×4", cat: "ردهة", w: 4, h: 4, color: "#8B6914", icon: "🏠",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
   // ===== مكاتب =====
-  { label: "مكتب 3×4", cat: "مكتب", w: 3, h: 4, color: "#D8E8F0", icon: "💼",
+  { label: "مكتب 3×4", cat: "مكتب", w: 3, h: 4, color: "#2980B9", icon: "💼",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مكتب 4×5", cat: "مكتب", w: 4, h: 5, color: "#D8E8F0", icon: "💼",
+  { label: "مكتب 4×5", cat: "مكتب", w: 4, h: 5, color: "#2980B9", icon: "💼",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "panoramic" },
     ]
   },
-  { label: "مكتبة 3×3", cat: "مكتب", w: 3, h: 3, color: "#C8D8E8", icon: "📚",
+  { label: "مكتبة 3×3", cat: "مكتب", w: 3, h: 3, color: "#1A6A9A", icon: "📚",
     openings: [{ side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" }]
   },
-  { label: "غرفة اجتماعات 5×6", cat: "مكتب", w: 5, h: 6, color: "#D0E0F0", icon: "🤝",
+  { label: "غرفة اجتماعات 5×6", cat: "مكتب", w: 5, h: 6, color: "#3498DB", icon: "🤝",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.0, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
   // ===== خدمات =====
-  { label: "غرفة غسيل 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5", icon: "🧺",
+  { label: "غرفة غسيل 2×2", cat: "خدمات", w: 2, h: 2, color: "#6B8E5A", icon: "🧺",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "غرفة غسيل 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5", icon: "🧺",
+  { label: "غرفة غسيل 2×3", cat: "خدمات", w: 2, h: 3, color: "#6B8E5A", icon: "🧺",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "غرفة خادمة 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5", icon: "🧹",
+  { label: "غرفة خادمة 2×3", cat: "خدمات", w: 2, h: 3, color: "#6B8E5A", icon: "🧹",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "مخزن 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5", icon: "📦",
+  { label: "مخزن 2×2", cat: "خدمات", w: 2, h: 2, color: "#6B8E5A", icon: "📦",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "مخزن 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5", icon: "📦",
+  { label: "مخزن 2×3", cat: "خدمات", w: 2, h: 3, color: "#6B8E5A", icon: "📦",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "غرفة مولد 2×2", cat: "خدمات", w: 2, h: 2, color: "#D8E8D0", icon: "⚡",
+  { label: "غرفة مولد 2×2", cat: "خدمات", w: 2, h: 2, color: "#5A7A48", icon: "⚡",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
   // ===== خارجي =====
-  { label: "مسبح 5×10", cat: "خارجي", w: 5, h: 10, color: "#B8D8F0", icon: "🏊",
+  { label: "مسبح 5×10", cat: "خارجي", w: 5, h: 10, color: "#2196F3", icon: "🏊",
     openings: []
   },
-  { label: "مسبح 4×8", cat: "خارجي", w: 4, h: 8, color: "#B8D8F0", icon: "🏊",
+  { label: "مسبح 4×8", cat: "خارجي", w: 4, h: 8, color: "#2196F3", icon: "🏊",
     openings: []
   },
-  { label: "جلسة خارجية 4×5", cat: "خارجي", w: 4, h: 5, color: "#D8F0D0", icon: "🌿",
+  { label: "جلسة خارجية 4×5", cat: "خارجي", w: 4, h: 5, color: "#4CAF50", icon: "🌿",
     openings: []
   },
-  { label: "حديقة 6×8", cat: "خارجي", w: 6, h: 8, color: "#C0E8B0", icon: "🌳",
+  { label: "حديقة 6×8", cat: "خارجي", w: 6, h: 8, color: "#388E3C", icon: "🌳",
     openings: []
   },
-  { label: "موقف سيارة 3×6", cat: "خارجي", w: 3, h: 6, color: "#D8D8D8", icon: "🚗",
+  { label: "موقف سيارة 3×6", cat: "خارجي", w: 3, h: 6, color: "#757575", icon: "🚗",
     openings: []
   },
-  { label: "موقف سيارتين 6×6", cat: "خارجي", w: 6, h: 6, color: "#D8D8D8", icon: "🚗",
+  { label: "موقف سيارتين 6×6", cat: "خارجي", w: 6, h: 6, color: "#757575", icon: "🚗",
     openings: []
   },
-  { label: "مدخل سيارة 4×8", cat: "خارجي", w: 4, h: 8, color: "#E0E0D0", icon: "🏠",
+  { label: "مدخل سيارة 4×8", cat: "خارجي", w: 4, h: 8, color: "#8D8D7A", icon: "🏠",
     openings: []
   },
-  { label: "ملعب أطفال 5×5", cat: "خارجي", w: 5, h: 5, color: "#E8F0C0", icon: "🎠",
+  { label: "ملعب أطفال 5×5", cat: "خارجي", w: 5, h: 5, color: "#8BC34A", icon: "🎠",
     openings: []
   },
-  { label: "شرفة 2×4", cat: "خارجي", w: 2, h: 4, color: "#D8F0D0", icon: "🌺",
+  { label: "شرفة 2×4", cat: "خارجي", w: 2, h: 4, color: "#4CAF50", icon: "🌺",
     openings: []
   },
-  { label: "شرفة 3×5", cat: "خارجي", w: 3, h: 5, color: "#D8F0D0", icon: "🌺",
+  { label: "شرفة 3×5", cat: "خارجي", w: 3, h: 5, color: "#4CAF50", icon: "🌺",
     openings: []
   },
-  { label: "ملحق خارجي 3×4", cat: "خارجي", w: 3, h: 4, color: "#E0E8D8", icon: "🏚️",
+  { label: "ملحق خارجي 3×4", cat: "خارجي", w: 3, h: 4, color: "#7CB342", icon: "🏚️",
     openings: [{ side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" }]
   },
   // ===== مجالس إضافية =====
-  { label: "مجلس 4×5", cat: "مجالس", w: 4, h: 5, color: "#E8D5B7", icon: "🛋️",
+  { label: "مجلس 4×5", cat: "مجالس", w: 4, h: 5, color: "#D4A96A", icon: "🛋️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مجلس 5×5", cat: "مجالس", w: 5, h: 5, color: "#E8D5B7", icon: "🛋️",
+  { label: "مجلس 5×5", cat: "مجالس", w: 5, h: 5, color: "#D4A96A", icon: "🛋️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.0, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مجلس كبير 8×10", cat: "مجالس", w: 8, h: 10, color: "#DEC89A", icon: "🏛️",
+  { label: "مجلس كبير 8×10", cat: "مجالس", w: 8, h: 10, color: "#B8892A", icon: "🏛️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.8, type: "door", doorType: "double" },
       { side: "left", pos: 0.3, width: 2.5, type: "window", windowType: "panoramic" },
@@ -401,100 +401,100 @@ const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: s
     ]
   },
   // ===== معيشة إضافية =====
-  { label: "معيشة 3×4", cat: "معيشة", w: 3, h: 4, color: "#D4E8D5", icon: "📺",
+  { label: "معيشة 3×4", cat: "معيشة", w: 3, h: 4, color: "#5BA85E", icon: "📺",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
     ]
   },
-  { label: "معيشة 7×8", cat: "معيشة", w: 7, h: 8, color: "#C0DCC0", icon: "🏡",
+  { label: "معيشة 7×8", cat: "معيشة", w: 7, h: 8, color: "#3D8B40", icon: "🏡",
     openings: [
       { side: "bottom", pos: 0.3, width: 1.0, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 2.5, type: "window", windowType: "panoramic" },
     ]
   },
   // ===== نوم إضافية =====
-  { label: "غرفة نوم 2.5×3.5", cat: "نوم", w: 2.5, h: 3.5, color: "#E8D5D5", icon: "🛏️",
+  { label: "غرفة نوم 2.5×3.5", cat: "نوم", w: 2.5, h: 3.5, color: "#C06080", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
-  { label: "غرفة نوم 5×5", cat: "نوم", w: 5, h: 5, color: "#D5D4E8", icon: "🛏️",
+  { label: "غرفة نوم 5×5", cat: "نوم", w: 5, h: 5, color: "#7B68C8", icon: "🛏️",
     openings: [
       { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
     ]
   },
   // ===== حمام إضافي =====
-  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#D5E8E4", icon: "🚿",
+  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#2A9D8F", icon: "🚿",
     openings: [{ side: "bottom", pos: 0.5, width: 0.7, type: "door", doorType: "single" }]
   },
-  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#D5E8E4", icon: "🚿",
+  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#2A9D8F", icon: "🚿",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "حمام 3×4", cat: "حمام", w: 3, h: 4, color: "#C8E0DC", icon: "🛁",
+  { label: "حمام 3×4", cat: "حمام", w: 3, h: 4, color: "#1A8070", icon: "🛁",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.6, type: "window", windowType: "standard" },
     ]
   },
-  { label: "حمام ماستر 3×5", cat: "حمام", w: 3, h: 5, color: "#B8D8D4", icon: "🛁",
+  { label: "حمام ماستر 3×5", cat: "حمام", w: 3, h: 5, color: "#0D6E62", icon: "🛁",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
   // ===== دريسينج إضافي =====
-  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#E4D5E8", icon: "👗",
+  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#9B59B6", icon: "👗",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "دريسينج 2.5×3", cat: "دريسينج", w: 2.5, h: 3, color: "#E4D5E8", icon: "👗",
+  { label: "دريسينج 2.5×3", cat: "دريسينج", w: 2.5, h: 3, color: "#9B59B6", icon: "👗",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "دريسينج 4×5", cat: "دريسينج", w: 4, h: 5, color: "#D8C8E0", icon: "👔",
+  { label: "دريسينج 4×5", cat: "دريسينج", w: 4, h: 5, color: "#7D3C98", icon: "👔",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
   // ===== مطبخ إضافي =====
-  { label: "مطبخ 2×2", cat: "مطبخ", w: 2, h: 2, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 2×2", cat: "مطبخ", w: 2, h: 2, color: "#E07B39", icon: "🍳",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E8E4D5", icon: "🍳",
+  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E07B39", icon: "🍳",
     openings: [
       { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
       { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
     ]
   },
-  { label: "مطبخ مفتوح 5×5", cat: "مطبخ", w: 5, h: 5, color: "#D8D4B8", icon: "🍽️",
+  { label: "مطبخ مفتوح 5×5", cat: "مطبخ", w: 5, h: 5, color: "#B85A18", icon: "🍽️",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "panoramic" },
     ]
   },
   // ===== ردهة إضافية =====
-  { label: "ممر 0.9×3", cat: "ردهة", w: 0.9, h: 3, color: "#F0EAD8", icon: "↕️" },
-  { label: "ممر 1×4", cat: "ردهة", w: 1, h: 4, color: "#F0EAD8", icon: "↕️" },
-  { label: "سلالم 2×4", cat: "ردهة", w: 2, h: 4, color: "#E8E0D0", icon: "🪜",
+  { label: "ممر 0.9×3", cat: "ردهة", w: 0.9, h: 3, color: "#A0845C", icon: "↕️" },
+  { label: "ممر 1×4", cat: "ردهة", w: 1, h: 4, color: "#A0845C", icon: "↕️" },
+  { label: "سلالم 2×4", cat: "ردهة", w: 2, h: 4, color: "#8B6914", icon: "🪜",
     openings: []
   },
-  { label: "سلالم 3×5", cat: "ردهة", w: 3, h: 5, color: "#E8E0D0", icon: "🪜",
+  { label: "سلالم 3×5", cat: "ردهة", w: 3, h: 5, color: "#8B6914", icon: "🪜",
     openings: []
   },
   // ===== خدمات إضافية =====
-  { label: "مطبخ خدمات 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5", icon: "🍽️",
+  { label: "مطبخ خدمات 2×3", cat: "خدمات", w: 2, h: 3, color: "#6B8E5A", icon: "🍽️",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "غرفة تقنية 2×2", cat: "خدمات", w: 2, h: 2, color: "#D0E0D0", icon: "💻",
+  { label: "غرفة تقنية 2×2", cat: "خدمات", w: 2, h: 2, color: "#4A6A38", icon: "💻",
     openings: [{ side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
   // ===== مكتب إضافي =====
-  { label: "مكتب 2×3", cat: "مكتب", w: 2, h: 3, color: "#D8E8F0", icon: "💼",
+  { label: "مكتب 2×3", cat: "مكتب", w: 2, h: 3, color: "#2980B9", icon: "💼",
     openings: [{ side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" }]
   },
-  { label: "مكتب 5×6", cat: "مكتب", w: 5, h: 6, color: "#C8D8E8", icon: "🏢",
+  { label: "مكتب 5×6", cat: "مكتب", w: 5, h: 6, color: "#1A6A9A", icon: "🏢",
     openings: [
       { side: "bottom", pos: 0.5, width: 1.0, type: "door", doorType: "double" },
       { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
@@ -550,7 +550,7 @@ const AC_TYPES: { type: ACType; label: string; symbol: string; color: string }[]
   { type: "cassette", label: "كاسيت", symbol: "⊞", color: "#9b59b6" },
 ];
 
-const ROOM_COLORS = ["#E8D5B7","#D4E8D5","#D5D4E8","#E8D5D5","#E8E4D5","#D5E8E4","#E4D5E8","#E8E0D5","#DDE8D5","#F0EAD8"];
+const ROOM_COLORS = ["#D4A96A","#5BA85E","#7B68C8","#C06080","#E07B39","#2A9D8F","#9B59B6","#8B6914","#6B8E5A","#A0845C"];
 const SCALE = 60; // px per meter
 const GRID_SIZE = 0.5; // snap to 0.5m grid
 
@@ -2105,17 +2105,17 @@ export default function VoiceDesigner() {
                 <div className="grid grid-cols-3 gap-2">
                   {ROOM_LIBRARY.filter(r => r.cat === libCategory).map(preset => (
                     <button key={preset.label} onClick={() => { addFromLibrary(preset); setShowLibrary(false); }}
-                      className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border-2 border-[#e8d9c0] hover:border-[#C9A84C] hover:bg-[#faf6f0] transition-all active:scale-95">
-                      {/* Color preview */}
-                      <div className="w-full aspect-square rounded-xl flex items-center justify-center text-2xl relative overflow-hidden"
-                        style={{ backgroundColor: preset.color + 'cc' }}>
-                        <span className="text-2xl">{preset.icon || '🏠'}</span>
-                        {/* Scale indicator */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/10 text-[7px] text-center font-bold text-[#3d2a0a] py-0.5">
-                          {preset.w}×{preset.h}م
-                        </div>
+                      className="flex flex-col rounded-2xl border-2 border-[#e8d9c0] hover:border-[#C9A84C] transition-all active:scale-95 overflow-hidden">
+                      {/* Color block with icon */}
+                      <div className="w-full flex flex-col items-center justify-center gap-1 py-4"
+                        style={{ backgroundColor: preset.color }}>
+                        <span className="text-3xl leading-none drop-shadow-sm">{preset.icon || '🏠'}</span>
+                        <span className="text-[10px] font-black text-white drop-shadow">{preset.w}×{preset.h}م</span>
                       </div>
-                      <p className="text-[9px] font-bold text-[#5C3D11] text-center leading-tight">{preset.label}</p>
+                      {/* Label */}
+                      <div className="bg-white px-1 py-1.5">
+                        <p className="text-[10px] font-black text-[#5C3D11] text-center leading-tight">{preset.label}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
