@@ -1358,13 +1358,32 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      // قاعدة تغيير العناصر الهيكلية — ذكي تلقائياً
-      // الافتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ والفتحات تلقائياً (سلوك معماري صحيح)
-      // عند منح حرية النظر: م. سارة تستطيع اقتراح تغييرات معمارية وفق تقديرها
-      const allowStructuralFreedom = lockStructuralElements?.enabled === true && lockStructuralElements?.allowPlatformFreedom === true;
-      const doorChangeRule = allowStructuralFreedom
-        ? `🏗️ منحت م. سارة حرية النظر المعماري الكاملة: يمكنكِ اقتراح تغيير مواضع الأبواب والنوافذ والفتحات إذا كان ذلك يخدم التصميم بشكل أفضل. أبدعي بحرية معمارية كاملة على جميع العناصر.`
-        : `🔒 سلوك معماري ذكي: حافظي على مواضع الأبواب والنوافذ والفتحات الموجودة في الصورة تماماً بلا تغيير (هذا هو السلوك المعماري الصحيح). أبدعي بحرية كاملة في: الألوان، الأثاث، الأرضيات، الأسقف، الإضاءة، التشطيبات.`;
+      // قاعدة تغيير العناصر الهيكلية — م. سارة حرة تماماً بالافتراضي
+      // الافتراضي: حرية إبداعية مطلقة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والفتحات
+      // القيد: فقط ما يحدده المالك صراحةً بأنه لا يتبدّل
+      const userConstraints = lockStructuralElements?.enabled === true ? {
+        doors: lockStructuralElements.lockDoors,
+        windows: lockStructuralElements.lockWindows,
+        openings: lockStructuralElements.lockOpenings,
+        columns: lockStructuralElements.lockColumns,
+      } : null;
+
+      let doorChangeRule: string;
+      if (!userConstraints) {
+        // الافتراضي: حرية مطلقة
+        doorChangeRule = `🎨 م. سارة حرة تماماً: لكِ صلاحية معمارية كاملة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والفتحات والجدران والأسقف. إذا كان تغيير موضع باب أو إضافة نافذة يخدم التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.`;
+      } else {
+        const lockedItems: string[] = [];
+        if (userConstraints.doors) lockedItems.push('الأبواب');
+        if (userConstraints.windows) lockedItems.push('النوافذ');
+        if (userConstraints.openings) lockedItems.push('الفتحات');
+        if (userConstraints.columns) lockedItems.push('الأعمدة');
+        if (lockedItems.length > 0) {
+          doorChangeRule = `🔒 قرار المالك: حافظي على مواضع وأحجام ${lockedItems.join('، ')} تماماً بلا تغيير (هذا قرار المالك ويجب احترامه). أبدعي بحرية كاملة في كل شيء آخر: الألوان، المواد، الأثاث، الإضاءة، التشطيبات.`;
+        } else {
+          doorChangeRule = `🎨 م. سارة حرة تماماً: لكِ صلاحية معمارية كاملة على جميع عناصر الفضاء.`;
+        }
+      }
 
       // بناء تعليمات المرجع إذا وجد
       const referenceInstruction = referenceData
@@ -1384,22 +1403,24 @@ ${colorText}
 - التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
 - تصميم الواجهات الخارجية: الكلادينج، الطلاء الخارجي، الإضاءة الخارجية، المداخل
 - تصميم اللاندسكيب: الحدائق، الممرات، الفناء، المسابح، الجلسات الخارجية، النباتات
-- تصميم الفضاءات التجارية الخارجية: واجهات المحلات، المداخل، الأسطح
+- تصميم الفضاءات الحضرية: الشوارع، الممشاة، الأرصفة، الساحات العامة، واجهات المحلات
 - الجدوى الاقتصادية: التكاليف الدقيقة بالسوق الخليجي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
 
 🌿 SPACE INTELLIGENCE (ذكاء الفضاء):
-عند تحليل الصورة، حددي نوع الفضاء أولاً:
-- فضاء داخلي: غرفة معيشة، غرفة نوم، مطبخ، حمام، مجلس، مكتب، ممر داخلي، مدخل
-- واجهة خارجية: واجهة منزل، واجهة مبنى، مدخل خارجي، بوابة
-- لاندسكيب: حديقة، فناء، ممر خارجي، مسبح، سطح، شرفة، تراس
+عند تحليل الصورة، حددي نوع الفضاء أولاً وتعاملي معه بمنهجيته الصحيحة:
+- فضاء داخلي: غرفة معيشة، غرفة نوم، مطبخ، حمام، مجلس، مكتب، ممر داخلي، مدخل → صمّمي كتصميم داخلي بأثاث وإضاءة وتشطيبات
+- واجهة خارجية: واجهة منزل، واجهة مبنى، مدخل خارجي، بوابة → صمّمي كواجهة معمارية: كلادينج، نوافذ، إضاءة خارجية، زراعة أمامية
+- لاندسكيب: حديقة، فناء، مسبح، سطح، شرفة، تراس → صمّمي كلاندسكيب: نباتات، ممرات، مياه، جلسات خارجية
+- فضاء حضري: شارع، طريق، ممشى، رصيف، ساحة عامة → صمّمي كتصميم حضري: بلاط أرضية، أشجار، إضاءة عمودية، مقاعد، أحواض، واجهات محلات
 كل نوع فضاء له قواعد تصميم وبنود BOQ مختلفة — طبّقيها بدقة.
 
-🎨 FULL ARCHITECTURAL FREEDOM (صلاحية معمارية كاملة):
-م. سارة لها صلاحية كاملة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والجدران والفتحات. إذا كان تغيير موقع باب أو إضافة نافذة يحسّن التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.
+🎨 FULL ARCHITECTURAL FREEDOM (صلاحية معمارية كاملة — الافتراضي):
+م. سارة حرة تماماً على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والجدران والفتحات. إذا كان تغيير موضع باب أو إضافة نافذة يحسّن التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.
+القيد الوحيد: فقط ما يحدده المالك صراحةً بأنه لا يتبدّل — وستجدينه في تعليمات المستخدم أدناه.
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
-أنتِ حرة تماماً في تغيير كل شيء في الغرفة: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
-لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدأين من صفحة بيضاء.
+أنتِ حرة تماماً في تغيير كل شيء في الفضاء: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات، الأبواب، النوافذ.
+لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدئين من صفحة بيضاء.
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
 2. نفس أبعاد الفضاء بالضبط — لا تغيير في أبعاد الفضاء أو نسبه
@@ -1699,15 +1720,19 @@ ${structuralAnalysisPrompt}
           
           // كشف نوع الفضاء من بيانات التحليل
           const spaceTypeStr = String(spaceAnalysisData.spaceType || "").toLowerCase();
-          const isExteriorFacade = /واجهة|خارجي|مدخل|مبنى|facade|exterior|building|front/.test(spaceTypeStr);
-          const isLandscape = /حديقة|لاندسكيب|مسبح|جلسة خارجية|ممر|ساحة|garden|landscape|pool|outdoor|terrace|pathway/.test(spaceTypeStr);
-          const isInterior = !isExteriorFacade && !isLandscape;
+          const isExteriorFacade = /واجهة|خارجي|مدخل|مبنى|بوابة|facade|exterior|building|front|entrance/.test(spaceTypeStr);
+          const isStreet = /شارع|طريق|ممشى|رصيف|حضري|عام|منطقة تجارية|سوق|موقف|street|road|walkway|sidewalk|alley|plaza|square|urban|commercial|parking|public/.test(spaceTypeStr);
+          const isLandscape = /حديقة|لاندسكيب|مسبح|جلسة خارجية|ممر|ساحة|فناء|سطح|شرفة|تراس|garden|landscape|pool|outdoor|terrace|pathway|courtyard|rooftop|balcony/.test(spaceTypeStr);
+          const isInterior = !isExteriorFacade && !isStreet && !isLandscape;
           
           let generatedPrompt: string;
           
           if (isExteriorFacade) {
             // برومبت واجهات المباني
             generatedPrompt = `Photorealistic architectural exterior facade redesign. ${cameraNote} ${roomNote} BOLD COMPLETE FACADE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM on all facade elements: cladding materials (stone/wood/metal/glass/concrete), window styles and proportions, entrance design, lighting fixtures, landscaping in front. New color palette: ${palette}. New materials: ${mats}. Transform the facade completely - change cladding, update windows, redesign entrance, add architectural details, improve lighting. Make it look like a LUXURY ARCHITECTURAL MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional architectural photography, no people, no text.`;
+          } else if (isStreet) {
+            // برومبت تصميم الشوارع والممشيات الحضرية
+            generatedPrompt = `Photorealistic urban street and streetscape redesign. ${cameraNote} ${roomNote} BOLD COMPLETE STREET TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. This is an OUTDOOR URBAN SPACE - NOT an interior. FULL CREATIVE FREEDOM on all street elements: pavement materials (stone/brick/concrete/wood decking), street trees and planting (palms/ornamental trees/flower beds/hedges), street furniture (benches/bollards/planters/bike racks), lighting (lamp posts/ground lights/string lights/feature lighting), water features (fountains/streams/reflecting pools), public art and decorative elements, building facade treatments visible from street. New color palette: ${palette}. New materials: ${mats}. Transform the street into a vibrant urban destination - lush greenery, beautiful paving, ambient lighting, comfortable seating areas, activated ground floor facades. Make it look like a LUXURY URBAN DESIGN MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional urban photography, no people, no text.`;
           } else if (isLandscape) {
             // برومبت لاندسكيب وفضاءات خارجية
             generatedPrompt = `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
@@ -1745,6 +1770,7 @@ ${structuralAnalysisPrompt}
           const spaceTypeForBOQ = String(spaceAnalysisData.spaceType || "").toLowerCase();
           const isFacadeSpace = /واجهة|خارجي|مدخل|مبنى|facade|exterior|building|front/.test(spaceTypeForBOQ);
           const isPoolSpace = /مسبح|pool|swimming/.test(spaceTypeForBOQ);
+          const isStreetSpace = /شارع|طريق|ممشى|رصيف|street|road|walkway|sidewalk|alley|plaza|square/.test(spaceTypeForBOQ);
           const isLandscapeSpace = /حديقة|لاندسكيب|جلسة خارجية|ممر|ساحة|garden|landscape|outdoor|terrace|pathway/.test(spaceTypeForBOQ);
           
           let boqResult;
@@ -1752,6 +1778,8 @@ ${structuralAnalysisPrompt}
             boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), "facade", aiBoqRaw, boqSource);
           } else if (isPoolSpace) {
             boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), "pool", aiBoqRaw, boqSource);
+          } else if (isStreetSpace) {
+            boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), "pathway", aiBoqRaw, boqSource);
           } else if (isLandscapeSpace) {
             const subCat = /ممر|pathway/.test(spaceTypeForBOQ) ? "pathway" : "landscape";
             boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), subCat, aiBoqRaw, boqSource);

@@ -2787,13 +2787,13 @@ export default function SmartCapture() {
                 className="w-full flex items-center justify-between px-4 py-3.5"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base">{allowPlatformFreedom ? '🏗️' : '🔒'}</span>
+                  <span className="text-base">{allowPlatformFreedom ? '🔓' : '🔒'}</span>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#5C3D11]">حرية النظر المعماري</p>
+                    <p className="text-sm font-bold text-[#5C3D11]">تحديد قيود التصميم</p>
                     <p className="text-[10px] text-[#8B6914]/60">
                       {allowPlatformFreedom
-                        ? '🏗️ م. سارة تستطيع اقتراح تغيير مواضع الأبواب والنوافذ وفق تقديرها'
-                        : 'افتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ تلقائياً'}
+                        ? '🔓 م. سارة حرة تماماً — تغيّر كل شيء بما فيها الأبواب والنوافذ وفق تقديرها'
+                        : '🔒 حدد عناصر ثابتة لا تتغيّر — م. سارة تبدع في كل ما عداها'}
                     </p>
                   </div>
                 </div>
@@ -2806,11 +2806,28 @@ export default function SmartCapture() {
                 </div>
               </button>
 
-              {allowPlatformFreedom && (
+              {!allowPlatformFreedom && (
                 <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
                   <div className="bg-amber-50 rounded-xl px-3 py-2.5 border border-amber-200">
-                    <p className="text-[10px] text-amber-700 text-center leading-relaxed">
-                      🏗️ م. سارة ستستخدم خبرتها المعمارية لاقتراح تغييرات هيكلية إذا كانت تخدم التصميم — مثل نقل باب أو توسيع فتحة
+                    <p className="text-[10px] text-amber-700 text-right leading-relaxed mb-2">
+                      🔒 ماذا تريد تثبيته في جميع التصاميم؟
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {['الأبواب', 'النوافذ', 'الفتحات', 'الأعمدة', 'الدرج الخارجي'].map(el => (
+                        <button key={el} className="text-[10px] bg-white border border-amber-300 text-amber-700 rounded-lg px-2 py-1 active:bg-amber-100">
+                          {el}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-amber-600/70 text-center mt-2">م. سارة تحترم هذه العناصر وتبدع في كل ما عداها</p>
+                  </div>
+                </div>
+              )}
+              {allowPlatformFreedom && (
+                <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
+                  <div className="bg-green-50 rounded-xl px-3 py-2.5 border border-green-200">
+                    <p className="text-[10px] text-green-700 text-center leading-relaxed">
+                      🔓 م. سارة حرة تماماً — تغيّر كل شيء بما فيها الأبواب والنوافذ وفق تقديرها المعماري
                     </p>
                   </div>
                 </div>
