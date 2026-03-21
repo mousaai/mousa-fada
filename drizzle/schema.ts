@@ -10,6 +10,10 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  // MOUSA.AI integration
+  mousaUserId: int("mousaUserId"),
+  mousaBalance: int("mousaBalance").default(0),
+  mousaLastSync: timestamp("mousaLastSync"),
 });
 
 export type User = typeof users.$inferSelect;

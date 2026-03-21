@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
 
 // ===== Types =====
 type CaptureMode = "single";
@@ -2376,6 +2377,7 @@ function VideoRecorder({
 export default function SmartCapture() {
   const [, navigate] = useLocation();
   const { data: currentUser } = trpc.auth.me.useQuery();
+  const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
   // UI state
   const [step, setStep] = useState<"select" | "capture" | "filter" | "analyzing" | "results">("select");
@@ -2465,7 +2467,9 @@ export default function SmartCapture() {
   const refListQuery = trpc.designReference.list.useQuery(undefined, { enabled: useReference });
 
   const analyzeAndGenerateMutation = trpc.analyzeAndGenerateIdeas.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // خصم الكريدت بعد نجاح التحليل
+      await deduct("analyzePhoto").catch(() => {});
       if (data.ideas && Array.isArray(data.ideas)) {
         setIdeas(data.ideas.map((idea: Partial<DesignIdea> & { id?: string }) => ({
           id: idea.id || Math.random().toString(36).slice(2),
@@ -2557,6 +2561,13 @@ export default function SmartCapture() {
   };
 
   const startAnalysis = async (images: string[]) => {
+    // التحقق من الرصيد قبل التحليل
+    if (requiresMousa && !canAfford("analyzePhoto")) {
+      toast.error(`رصيدك غير كافٍ (${balance ?? 0} كريدت). تحليل الصورة يكلف 20 كريدت.`, {
+        action: upgradeUrl ? { label: "شراء كريدت", onClick: () => window.open(upgradeUrl, "_blank") } : undefined,
+      });
+      return;
+    }
     setStep("analyzing");
     const budget = BUDGET_MAP[budgetLevel];
     const customAmount = budgetAmount ? parseInt(budgetAmount.replace(/,/g, "")) : null;

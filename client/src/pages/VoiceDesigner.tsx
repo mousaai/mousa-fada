@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import PlanRenderResult from "@/components/PlanRenderResult";
+import { useMousaCredit } from "@/components/CreditBadge";
 
 // ===== Types =====
 type DrawTool = "select" | "wall" | "door" | "window" | "electrical" | "ac" | "room" | "pan";
@@ -1237,6 +1238,7 @@ function hitTest(el: DrawElement, px: number, py: number, sc: number, offset: Po
 export default function VoiceDesigner() {
   const [, navigate] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
   const [elements, setElements] = useState<DrawElement[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -2650,6 +2652,13 @@ export default function VoiceDesigner() {
 
             <button
               onClick={async () => {
+                // التحقق من الرصيد قبل توليد الرندر
+                if (requiresMousa && !canAfford("generate3D")) {
+                  toast.error(`رصيدك غير كافٍ (${balance ?? 0} كريدت). توليد الرندر 3D يكلف 30 كريدت.`, {
+                    action: upgradeUrl ? { label: "شراء كريدت", onClick: () => window.open(upgradeUrl, "_blank") } : undefined,
+                  });
+                  return;
+                }
                 setIs3DLoading(true);
                 setRender3DUrl(null);
                 try {
@@ -2916,6 +2925,8 @@ export default function VoiceDesigner() {
                   const data = await res.json();
                   const url = data?.result?.data?.json?.url || data?.result?.data?.url;
                   if (url) {
+                    // خصم الكريدت بعد نجاح الرندر
+                    await deduct("generate3D").catch(() => {});
                     setRender3DUrl(url);
                     // فتح صفحة النتائج الكاملة
                     setShow3DModal(false);

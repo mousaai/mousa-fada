@@ -624,3 +624,14 @@
 
 ## الإصدار 39.0 — إصلاح PDF العربي في PlanRenderResult
 - [x] إصلاح مشكلة النص العربي في PDF باستخدام html2canvas بدلاً من helvetica
+
+## الإصدار 40.0 — تكامل MOUSA.AI Credit System
+- [x] إضافة MOUSA_API_KEY للـ secrets
+- [x] بناء server/mousa.ts helper (verifyToken, checkBalance, deductCredits, getUserInfo)
+- [x] تحديث schema: إضافة mousaUserId + mousaBalance + mousaToken لجدول users
+- [x] tRPC procedures: mousa.verifyToken + mousa.checkBalance + mousa.deductCredits + mousa.getBalance
+- [x] معالجة URL token عند الدخول من mousa.ai (?token=...)
+- [x] مكوّن CreditBadge + useMousaCredit hook لعرض الرصيد في الـ header
+- [x] ربط خصم الكريدت بكل ميزة AI (SmartCapture 20، DesignIdeas 20، 3D Render 30)
+- [x] شاشة "رصيد غير كافٍ" مع رابط شراء كريدت
+- [x] كتابة 9 اختبارات vitest للـ mousa helper (كلها ناجحة)

@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE users \nADD COLUMN IF NOT EXISTS mousaUserId INT,\nADD COLUMN IF NOT EXISTS mousaBalance INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS mousaLastSync TIMESTAMP NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3RYRgiKBksaJ9ku.7d358fa033cf --database UmC8qBss9ULDD4nzp9QKTw --execute \nALTER TABLE users \nADD COLUMN IF NOT EXISTS mousaUserId INT,\nADD COLUMN IF NOT EXISTS mousaBalance INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS mousaLastSync TIMESTAMP NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 16538
+}

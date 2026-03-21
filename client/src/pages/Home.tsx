@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
 import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, ShoppingBag } from "lucide-react";
+import { CreditBadge } from "@/components/CreditBadge";
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -202,6 +203,7 @@ export default function Home() {
                 <p className="text-xs text-[#8B6914]/70">مرحباً</p>
                 <p className="text-sm font-bold text-[#5C3D11]">{user?.name?.split(" ")[0] || "مستخدم"}</p>
               </div>
+              <CreditBadge />
             </div>
           ) : (
             <button

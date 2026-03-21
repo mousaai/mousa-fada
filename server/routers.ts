@@ -18,6 +18,10 @@ import {
   createReport, getProjectReports
 } from "./db";
 import { nanoid } from "nanoid";
+import { verifyMousaToken, checkMousaBalance, deductMousaCredits, CREDIT_COSTS, type CreditOperation } from "./mousa";
+import { eq } from "drizzle-orm";
+import { getDb } from "./db";
+import { users } from "../drizzle/schema";
 
 // ===== نوع بيانات منتجات بنيان =====
 interface BonyanProduct {
@@ -2888,5 +2892,154 @@ ${structuralAnalysisPrompt}
         return { success: false, data: null };
       }
     }),
+  // ===== MOUSA.AI Credit System =====
+  mousa: router({
+    // التحقق من توكن MOUSA.AI عند الدخول من بطاقة المنصة
+    verifyToken: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const data = await verifyMousaToken(input.token);
+          if (!data.valid) {
+            return { success: false, error: "توكن غير صالح" };
+          }
+          // إذا كان المستخدم مسجلاً، نحدّث بيانات MOUSA.AI
+          if (ctx.user) {
+            const db = await getDb();
+            if (db) {
+              await db.update(users)
+                .set({
+                  mousaUserId: data.userId,
+                  mousaBalance: data.balance,
+                  mousaLastSync: new Date(),
+                })
+                .where(eq(users.id, ctx.user.id));
+            }
+          }
+          return {
+            success: true,
+            mousaUserId: data.userId,
+            userName: data.userName,
+            balance: data.balance,
+            platformCost: data.platformCost,
+            sufficient: data.sufficient,
+          };
+        } catch (err) {
+          console.error("[mousa.verifyToken] Error:", err);
+          return { success: false, error: "فشل التحقق من التوكن" };
+        }
+      }),
+
+    // التحقق من الرصيد قبل تنفيذ عملية AI
+    checkBalance: protectedProcedure
+      .input(z.object({
+        operation: z.enum(["analyzePhoto", "generateIdeas", "applyStyle", "refineDesign", "generate3D", "generatePlanDesign", "generatePDF", "voiceDesign"]),
+      }))
+      .query(async ({ input, ctx }) => {
+        try {
+          const mousaUserId = ctx.user.mousaUserId;
+          if (!mousaUserId) {
+            // المستخدم لم يدخل من MOUSA.AI — نسمح بالاستخدام المجاني
+            return { sufficient: true, balance: null, cost: CREDIT_COSTS[input.operation], requiresMousa: false };
+          }
+          const data = await checkMousaBalance(mousaUserId);
+          const cost = CREDIT_COSTS[input.operation];
+          return {
+            sufficient: data.balance >= cost,
+            balance: data.balance,
+            cost,
+            upgradeUrl: data.upgradeUrl,
+            requiresMousa: true,
+          };
+        } catch (err) {
+          console.error("[mousa.checkBalance] Error:", err);
+          // في حالة خطأ، نسمح بالاستخدام
+          return { sufficient: true, balance: null, cost: CREDIT_COSTS[input.operation], requiresMousa: false };
+        }
+      }),
+
+    // خصم الكريدت بعد نجاح عملية AI
+    deductCredits: protectedProcedure
+      .input(z.object({
+        operation: z.enum(["analyzePhoto", "generateIdeas", "applyStyle", "refineDesign", "generate3D", "generatePlanDesign", "generatePDF", "voiceDesign"]),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const mousaUserId = ctx.user.mousaUserId;
+          if (!mousaUserId) {
+            return { success: true, newBalance: null, deducted: 0, requiresMousa: false };
+          }
+          const cost = CREDIT_COSTS[input.operation];
+          const operationLabels: Record<CreditOperation, string> = {
+            analyzePhoto: "تحليل صورة داخلية",
+            generateIdeas: "توليد أفكار تصميم",
+            applyStyle: "تغيير نمط التصميم",
+            refineDesign: "تحسين التصميم",
+            generate3D: "توليد رندر 3D",
+            generatePlanDesign: "تحليل مخطط المسقط",
+            generatePDF: "تصدير دفتر التصميم PDF",
+            voiceDesign: "تصميم صوتي بالذكاء الاصطناعي",
+          };
+          const description = input.description || operationLabels[input.operation];
+          const result = await deductMousaCredits(mousaUserId, cost, description);
+          if ("error" in result) {
+            // رصيد غير كافٍ
+            return {
+              success: false,
+              newBalance: result.currentBalance,
+              deducted: 0,
+              requiresMousa: true,
+              upgradeUrl: result.upgradeUrl,
+              error: result.error,
+            };
+          }
+          // تحديث الرصيد المحلي في قاعدة البيانات
+          const db2 = await getDb();
+          if (db2) {
+            await db2.update(users)
+              .set({ mousaBalance: result.newBalance, mousaLastSync: new Date() })
+              .where(eq(users.id, ctx.user.id));
+          }
+          return {
+            success: true,
+            newBalance: result.newBalance,
+            deducted: result.deducted,
+            requiresMousa: true,
+          };
+        } catch (err) {
+          console.error("[mousa.deductCredits] Error:", err);
+          return { success: true, newBalance: null, deducted: 0, requiresMousa: false };
+        }
+      }),
+
+    // جلب الرصيد الحالي للمستخدم
+    getBalance: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          const mousaUserId = ctx.user.mousaUserId;
+          if (!mousaUserId) {
+            return { balance: null, requiresMousa: false, upgradeUrl: null };
+          }
+          const data = await checkMousaBalance(mousaUserId);
+          // تحديث الرصيد المحلي
+          const db3 = await getDb();
+          if (db3) {
+            await db3.update(users)
+              .set({ mousaBalance: data.balance, mousaLastSync: new Date() })
+              .where(eq(users.id, ctx.user.id));
+          }
+          return {
+            balance: data.balance,
+            requiresMousa: true,
+            upgradeUrl: data.upgradeUrl,
+            platformCost: data.platformCost,
+          };
+        } catch (err) {
+          console.error("[mousa.getBalance] Error:", err);
+          return { balance: ctx.user.mousaBalance ?? null, requiresMousa: false, upgradeUrl: null };
+        }
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

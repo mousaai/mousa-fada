@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
 
 // ===== Types =====
 interface DesignIdea {
@@ -255,6 +256,7 @@ function IdeaCard({
 // ===== Main Page =====
 export default function DesignIdeas() {
   const [, navigate] = useLocation();
+  const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
   // حالة الفلاتر
   const [selectedStyles, setSelectedStyles] = useState<StyleId[]>(["modern", "gulf", "minimal"]);
@@ -276,7 +278,8 @@ export default function DesignIdeas() {
   });
 
   const generateIdeasMutation = trpc.generateDesignIdeas.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      await deduct("generateIdeas").catch(() => {});
       if (data.ideas && Array.isArray(data.ideas)) {
         setIdeas(data.ideas.map((idea: Omit<DesignIdea, 'id'> & { id?: string }) => ({
           ...idea,
@@ -317,6 +320,12 @@ export default function DesignIdeas() {
   const handleGenerateIdeas = useCallback(() => {
     if (selectedStyles.length === 0) {
       toast.error("اختر نمطاً واحداً على الأقل");
+      return;
+    }
+    if (requiresMousa && !canAfford("generateIdeas")) {
+      toast.error(`رصيدك غير كافٍ (${balance ?? 0} كريدت). توليد الأفكار يكلف 20 كريدت.`, {
+        action: upgradeUrl ? { label: "شراء كريدت", onClick: () => window.open(upgradeUrl, "_blank") } : undefined,
+      });
       return;
     }
     setIsLoading(true);
