@@ -984,71 +984,90 @@ function IdeaCard({
           spaceType={spaceType}
         />
 
-        {/* واجهة التحسين الذكي */}
+        {/* واجهة التحسين الذكي — inline full-screen */}
         {showRefine && idea.imageUrl && originalImageUrl && (
-          <div className="mt-3 mx-0 bg-gradient-to-br from-[#faf6f0] to-[#f0e8d8] rounded-2xl border border-[#e8d9c0] overflow-hidden">
-            <div className="px-4 py-3 bg-[#C9A84C]/10 border-b border-[#e8d9c0] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">✏️</span>
-                <span className="text-sm font-bold text-[#5C3D11]">تحسين التصميم</span>
-              </div>
-              <button onClick={() => setShowRefine(false)} className="text-[#8B6914] hover:text-[#5C3D11]">
+          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
+              <button onClick={() => { setShowRefine(false); setRefineClickX(undefined); setRefineClickY(undefined); setRefineText(""); }}
+                className="w-9 h-9 rounded-full bg-[#f0e8d8] flex items-center justify-center text-[#5C3D11]">
                 <X className="w-4 h-4" />
               </button>
+              <div className="text-center">
+                <p className="text-sm font-black text-[#5C3D11]">✏️ تحسين التصميم</p>
+                <p className="text-[10px] text-[#8B6914]/60">{idea.title}</p>
+              </div>
+              <div className="w-9" />
             </div>
 
-            {/* الصورة المولّدة مع إمكانية النقر */}
-            <div className="px-4 pt-3">
-              <p className="text-[10px] text-[#8B6914]/70 mb-2 text-center">
-                {refineClickX !== undefined ? `تم تحديد المنطقة: (${refineClickX}%, ${refineClickY}%) — اضغط مرة أخرى لتغييرها` : "اضغط على المنطقة التي تريد تحسينها (اختياري)"}
-              </p>
-              <div
-                ref={refineImageRef}
-                className="relative cursor-crosshair rounded-xl overflow-hidden border-2 border-[#C9A84C]/30"
-                onClick={handleRefineImageClick}
-              >
-                <img src={idea.imageUrl} className="w-full h-40 object-cover" alt="التصميم الحالي" />
-                {refineClickX !== undefined && refineClickY !== undefined && (
-                  <div
-                    className="absolute w-5 h-5 rounded-full border-2 border-[#C9A84C] bg-[#C9A84C]/30 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ left: `${refineClickX}%`, top: `${refineClickY}%` }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <span className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">اضغط لتحديد المنطقة</span>
+            {/* الصورة الكاملة مع إمكانية النقر */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="relative">
+                <p className="text-[10px] text-[#8B6914]/70 text-center py-2 bg-[#C9A84C]/5">
+                  {refineClickX !== undefined
+                    ? `📍 تم تحديد المنطقة (${refineClickX}%, ${refineClickY}%) — اضغط مرة أخرى لتغييرها`
+                    : 'اضغط على المنطقة التي تريد تحسينها (اختياري)'}
+                </p>
+                <div
+                  ref={refineImageRef}
+                  className="relative cursor-crosshair"
+                  onClick={handleRefineImageClick}
+                >
+                  <img src={idea.imageUrl} className="w-full object-cover" style={{ maxHeight: '55vh' }} alt="التصميم الحالي" />
+                  {refineClickX !== undefined && refineClickY !== undefined && (
+                    <div
+                      className="absolute w-8 h-8 rounded-full border-4 border-[#C9A84C] bg-[#C9A84C]/20 -translate-x-1/2 -translate-y-1/2 pointer-events-none shadow-lg"
+                      style={{ left: `${refineClickX}%`, top: `${refineClickY}%` }}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 active:opacity-100 transition-opacity">
+                    <span className="text-white text-xs bg-black/60 px-3 py-1.5 rounded-full">📍 اضغط لتحديد المنطقة</span>
+                  </div>
                 </div>
               </div>
+
+              {/* اقتراحات سريعة */}
+              <div className="px-4 pt-4">
+                <p className="text-[10px] text-[#8B6914]/60 mb-2">اقتراحات سريعة:</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {["غيّر لون الجدار", "أضف سجادة", "غيّر الإضاءة", "أضف نباتات", "غيّر الستائر", "أضف لوحة فنية"].map(hint => (
+                    <button
+                      key={hint}
+                      onClick={() => setRefineText(hint)}
+                      className={`text-[10px] px-3 py-1.5 rounded-full border transition-all active:scale-95 ${
+                        refineText === hint
+                          ? 'bg-[#C9A84C] text-white border-[#C9A84C]'
+                          : 'bg-white text-[#8B6914] border-[#e8d9c0]'
+                      }`}
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+
+                {/* حقل النص */}
+                <textarea
+                  value={refineText}
+                  onChange={e => setRefineText(e.target.value)}
+                  placeholder="صف التغيير المطلوب... مثل: غيّر لون الجدار إلى أخضر زيتوني"
+                  className="w-full text-sm border-2 border-[#e8d9c0] rounded-2xl px-4 py-3 bg-white text-[#5C3D11] placeholder-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] transition-colors"
+                  rows={3}
+                  dir="rtl"
+                  autoFocus
+                />
+              </div>
             </div>
 
-            {/* حقل وصف التحسين */}
-            <div className="px-4 pb-4 pt-3">
-              <div className="flex gap-2 mb-2">
-                {["غيّر لون الجدار", "أضف سجادة", "غيّر الإضاءة", "أضف نباتات"].map(hint => (
-                  <button
-                    key={hint}
-                    onClick={() => setRefineText(hint)}
-                    className="text-[9px] bg-[#C9A84C]/10 text-[#8B6914] px-2 py-1 rounded-full border border-[#C9A84C]/20 active:scale-95 transition-transform whitespace-nowrap"
-                  >
-                    {hint}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={refineText}
-                onChange={e => setRefineText(e.target.value)}
-                placeholder="صف التغيير المطلوب... مثل: غيّر لون الجدار إلى أخضر زيتوني"
-                className="w-full text-xs border border-[#e8d9c0] rounded-xl px-3 py-2 bg-white text-[#5C3D11] placeholder-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] mb-3"
-                rows={2}
-                dir="rtl"
-              />
+            {/* زر التطبيق */}
+            <div className="px-4 py-4 bg-white border-t border-[#e8d9c0] safe-area-pb">
               <button
                 onClick={handleRefineSubmit}
                 disabled={!refineText.trim() || isRefining}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-all"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all shadow-lg"
               >
                 {isRefining ? (
                   <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     م. سارة تحسّن التصميم...
                   </>
                 ) : (
@@ -1755,12 +1774,14 @@ export default function SmartCapture() {
   const [ideasCount, setIdeasCount] = useState(3);
   const [budgetLevel, setBudgetLevel] = useState<"economy" | "mid" | "luxury" | "premium">("mid");
   const [budgetAmount, setBudgetAmount] = useState<string>("");
-  // تثبيت العناصر الهيكلية — بقرار المستخدم (الافتراضي: حرية إبداعية كاملة)
-  const [lockStructural, setLockStructural] = useState(false);
-  const [lockDoors, setLockDoors] = useState(true);
-  const [lockWindows, setLockWindows] = useState(true);
-  const [lockOpenings, setLockOpenings] = useState(true);
-  const [lockColumns, setLockColumns] = useState(false);
+  // حرية النظر المعماري — الافتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ تلقائياً
+  const [allowPlatformFreedom, setAllowPlatformFreedom] = useState(false);
+  // متغيرات قديمة محتفظ بها للتوافق مع الكود القديم
+  const lockStructural = false;
+  const lockDoors = true;
+  const lockWindows = true;
+  const lockOpenings = true;
+  const lockColumns = false;
   const [showFilters, setShowFilters] = useState(false);
 
   // Preferred style & colors (optional filters)
@@ -1961,13 +1982,14 @@ export default function SmartCapture() {
       preferredStyle: preferredStyle || undefined,
       preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
       roomDimensions,
-      lockStructuralElements: lockStructural ? {
+      lockStructuralElements: {
         enabled: true,
-        lockDoors,
-        lockWindows,
-        lockOpenings,
-        lockColumns,
-      } : undefined,
+        lockDoors: true,
+        lockWindows: true,
+        lockOpenings: true,
+        lockColumns: false,
+        allowPlatformFreedom,
+      },
     });
   };
 
@@ -2612,65 +2634,37 @@ export default function SmartCapture() {
               )}
             </div>
 
-            {/* قسم تثبيت العناصر الهيكلية */}
+            {/* حرية النظر المعماري */}
             <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
               <button
-                onClick={() => setLockStructural(!lockStructural)}
+                onClick={() => setAllowPlatformFreedom(!allowPlatformFreedom)}
                 className="w-full flex items-center justify-between px-4 py-3.5"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base">🔒</span>
+                  <span className="text-base">{allowPlatformFreedom ? '🏗️' : '🔒'}</span>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#5C3D11]">تثبيت العناصر الهيكلية</p>
+                    <p className="text-sm font-bold text-[#5C3D11]">حرية النظر المعماري</p>
                     <p className="text-[10px] text-[#8B6914]/60">
-                      {lockStructural
-                        ? `🔒 محدد: ${[lockDoors&&'أبواب',lockWindows&&'نوافذ',lockOpenings&&'فتحات',lockColumns&&'أعمدة'].filter(Boolean).join(' • ')} — م. سارة تحترمها`
-                        : 'افتراضي: م. سارة تبدع بحرية كاملة على كل شيء'}
+                      {allowPlatformFreedom
+                        ? '🏗️ م. سارة تستطيع اقتراح تغيير مواضع الأبواب والنوافذ وفق تقديرها'
+                        : 'افتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ تلقائياً'}
                     </p>
                   </div>
                 </div>
                 <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
-                  lockStructural ? 'bg-[#C9A84C]' : 'bg-gray-200'
+                  allowPlatformFreedom ? 'bg-[#C9A84C]' : 'bg-gray-200'
                 }`}>
                   <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
-                    lockStructural ? 'left-6' : 'left-0.5'
+                    allowPlatformFreedom ? 'left-6' : 'left-0.5'
                   }`} />
                 </div>
               </button>
 
-              {lockStructural && (
-                <div className="px-4 pb-4 border-t border-[#f0e8d8] pt-3">
-                  <p className="text-[10px] text-[#8B6914]/70 mb-3 leading-relaxed">
-                    حدد العناصر التي تريد الحفاظ عليها — م. سارة ستبدع بحرية كاملة في كل شيء آخر
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { key: 'doors', label: '🚪 الأبواب', value: lockDoors, setter: setLockDoors },
-                      { key: 'windows', label: '🪟 النوافذ', value: lockWindows, setter: setLockWindows },
-                      { key: 'openings', label: '🗗️ الفتحات', value: lockOpenings, setter: setLockOpenings },
-                      { key: 'columns', label: '🏛️ الأعمدة', value: lockColumns, setter: setLockColumns },
-                    ].map(({ key, label, value, setter }) => (
-                      <button
-                        key={key}
-                        onClick={() => setter(!value)}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all ${
-                          value
-                            ? 'border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]'
-                            : 'border-[#e8d9c0] text-[#5C3D11]/50'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                          value ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-[#e8d9c0]'
-                        }`}>
-                          {value && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 bg-amber-50 rounded-xl px-3 py-2 border border-amber-200">
+              {allowPlatformFreedom && (
+                <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
+                  <div className="bg-amber-50 rounded-xl px-3 py-2.5 border border-amber-200">
                     <p className="text-[10px] text-amber-700 text-center leading-relaxed">
-                      💡 م. سارة ستحترم مواضع هذه العناصر وتبدع بحرية كاملة في: الألوان، الأثاث، الأرضيات، الإضاءة، التشطيبات
+                      🏗️ م. سارة ستستخدم خبرتها المعمارية لاقتراح تغييرات هيكلية إذا كانت تخدم التصميم — مثل نقل باب أو توسيع فتحة
                     </p>
                   </div>
                 </div>

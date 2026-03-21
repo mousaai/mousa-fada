@@ -1337,6 +1337,7 @@ ${colorText}
         lockWindows: z.boolean().default(true),
         lockOpenings: z.boolean().default(true),
         lockColumns: z.boolean().default(false),
+        allowPlatformFreedom: z.boolean().default(false), // منح م. سارة حرية النظر المعماري
       }).optional(),
     }))
     .mutation(async ({ input }) => {
@@ -1357,18 +1358,13 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      // قاعدة تغيير العناصر الهيكلية — بقرار المستخدم
-      const lockEnabled = lockStructuralElements?.enabled === true;
-      const lockedItems: string[] = [];
-      if (lockEnabled) {
-        if (lockStructuralElements?.lockDoors !== false) lockedItems.push("الأبواب");
-        if (lockStructuralElements?.lockWindows !== false) lockedItems.push("النوافذ");
-        if (lockStructuralElements?.lockOpenings !== false) lockedItems.push("الفتحات");
-        if (lockStructuralElements?.lockColumns === true) lockedItems.push("الأعمدة");
-      }
-      const doorChangeRule = lockEnabled && lockedItems.length > 0
-        ? `⚠️ قرار العميل الصريح: ${lockedItems.join(' و')} ثابتة لا تتغير في أي تصميم. م. سارة تحترم هذا القرار تماماً وتبدع في كل شيء آخر: الألوان، الأثاث، الأرضيات، الأسقف، الإضاءة، التشطيبات — بحرية كاملة.`
-        : "م. سارة لها صلاحية إبداعية كاملة على جميع عناصر الفضاء: الأبواب، النوافذ، الجدران، الفتحات، الأسقف، الأرضيات. تبدع بحرية تامة وتقترح تحولات جذرية مبهرة.";
+      // قاعدة تغيير العناصر الهيكلية — ذكي تلقائياً
+      // الافتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ والفتحات تلقائياً (سلوك معماري صحيح)
+      // عند منح حرية النظر: م. سارة تستطيع اقتراح تغييرات معمارية وفق تقديرها
+      const allowStructuralFreedom = lockStructuralElements?.enabled === true && lockStructuralElements?.allowPlatformFreedom === true;
+      const doorChangeRule = allowStructuralFreedom
+        ? `🏗️ منحت م. سارة حرية النظر المعماري الكاملة: يمكنكِ اقتراح تغيير مواضع الأبواب والنوافذ والفتحات إذا كان ذلك يخدم التصميم بشكل أفضل. أبدعي بحرية معمارية كاملة على جميع العناصر.`
+        : `🔒 سلوك معماري ذكي: حافظي على مواضع الأبواب والنوافذ والفتحات الموجودة في الصورة تماماً بلا تغيير (هذا هو السلوك المعماري الصحيح). أبدعي بحرية كاملة في: الألوان، الأثاث، الأرضيات، الأسقف، الإضاءة، التشطيبات.`;
 
       // بناء تعليمات المرجع إذا وجد
       const referenceInstruction = referenceData
