@@ -2591,17 +2591,38 @@ ${structuralAnalysisPrompt}
 
       const refinementPrompt = `${originalPrompt || "Photorealistic interior design"} REFINEMENT REQUEST: ${refinementRequest}.${locationHint} Keep everything else exactly the same. Only change what was specifically requested. Maintain same camera angle, same room proportions, same structural elements.`;
 
+      // دالة مساعدة: تحويل data URL أو URL عادي إلى كائن مناسب لـ originalImages
+      const toImageEntry = (imgUrl: string): { url?: string; b64Json?: string; mimeType?: string } => {
+        if (imgUrl.startsWith("data:")) {
+          const [header, b64Data] = imgUrl.split(",");
+          const mimeMatch = header.match(/data:([^;]+);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+          return { b64Json: b64Data, mimeType };
+        }
+        return { url: imgUrl, mimeType: "image/jpeg" };
+      };
+
       try {
         const { url: imageUrl } = await generateImage({
           prompt: refinementPrompt,
           originalImages: [
-            { url: originalImageUrl, mimeType: "image/jpeg" },
-            { url: generatedImageUrl, mimeType: "image/jpeg" },
+            toImageEntry(originalImageUrl),
+            toImageEntry(generatedImageUrl),
           ],
         });
         return { imageUrl, success: true };
-      } catch {
-        return { imageUrl: null, success: false };
+      } catch (err) {
+        console.error("[refineDesign] Error:", err);
+        // fallback: توليد بدون الصورة الأصلية (فقط الصورة المولّدة)
+        try {
+          const { url: imageUrl } = await generateImage({
+            prompt: refinementPrompt,
+            originalImages: [toImageEntry(generatedImageUrl)],
+          });
+          return { imageUrl, success: true };
+        } catch {
+          return { imageUrl: null, success: false };
+        }
       }
     }),
 
