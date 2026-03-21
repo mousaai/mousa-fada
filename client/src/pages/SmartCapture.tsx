@@ -1035,6 +1035,7 @@ function IdeaCard({
 
   const refineMutation = trpc.refineDesign.useMutation();
   const applyStyleMutation = trpc.applyStyleToIdea.useMutation();
+  const { deduct: deductCredit } = useMousaCredit();
 
   const handleApplyStyle = async () => {
     if (!selectedNewStyle || !idea.imageUrl) return;
@@ -1054,6 +1055,7 @@ function IdeaCard({
           title: result.newTitle,
           description: result.newDescription,
         });
+        await deductCredit("applyStyle").catch(() => {});
         setShowStyleChanger(false);
         setSelectedNewStyle(null);
         setSelectedNewColors([]);
@@ -1089,6 +1091,7 @@ function IdeaCard({
       });
       if (result.imageUrl && onUpdateIdea) {
         onUpdateIdea(idea.id, { imageUrl: result.imageUrl });
+        await deductCredit("refineDesign").catch(() => {});
         setShowRefine(false);
         setRefineText("");
         setRefineClickX(undefined);
@@ -2761,17 +2764,20 @@ export default function SmartCapture() {
             <p className="text-xs text-[#8B6914]/70">{ideas.length} أفكار • {budget.label} • اضغط لتوليد الصور</p>
           )}
         </div>
-        {step === "results" && (
-          <div className="flex gap-2">
-            <button onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-xl border-2 transition-all ${showFilters ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"}`}>
-              <Palette className="w-4 h-4" />
-            </button>
-            <button onClick={reset} className="p-2 rounded-xl border-2 border-[#e8d9c0] text-[#5C3D11]">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <CreditBadge className="hidden sm:flex" />
+          {step === "results" && (
+            <>
+              <button onClick={() => setShowFilters(!showFilters)}
+                className={`p-2 rounded-xl border-2 transition-all ${showFilters ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"}`}>
+                <Palette className="w-4 h-4" />
+              </button>
+              <button onClick={reset} className="p-2 rounded-xl border-2 border-[#e8d9c0] text-[#5C3D11]">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col px-5 py-5 pb-24">

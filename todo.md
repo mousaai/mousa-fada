@@ -635,3 +635,9 @@
 - [x] ربط خصم الكريدت بكل ميزة AI (SmartCapture 20، DesignIdeas 20، 3D Render 30)
 - [x] شاشة "رصيد غير كافٍ" مع رابط شراء كريدت
 - [x] كتابة 9 اختبارات vitest للـ mousa helper (كلها ناجحة)
+
+## الإصدار 41.0 — إصلاحات جودة الكود قبل الإطلاق
+- [x] إضافة CreditBadge في header SmartCapture وDesignIdeas وVoiceDesigner
+- [x] إضافة خصم كريدت لـ applyStyle (15) وrefineDesign (15) في IdeaCard (SmartCapture)
+- [x] لا أخطاء TypeScript في أي ملف
+- [x] 142 اختبار ناجح (12 ملف اختبار)

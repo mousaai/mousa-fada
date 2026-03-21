@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import PlanRenderResult from "@/components/PlanRenderResult";
-import { useMousaCredit } from "@/components/CreditBadge";
+import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
 
 // ===== Types =====
 type DrawTool = "select" | "wall" | "door" | "window" | "electrical" | "ac" | "room" | "pan";
@@ -1890,6 +1890,7 @@ export default function VoiceDesigner() {
             className="p-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 active:scale-90 transition-all">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+          <CreditBadge className="hidden sm:flex" />
           <div className="h-4 w-px bg-[#e8d9c0]" />
           <button
             onClick={() => setShow3DModal(true)}

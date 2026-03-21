@@ -399,15 +399,18 @@ export default function DesignIdeas() {
             {ideas.length > 0 ? `${ideas.length} أفكار • غير الفلاتر لتحديثها` : "اضبط الفلاتر وولّد أفكارك"}
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${
-            showFilters ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"
-          }`}
-        >
-          <Filter className="w-3.5 h-3.5" />
-          فلاتر
-        </button>
+        <div className="flex items-center gap-2">
+          <CreditBadge className="hidden sm:flex" />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 text-xs font-bold transition-all ${
+              showFilters ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"
+            }`}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            فلاتر
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col pb-24">
