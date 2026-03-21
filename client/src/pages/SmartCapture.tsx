@@ -2127,8 +2127,8 @@ export default function SmartCapture() {
                 <Camera className="w-10 h-10" />
               </div>
               <div className="text-center">
-                <p className="font-black text-[#5C3D11] text-lg">صوّر غرفتك</p>
-                <p className="text-xs text-[#8B6914]/60 mt-1">التقط صورة واحدة من أي زاوية</p>
+                <p className="font-black text-[#5C3D11] text-lg">صوّر فضاءك</p>
+                <p className="text-xs text-[#8B6914]/60 mt-1">غرفة • واجهة مبنى • حديقة • مسبح</p>
               </div>
             </button>
 
@@ -2150,7 +2150,7 @@ export default function SmartCapture() {
             {/* Architectural integrity note */}
             <div className="bg-[#C9A84C]/10 rounded-2xl p-3 border border-[#C9A84C]/20">
               <p className="text-xs text-[#8B6914] leading-relaxed">
-                🏗️ <strong>م. سارة</strong> ستحلل البنية المعمارية وتحافظ على موقع الأبواب والسلالم والأبعاد في كل التصاميم
+                🏗️ <strong>م. سارة</strong> تحلل أي فضاء: غرفة، واجهة مبنى، حديقة، مسبح — وتولد تصاميم مخصصة لكل نوع
               </p>
             </div>
           </div>
@@ -2677,7 +2677,7 @@ export default function SmartCapture() {
                 <div className="absolute bottom-3 right-3 left-3 flex items-end justify-between">
                   <div>
                     <span className="text-[10px] text-white/70">الصورة الأصلية</span>
-                    <p className="text-white font-bold text-sm">صورة واحدة</p>
+                    <p className="text-white font-bold text-sm">صورة الفضاء</p>
                   </div>
                   <button onClick={reset} className="flex items-center gap-1 px-2.5 py-1.5 bg-white/20 backdrop-blur rounded-xl text-white text-[10px] font-bold">
                     <RotateCcw className="w-3 h-3" /> تصوير جديد
