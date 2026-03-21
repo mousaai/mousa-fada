@@ -1755,7 +1755,12 @@ export default function SmartCapture() {
   const [ideasCount, setIdeasCount] = useState(3);
   const [budgetLevel, setBudgetLevel] = useState<"economy" | "mid" | "luxury" | "premium">("mid");
   const [budgetAmount, setBudgetAmount] = useState<string>("");
-  // م. سارة لها صلاحية كاملة - تبدع بحرية تامة على جميع عناصر الفضاء
+  // تثبيت العناصر الهيكلية — بقرار المستخدم (الافتراضي: حرية إبداعية كاملة)
+  const [lockStructural, setLockStructural] = useState(false);
+  const [lockDoors, setLockDoors] = useState(true);
+  const [lockWindows, setLockWindows] = useState(true);
+  const [lockOpenings, setLockOpenings] = useState(true);
+  const [lockColumns, setLockColumns] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   // Preferred style & colors (optional filters)
@@ -1956,6 +1961,13 @@ export default function SmartCapture() {
       preferredStyle: preferredStyle || undefined,
       preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
       roomDimensions,
+      lockStructuralElements: lockStructural ? {
+        enabled: true,
+        lockDoors,
+        lockWindows,
+        lockOpenings,
+        lockColumns,
+      } : undefined,
     });
   };
 
@@ -2596,6 +2608,71 @@ export default function SmartCapture() {
                       <p className="text-[9px] text-emerald-600 text-center mt-0.5">سيتم حساب جدول الكميات بناءً على هذه الأبعاد</p>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* قسم تثبيت العناصر الهيكلية */}
+            <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+              <button
+                onClick={() => setLockStructural(!lockStructural)}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🔒</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#5C3D11]">تثبيت العناصر الهيكلية</p>
+                    <p className="text-[10px] text-[#8B6914]/60">
+                      {lockStructural
+                        ? `🔒 محدد: ${[lockDoors&&'أبواب',lockWindows&&'نوافذ',lockOpenings&&'فتحات',lockColumns&&'أعمدة'].filter(Boolean).join(' • ')} — م. سارة تحترمها`
+                        : 'افتراضي: م. سارة تبدع بحرية كاملة على كل شيء'}
+                    </p>
+                  </div>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
+                  lockStructural ? 'bg-[#C9A84C]' : 'bg-gray-200'
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                    lockStructural ? 'left-6' : 'left-0.5'
+                  }`} />
+                </div>
+              </button>
+
+              {lockStructural && (
+                <div className="px-4 pb-4 border-t border-[#f0e8d8] pt-3">
+                  <p className="text-[10px] text-[#8B6914]/70 mb-3 leading-relaxed">
+                    حدد العناصر التي تريد الحفاظ عليها — م. سارة ستبدع بحرية كاملة في كل شيء آخر
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: 'doors', label: '🚪 الأبواب', value: lockDoors, setter: setLockDoors },
+                      { key: 'windows', label: '🪟 النوافذ', value: lockWindows, setter: setLockWindows },
+                      { key: 'openings', label: '🗗️ الفتحات', value: lockOpenings, setter: setLockOpenings },
+                      { key: 'columns', label: '🏛️ الأعمدة', value: lockColumns, setter: setLockColumns },
+                    ].map(({ key, label, value, setter }) => (
+                      <button
+                        key={key}
+                        onClick={() => setter(!value)}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all ${
+                          value
+                            ? 'border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]'
+                            : 'border-[#e8d9c0] text-[#5C3D11]/50'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                          value ? 'border-[#C9A84C] bg-[#C9A84C]' : 'border-[#e8d9c0]'
+                        }`}>
+                          {value && <Check className="w-2.5 h-2.5 text-white" />}
+                        </div>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 bg-amber-50 rounded-xl px-3 py-2 border border-amber-200">
+                    <p className="text-[10px] text-amber-700 text-center leading-relaxed">
+                      💡 م. سارة ستحترم مواضع هذه العناصر وتبدع بحرية كاملة في: الألوان، الأثاث، الأرضيات، الإضاءة، التشطيبات
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

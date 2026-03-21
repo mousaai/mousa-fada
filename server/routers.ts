@@ -1331,10 +1331,16 @@ ${colorText}
         width: z.number().optional(),  // العرض بالمتر
         height: z.number().optional(), // الارتفاع بالمتر
       }).optional(),
+      lockStructuralElements: z.object({ // تثبيت العناصر الهيكلية بقرار المستخدم
+        enabled: z.boolean().default(false),
+        lockDoors: z.boolean().default(true),
+        lockWindows: z.boolean().default(true),
+        lockOpenings: z.boolean().default(true),
+        lockColumns: z.boolean().default(false),
+      }).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, referenceData, preferredStyle, preferredColors, roomDimensions } = input;
-      const allowDoorChanges = true; // م. سارة لها صلاحية كاملة على الفتحات والجدران
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, referenceData, preferredStyle, preferredColors, roomDimensions, lockStructuralElements } = input;
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1351,8 +1357,18 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      // م. سارة لها صلاحية كاملة على جميع عناصر الفضاء بما فيها الفتحات والجدران
-      const doorChangeRule = "م. سارة لها صلاحية إبداعية كاملة على جميع عناصر الفضاء: الأبواب، النوافذ، الجدران، الفتحات، الأسقف، الأرضيات. تبدع بحرية تامة وتقترح تحولات جذرية مبهرة.";
+      // قاعدة تغيير العناصر الهيكلية — بقرار المستخدم
+      const lockEnabled = lockStructuralElements?.enabled === true;
+      const lockedItems: string[] = [];
+      if (lockEnabled) {
+        if (lockStructuralElements?.lockDoors !== false) lockedItems.push("الأبواب");
+        if (lockStructuralElements?.lockWindows !== false) lockedItems.push("النوافذ");
+        if (lockStructuralElements?.lockOpenings !== false) lockedItems.push("الفتحات");
+        if (lockStructuralElements?.lockColumns === true) lockedItems.push("الأعمدة");
+      }
+      const doorChangeRule = lockEnabled && lockedItems.length > 0
+        ? `⚠️ قرار العميل الصريح: ${lockedItems.join(' و')} ثابتة لا تتغير في أي تصميم. م. سارة تحترم هذا القرار تماماً وتبدع في كل شيء آخر: الألوان، الأثاث، الأرضيات، الأسقف، الإضاءة، التشطيبات — بحرية كاملة.`
+        : "م. سارة لها صلاحية إبداعية كاملة على جميع عناصر الفضاء: الأبواب، النوافذ، الجدران، الفتحات، الأسقف، الأرضيات. تبدع بحرية تامة وتقترح تحولات جذرية مبهرة.";
 
       // بناء تعليمات المرجع إذا وجد
       const referenceInstruction = referenceData
