@@ -10,7 +10,7 @@ import {
   DollarSign, Palette, ChevronDown, ChevronUp, Heart,
   Share2, ZoomIn, Video, ScanLine, Box, ImageIcon,
   Plus, Minus, Check, RotateCcw, Layers, AlertTriangle,
-  Building2, Home, Info, Star, ShoppingBag
+  Building2, Home, Info, Star, ShoppingBag, FileDown
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -559,6 +559,337 @@ function ShopTheLookPanel({
   );
 }
 
+// ===== PDF Export: دفتر التصميم الاحترافي =====
+async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
+  const { jsPDF } = await import("jspdf");
+  const autoTable = (await import("jspdf-autotable")).default;
+
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const W = 210; const H = 297;
+  const gold = [201, 168, 76] as [number, number, number];
+  const darkBrown = [92, 61, 17] as [number, number, number];
+  const lightBg = [250, 246, 240] as [number, number, number];
+  const white = [255, 255, 255] as [number, number, number];
+  const emerald = [16, 124, 90] as [number, number, number];
+
+  // ===== صفحة 1: الغلاف =====
+  doc.setFillColor(...lightBg);
+  doc.rect(0, 0, W, H, "F");
+
+  // شريط ذهبي علوي
+  doc.setFillColor(...gold);
+  doc.rect(0, 0, W, 18, "F");
+  doc.setFillColor(...darkBrown);
+  doc.rect(0, 18, W, 2, "F");
+
+  // شعار وعنوان
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...white);
+  doc.text("م. سارة | خبيرة التصميم الداخلي بالذكاء الاصطناعي", W / 2, 11, { align: "center" });
+
+  // صورة التصميم
+  if (idea.imageUrl) {
+    try {
+      const imgData = idea.imageUrl;
+      doc.addImage(imgData, "JPEG", 10, 28, W - 20, 90, undefined, "FAST");
+      // إطار ذهبي
+      doc.setDrawColor(...gold);
+      doc.setLineWidth(0.8);
+      doc.rect(10, 28, W - 20, 90);
+    } catch { /* skip image if error */ }
+  } else {
+    // مستطيل بديل
+    doc.setFillColor(...gold);
+    doc.rect(10, 28, W - 20, 90, "F");
+    doc.setFontSize(16);
+    doc.setTextColor(...white);
+    doc.text("صورة التصميم", W / 2, 75, { align: "center" });
+  }
+
+  // عنوان الفكرة
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkBrown);
+  doc.text(idea.title, W / 2, 132, { align: "center" });
+
+  // النمط والسيناريو
+  doc.setFontSize(11);
+  doc.setTextColor(gold[0], gold[1], gold[2]);
+  doc.text(`${idea.styleLabel}  •  ${idea.scenarioLabel || ""}  •  ${spaceType || ""}`, W / 2, 141, { align: "center" });
+
+  // خط فاصل
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.5);
+  doc.line(30, 146, W - 30, 146);
+
+  // الوصف
+  doc.setFontSize(10);
+  doc.setTextColor(80, 60, 30);
+  doc.setFont("helvetica", "normal");
+  const descLines = doc.splitTextToSize(idea.description, W - 40);
+  doc.text(descLines, W / 2, 153, { align: "center" });
+
+  // لوحة الألوان
+  const paletteY = 170;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkBrown);
+  doc.text("لوحة الألوان", W / 2, paletteY, { align: "center" });
+  const swatchW = 28; const swatchH = 12;
+  const totalPaletteW = idea.palette.length * (swatchW + 4) - 4;
+  const startX = (W - totalPaletteW) / 2;
+  idea.palette.forEach((c, i) => {
+    const x = startX + i * (swatchW + 4);
+    const hex = c.hex.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "F");
+    doc.setDrawColor(200, 180, 140);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "S");
+    doc.setFontSize(7);
+    doc.setTextColor(80, 60, 30);
+    doc.text(c.name, x + swatchW / 2, paletteY + 18, { align: "center" });
+  });
+
+  // التكلفة الإجمالية
+  doc.setFillColor(...gold);
+  doc.roundedRect(20, 195, W - 40, 20, 4, 4, "F");
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...white);
+  doc.text(`التكلفة التقديرية: ${idea.estimatedCost}`, W / 2, 208, { align: "center" });
+  if (idea.timeline) {
+    doc.setFontSize(9);
+    doc.text(`المدة الزمنية: ${idea.timeline}`, W / 2, 214, { align: "center" });
+  }
+
+  // المواد
+  const matY = 222;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkBrown);
+  doc.text("المواد والتشطيبات المقترحة", 15, matY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(80, 60, 30);
+  idea.materials.forEach((m, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    doc.text(`• ${m}`, 15 + col * 95, matY + 6 + row * 6);
+  });
+
+  // مزايا التصميم
+  const hlY = matY + 8 + Math.ceil(idea.materials.length / 2) * 6 + 4;
+  if (hlY < 265 && idea.highlights.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...darkBrown);
+    doc.text("مزايا التصميم", 15, hlY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(80, 60, 30);
+    idea.highlights.slice(0, 4).forEach((h, i) => {
+      doc.text(`✓ ${h}`, 15, hlY + 6 + i * 5.5);
+    });
+  }
+
+  // تذييل الصفحة الأولى
+  doc.setFillColor(...gold);
+  doc.rect(0, H - 12, W, 12, "F");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...white);
+  const today = new Date().toLocaleDateString("ar-AE");
+  doc.text(`م. سارة — دفتر التصميم الاحترافي — ${today}`, W / 2, H - 4, { align: "center" });
+
+  // ===== صفحة 2: جدول الكميات BOQ =====
+  if (idea.boq && idea.boq.categories.length > 0) {
+    doc.addPage();
+    doc.setFillColor(...lightBg);
+    doc.rect(0, 0, W, H, "F");
+
+    // رأس الصفحة
+    doc.setFillColor(...gold);
+    doc.rect(0, 0, W, 18, "F");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...white);
+    doc.text("جدول الكميات والمواصفات (BOQ)", W / 2, 11, { align: "center" });
+
+    // معلومات الفضاء
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...darkBrown);
+    doc.text(`الفضاء: ${spaceType || "غير محدد"}  |  المساحة: ${idea.boq.area} م²  |  المحيط: ${idea.boq.perimeter} م`, W / 2, 24, { align: "center" });
+
+    let yPos = 30;
+
+    idea.boq.categories.forEach((cat) => {
+      if (yPos > H - 40) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); yPos = 15; }
+
+      // عنوان الفئة
+      doc.setFillColor(darkBrown[0], darkBrown[1], darkBrown[2]);
+      doc.rect(10, yPos, W - 20, 7, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...white);
+      doc.text(`${cat.icon || ""} ${cat.category}`, 14, yPos + 5);
+      const catTotal = `${cat.subtotalMin.toLocaleString()} – ${cat.subtotalMax.toLocaleString()} د.إ`;
+      doc.text(catTotal, W - 14, yPos + 5, { align: "right" });
+      yPos += 9;
+
+      // بنود الجدول
+      const tableData = cat.items.map(item => [
+        item.name,
+        item.unit,
+        item.qty.toString(),
+        `${item.unitPriceMin.toLocaleString()} – ${item.unitPriceMax.toLocaleString()}`,
+        `${item.totalMin.toLocaleString()} – ${item.totalMax.toLocaleString()}`,
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [["البند", "الوحدة", "الكمية", "سعر الوحدة (د.إ)", "الإجمالي (د.إ)"]],
+        body: tableData,
+        theme: "grid",
+        styles: { fontSize: 7.5, cellPadding: 2, halign: "right", font: "helvetica" },
+        headStyles: { fillColor: gold, textColor: white, fontStyle: "bold", fontSize: 8 },
+        alternateRowStyles: { fillColor: [250, 246, 240] },
+        columnStyles: {
+          0: { cellWidth: 65, halign: "right" },
+          1: { cellWidth: 18, halign: "center" },
+          2: { cellWidth: 18, halign: "center" },
+          3: { cellWidth: 40, halign: "center" },
+          4: { cellWidth: 40, halign: "center" },
+        },
+        margin: { left: 10, right: 10 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 6;
+    });
+
+    // الإجمالي الكلي
+    if (yPos > H - 30) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); yPos = 20; }
+    doc.setFillColor(...emerald);
+    doc.roundedRect(10, yPos, W - 20, 16, 3, 3, "F");
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...white);
+    doc.text("الإجمالي الكلي التقديري", 20, yPos + 10);
+    doc.text(`${idea.boq.grandTotalMin.toLocaleString()} – ${idea.boq.grandTotalMax.toLocaleString()} د.إ`, W - 20, yPos + 10, { align: "right" });
+
+    // إخلاء المسؤولية
+    yPos += 22;
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 100, 70);
+    const disclaimer = idea.boq.disclaimer || "الأسعار تقديرية وفق أسعار السوق الخليجي. تختلف الأسعار الفعلية حسب الموردين والمقاولين والمواصفات النهائية.";
+    const discLines = doc.splitTextToSize(disclaimer, W - 30);
+    doc.text(discLines, W / 2, yPos, { align: "center" });
+
+    // تذييل
+    doc.setFillColor(...gold);
+    doc.rect(0, H - 12, W, 12, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...white);
+    doc.text(`م. سارة — جدول الكميات — ${today}`, W / 2, H - 4, { align: "center" });
+  }
+
+  // ===== صفحة 3: المواصفات التفصيلية =====
+  doc.addPage();
+  doc.setFillColor(...lightBg);
+  doc.rect(0, 0, W, H, "F");
+  doc.setFillColor(...gold);
+  doc.rect(0, 0, W, 18, "F");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...white);
+  doc.text("المواصفات التفصيلية والتوصيات", W / 2, 11, { align: "center" });
+
+  let specY = 25;
+
+  // مزايا التصميم الكاملة
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkBrown);
+  doc.text("مزايا ومميزات التصميم", 15, specY);
+  specY += 7;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(80, 60, 30);
+  idea.highlights.forEach((h) => {
+    if (specY > H - 30) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
+    const lines = doc.splitTextToSize(`✓  ${h}`, W - 30);
+    doc.text(lines, 15, specY);
+    specY += lines.length * 5.5;
+  });
+
+  specY += 5;
+
+  // تكاليف الاستبدال
+  if (idea.replacementCosts && idea.replacementCosts.length > 0) {
+    if (specY > H - 40) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...darkBrown);
+    doc.text("تكاليف الاستبدال التفصيلية", 15, specY);
+    specY += 7;
+    autoTable(doc, {
+      startY: specY,
+      head: [["البند", "التقدير الحالي", "تكلفة الاستبدال", "ملاحظات"]],
+      body: idea.replacementCosts.map(r => [r.item, r.currentEstimate, r.replacementCost, r.notes]),
+      theme: "striped",
+      styles: { fontSize: 8, cellPadding: 2.5, halign: "right" },
+      headStyles: { fillColor: darkBrown, textColor: white, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [250, 246, 240] },
+      margin: { left: 10, right: 10 },
+    });
+    specY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // توصيات التنفيذ
+  if (specY > H - 50) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...darkBrown);
+  doc.text("توصيات التنفيذ", 15, specY);
+  specY += 7;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(80, 60, 30);
+  const recommendations = [
+    `النمط المختار: ${idea.styleLabel} — يتطلب مقاولاً متخصصاً في هذا النمط`,
+    `الميزانية التقديرية: ${idea.estimatedCost} — يُنصح بتخصيص 10-15% احتياطياً للطوارئ`,
+    `الجدول الزمني: ${idea.timeline || "يُحدد بعد الاتفاق مع المقاول"} — يشمل التوريد والتركيب والتشطيب`,
+    "يُنصح بالحصول على 3 عروض أسعار من مقاولين معتمدين قبل البدء",
+    "التأكد من جودة المواد ومطابقتها للمواصفات المذكورة قبل الشراء",
+    "م. سارة تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
+  ];
+  recommendations.forEach((rec) => {
+    if (specY > H - 20) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
+    const lines = doc.splitTextToSize(`• ${rec}`, W - 30);
+    doc.text(lines, 15, specY);
+    specY += lines.length * 5.5 + 1;
+  });
+
+  // تذييل الصفحة الأخيرة
+  doc.setFillColor(...gold);
+  doc.rect(0, H - 12, W, 12, "F");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...white);
+  doc.text(`م. سارة — المواصفات التفصيلية — ${today}`, W / 2, H - 4, { align: "center" });
+
+  // حفظ الملف
+  const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}_${Date.now()}.pdf`;
+  doc.save(fileName);
+  return fileName;
+}
+
 function IdeaCard({
   idea,
   onGenerateImage,
@@ -587,6 +918,22 @@ function IdeaCard({
   const [refineClickY, setRefineClickY] = useState<number | undefined>(undefined);
   const [isRefining, setIsRefining] = useState(false);
   const refineImageRef = useRef<HTMLDivElement>(null);
+
+  // حالة تصدير PDF
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    try {
+      await generateDesignBookPDF(idea, spaceType);
+      toast.success("تم تصدير دفتر التصميم بنجاح!");
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء تصدير PDF");
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
 
   // حالة تغيير النمط
   const [showStyleChanger, setShowStyleChanger] = useState(false);
@@ -677,6 +1024,17 @@ function IdeaCard({
             <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
               <ZoomIn className="w-3 h-3" /> تكبير
             </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExportPDF(); }}
+              disabled={isExportingPDF}
+              className="absolute bottom-2 left-2 bg-[#C9A84C]/90 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-[#C9A84C] transition-colors disabled:opacity-60"
+            >
+              {isExportingPDF ? (
+                <><div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" /> جاري...</>
+              ) : (
+                <><FileDown className="w-3 h-3" /> تصدير PDF</>
+              )}
+            </button>
           </div>
         ) : idea.isGeneratingImage ? (
           <div className="w-full h-52 bg-gradient-to-br from-[#f0e8d8] to-[#faf6f0] flex flex-col items-center justify-center gap-3">
@@ -872,6 +1230,18 @@ function IdeaCard({
         {/* جدول الكميات الهندسي */}
         {idea.boq && (
           <div className="mt-3">
+            {/* زر تصدير دفتر التصميم */}
+            <button
+              onClick={handleExportPDF}
+              disabled={isExportingPDF}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 mb-2 rounded-xl bg-[#C9A84C] text-white text-sm font-bold active:scale-95 transition-transform disabled:opacity-60"
+            >
+              {isExportingPDF ? (
+                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> جاري إعداد دفتر التصميم...</>
+              ) : (
+                <><FileDown className="w-4 h-4" /> تصدير دفتر التصميم (PDF)</>
+              )}
+            </button>
             <button
               onClick={() => setShowBOQ(!showBOQ)}
               className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-500 text-white text-sm font-bold active:scale-95 transition-transform"
