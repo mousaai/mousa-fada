@@ -74,43 +74,167 @@ type DrawElement = Wall | Opening | ElectricalSymbol | ACSymbol | RoomShape;
 interface HistoryEntry { elements: DrawElement[]; }
 
 // ===== Library Presets =====
-const ROOM_LIBRARY = [
+// Door/window preset type
+type RoomPresetOpening = { side: "top" | "bottom" | "left" | "right"; pos: number; width: number; type: "door" | "window"; doorType?: DoorType; windowType?: WindowType; };
+const ROOM_LIBRARY: { label: string; cat: string; w: number; h: number; color: string; openings?: RoomPresetOpening[] }[] = [
   // مجالس وغرف معيشة
-  { label: "مجلس 6×8", cat: "مجالس", w: 6, h: 8, color: "#E8D5B7" },
-  { label: "مجلس 5×6", cat: "مجالس", w: 5, h: 6, color: "#E8D5B7" },
-  { label: "غرفة معيشة 5×6", cat: "معيشة", w: 5, h: 6, color: "#D4E8D5" },
-  { label: "غرفة معيشة 4×5", cat: "معيشة", w: 4, h: 5, color: "#D4E8D5" },
-  { label: "غرفة معيشة 4×4", cat: "معيشة", w: 4, h: 4, color: "#D4E8D5" },
+  { label: "مجلس 6×8", cat: "مجالس", w: 6, h: 8, color: "#E8D5B7",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
+      { side: "left", pos: 0.3, width: 1.5, type: "window", windowType: "panoramic" },
+      { side: "right", pos: 0.3, width: 1.5, type: "window", windowType: "panoramic" },
+    ]
+  },
+  { label: "مجلس 5×6", cat: "مجالس", w: 5, h: 6, color: "#E8D5B7",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
+      { side: "left", pos: 0.4, width: 1.2, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "غرفة معيشة 5×6", cat: "معيشة", w: 5, h: 6, color: "#D4E8D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
+    ]
+  },
+  { label: "غرفة معيشة 4×5", cat: "معيشة", w: 4, h: 5, color: "#D4E8D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "غرفة معيشة 4×4", cat: "معيشة", w: 4, h: 4, color: "#D4E8D5",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "left", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
+    ]
+  },
   // غرف نوم
-  { label: "ماستر 4×5", cat: "نوم", w: 4, h: 5, color: "#D5D4E8" },
-  { label: "ماستر 5×6", cat: "نوم", w: 5, h: 6, color: "#D5D4E8" },
-  { label: "غرفة نوم 4×4", cat: "نوم", w: 4, h: 4, color: "#E8D5D5" },
-  { label: "غرفة نوم 3×4", cat: "نوم", w: 3, h: 4, color: "#E8D5D5" },
-  { label: "غرفة نوم 3×3", cat: "نوم", w: 3, h: 3, color: "#E8D5D5" },
+  { label: "ماستر 4×5", cat: "نوم", w: 4, h: 5, color: "#D5D4E8",
+    openings: [
+      { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
+      { side: "right", pos: 0.3, width: 0.8, type: "door", doorType: "single" }, // باب دريسينج
+    ]
+  },
+  { label: "ماستر 5×6", cat: "نوم", w: 5, h: 6, color: "#D5D4E8",
+    openings: [
+      { side: "bottom", pos: 0.3, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.5, type: "window", windowType: "panoramic" },
+      { side: "right", pos: 0.3, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "غرفة نوم 4×4", cat: "نوم", w: 4, h: 4, color: "#E8D5D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.0, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "غرفة نوم 3×4", cat: "نوم", w: 3, h: 4, color: "#E8D5D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "غرفة نوم 3×3", cat: "نوم", w: 3, h: 3, color: "#E8D5D5",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "left", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
+    ]
+  },
   // حمامات
-  { label: "حمام ماستر 2×3", cat: "حمام", w: 2, h: 3, color: "#D5E8E4" },
-  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#D5E8E4" },
-  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#D5E8E4" },
-  { label: "حمام ضيوف 1.5×1.5", cat: "حمام", w: 1.5, h: 1.5, color: "#D5E8E4" },
+  { label: "حمام ماستر 2×3", cat: "حمام", w: 2, h: 3, color: "#D5E8E4",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#D5E8E4",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#D5E8E4",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.7, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "حمام ضيوف 1.5×1.5", cat: "حمام", w: 1.5, h: 1.5, color: "#D5E8E4",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.7, type: "door", doorType: "single" },
+    ]
+  },
   // دريسينج
-  { label: "دريسينج 3×3", cat: "دريسينج", w: 3, h: 3, color: "#E4D5E8" },
-  { label: "دريسينج 2×3", cat: "دريسينج", w: 2, h: 3, color: "#E4D5E8" },
-  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#E4D5E8" },
+  { label: "دريسينج 3×3", cat: "دريسينج", w: 3, h: 3, color: "#E4D5E8",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" },
+    ]
+  },
+  { label: "دريسينج 2×3", cat: "دريسينج", w: 2, h: 3, color: "#E4D5E8",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" },
+    ]
+  },
+  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#E4D5E8",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "sliding" },
+    ]
+  },
   // مطابخ
-  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E8E4D5" },
-  { label: "مطبخ 2×4", cat: "مطبخ", w: 2, h: 4, color: "#E8E4D5" },
-  { label: "مطبخ 3×3", cat: "مطبخ", w: 3, h: 3, color: "#E8E4D5" },
+  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E8E4D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 0.9, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "مطبخ 2×4", cat: "مطبخ", w: 2, h: 4, color: "#E8E4D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
+    ]
+  },
+  { label: "مطبخ 3×3", cat: "مطبخ", w: 3, h: 3, color: "#E8E4D5",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "left", pos: 0.5, width: 0.8, type: "window", windowType: "standard" },
+    ]
+  },
   // ممرات وردهات
-  { label: "ردهة 3×4", cat: "ردهة", w: 3, h: 4, color: "#F0EAD8" },
+  { label: "ردهة 3×4", cat: "ردهة", w: 3, h: 4, color: "#F0EAD8",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
+      { side: "top", pos: 0.5, width: 1.2, type: "door", doorType: "single" },
+    ]
+  },
   { label: "ممر 1.2×4", cat: "ممر", w: 1.2, h: 4, color: "#F0EAD8" },
   { label: "ممر 1.5×5", cat: "ممر", w: 1.5, h: 5, color: "#F0EAD8" },
   // مداخل وصالات
-  { label: "مدخل 3×3", cat: "مدخل", w: 3, h: 3, color: "#E8E0D5" },
-  { label: "صالة 4×4", cat: "صالة", w: 4, h: 4, color: "#E8E0D5" },
+  { label: "مدخل 3×3", cat: "مدخل", w: 3, h: 3, color: "#E8E0D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 1.2, type: "door", doorType: "double" },
+    ]
+  },
+  { label: "صالة 4×4", cat: "صالة", w: 4, h: 4, color: "#E8E0D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.9, type: "door", doorType: "single" },
+      { side: "top", pos: 0.5, width: 1.2, type: "window", windowType: "standard" },
+    ]
+  },
   // خدمات
-  { label: "غرفة غسيل 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5" },
-  { label: "غرفة خادمة 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5" },
-  { label: "مخزن 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5" },
+  { label: "غرفة غسيل 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "غرفة خادمة 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5",
+    openings: [
+      { side: "bottom", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
+  { label: "مخزن 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5",
+    openings: [
+      { side: "right", pos: 0.5, width: 0.8, type: "door", doorType: "single" },
+    ]
+  },
 ];
 
 const DOOR_TYPES: { type: DoorType; label: string; icon: string }[] = [
@@ -371,96 +495,121 @@ function drawDoor(ctx: CanvasRenderingContext2D, door: Opening, selected: boolea
   const cy = door.y * sc + offset.y;
   const dw = door.width * sc;
   const rad = (door.rotation * Math.PI) / 180;
+  const wallT = 12; // wall gap thickness in px
 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(rad);
 
-  const color = selected ? "#C9A84C" : hovered ? "#b8960f" : "#5C3D11";
-  ctx.strokeStyle = color;
+  const color = selected ? "#C9A84C" : hovered ? "#e6a817" : "#5C3D11";
+
+  // ===== WALL GAP (white break in wall) =====
   ctx.fillStyle = "#faf6f0";
-  ctx.lineWidth = 2;
+  ctx.fillRect(-dw / 2, -wallT / 2, dw, wallT);
+
+  // ===== DOOR FRAME (jambs) =====
+  ctx.strokeStyle = color;
+  ctx.lineWidth = selected ? 3 : 2.5;
+  // Left jamb
+  ctx.beginPath();
+  ctx.moveTo(-dw / 2, -wallT / 2);
+  ctx.lineTo(-dw / 2, wallT / 2);
+  ctx.stroke();
+  // Right jamb
+  ctx.beginPath();
+  ctx.moveTo(dw / 2, -wallT / 2);
+  ctx.lineTo(dw / 2, wallT / 2);
+  ctx.stroke();
+
+  // ===== DOOR LEAF + SWING =====
+  ctx.lineWidth = selected ? 2.5 : 2;
+  ctx.strokeStyle = color;
 
   if (door.doorType === "sliding") {
-    // Sliding door: two parallel lines with arrow
-    ctx.fillRect(-dw / 2, -4, dw, 8);
-    ctx.strokeRect(-dw / 2, -4, dw, 8);
+    // Sliding: door panel with arrows
+    ctx.fillStyle = color + "22";
+    ctx.fillRect(-dw / 2, -wallT / 2, dw * 0.7, wallT);
+    ctx.strokeRect(-dw / 2, -wallT / 2, dw * 0.7, wallT);
+    // Arrow indicating slide direction
     ctx.beginPath();
-    ctx.moveTo(-dw / 2 + 4, 0);
-    ctx.lineTo(dw / 2 - 4, 0);
-    ctx.stroke();
-    // Arrows
-    ctx.beginPath();
-    ctx.moveTo(-dw / 2 + 4, -3); ctx.lineTo(-dw / 2, 0); ctx.lineTo(-dw / 2 + 4, 3);
-    ctx.moveTo(dw / 2 - 4, -3); ctx.lineTo(dw / 2, 0); ctx.lineTo(dw / 2 - 4, 3);
+    ctx.moveTo(dw / 2 - 6, -wallT / 2 - 6);
+    ctx.lineTo(dw / 2 + 4, 0);
+    ctx.lineTo(dw / 2 - 6, wallT / 2 + 6);
     ctx.stroke();
   } else if (door.doorType === "double") {
-    // Double door: two arcs
+    // Double door: two arcs from each jamb
     const hw = dw / 2;
-    ctx.clearRect(-hw, -3, dw, 6);
-    ctx.fillRect(-hw, -2, dw, 4);
-    ctx.strokeRect(-hw, -2, dw, 4);
-    // Left arc
+    const swingDir = door.swingIn ? 1 : -1;
+    // Left leaf
     ctx.beginPath();
     ctx.moveTo(-hw, 0);
-    ctx.arc(-hw, 0, hw, 0, -Math.PI / 2, true);
+    ctx.arc(-hw, 0, hw, 0, swingDir * Math.PI / 2);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(-hw, 0);
-    ctx.lineTo(-hw, -hw);
+    ctx.lineTo(-hw + hw * Math.cos(swingDir * Math.PI / 2), hw * Math.sin(swingDir * Math.PI / 2));
     ctx.stroke();
-    // Right arc
+    // Right leaf
     ctx.beginPath();
     ctx.moveTo(hw, 0);
-    ctx.arc(hw, 0, hw, Math.PI, -Math.PI / 2);
+    ctx.arc(hw, 0, hw, Math.PI, Math.PI - swingDir * Math.PI / 2, swingDir < 0);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(hw, 0);
-    ctx.lineTo(hw, -hw);
+    ctx.lineTo(hw + hw * Math.cos(Math.PI - swingDir * Math.PI / 2), hw * Math.sin(Math.PI - swingDir * Math.PI / 2));
     ctx.stroke();
   } else if (door.doorType === "folding") {
-    // Folding door: zigzag
-    ctx.clearRect(-dw / 2, -3, dw, 6);
-    ctx.fillRect(-dw / 2, -2, dw, 4);
-    ctx.strokeRect(-dw / 2, -2, dw, 4);
-    ctx.beginPath();
+    // Folding: zigzag leaf
     const seg = dw / 4;
-    ctx.moveTo(-dw / 2, 0);
-    ctx.lineTo(-dw / 2 + seg, -dw / 4);
-    ctx.lineTo(-dw / 2 + seg * 2, 0);
-    ctx.lineTo(-dw / 2 + seg * 3, -dw / 4);
-    ctx.lineTo(dw / 2, 0);
-    ctx.stroke();
-  } else {
-    // Single door (default): arc swing
-    ctx.clearRect(-dw / 2, -3, dw, 6);
-    ctx.fillRect(-dw / 2, -2, dw, 4);
-    ctx.strokeRect(-dw / 2, -2, dw, 4);
     const swingDir = door.swingIn ? 1 : -1;
     ctx.beginPath();
     ctx.moveTo(-dw / 2, 0);
-    ctx.arc(-dw / 2, 0, dw, 0, swingDir * Math.PI / 2);
+    ctx.lineTo(-dw / 2 + seg, swingDir * dw / 4);
+    ctx.lineTo(-dw / 2 + seg * 2, 0);
+    ctx.lineTo(-dw / 2 + seg * 3, swingDir * dw / 4);
+    ctx.lineTo(dw / 2, 0);
     ctx.stroke();
+  } else if (door.doorType === "pocket") {
+    // Pocket: door slides into wall
+    ctx.fillStyle = color + "33";
+    ctx.fillRect(-dw / 2, -wallT / 2, dw * 0.6, wallT);
+    ctx.strokeRect(-dw / 2, -wallT / 2, dw * 0.6, wallT);
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2 + dw * 0.6, -wallT / 2 - 4);
+    ctx.lineTo(dw / 2, -wallT / 2 - 4);
+    ctx.moveTo(-dw / 2 + dw * 0.6, wallT / 2 + 4);
+    ctx.lineTo(dw / 2, wallT / 2 + 4);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // Single door (default): arc swing — architectural standard
+    const swingDir = door.swingIn ? 1 : -1;
+    // Door leaf line
     ctx.beginPath();
     ctx.moveTo(-dw / 2, 0);
     ctx.lineTo(-dw / 2 + dw * Math.cos(swingDir * Math.PI / 2), dw * Math.sin(swingDir * Math.PI / 2));
     ctx.stroke();
+    // Swing arc
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = color + "99";
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2 + dw, 0);
+    ctx.arc(-dw / 2, 0, dw, 0, swingDir * Math.PI / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
-  // Label
+  // ===== LABEL =====
   ctx.font = "bold 9px Cairo, sans-serif";
-  ctx.fillStyle = "#8B6914";
+  ctx.fillStyle = selected ? "#C9A84C" : "#8B6914";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(`باب ${door.width}م`, 0, dw / 2 + 4);
+  ctx.fillText(`${door.width.toFixed(1)}م`, 0, wallT / 2 + 5);
 
   if (selected) {
-    drawRotateHandle(ctx, 0, -dw / 2 - 16);
-    ctx.strokeStyle = "#C9A84C";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeRect(-dw / 2 - 4, -dw / 2 - 4, dw + 8, dw + 8);
-    ctx.setLineDash([]);
+    drawRotateHandle(ctx, 0, -dw / 2 - 14);
   }
   ctx.restore();
 }
@@ -850,6 +999,14 @@ export default function VoiceDesigner() {
   const [showACPanel, setShowACPanel] = useState(false);
   const [showDoorPanel, setShowDoorPanel] = useState(false);
   const [showWinPanel, setShowWinPanel] = useState(false);
+  // Quick actions floating toolbar
+  const [quickActionsPos, setQuickActionsPos] = useState<{ x: number; y: number } | null>(null);
+  const [show3DModal, setShow3DModal] = useState(false);
+  const [renderStyle, setRenderStyle] = useState<"modern" | "classic" | "gulf" | "minimal">("modern");
+  const [renderView, setRenderView] = useState<"perspective" | "top" | "front" | "aerial">("perspective");
+  const [is3DLoading, setIs3DLoading] = useState(false);
+  const [render3DUrl, setRender3DUrl] = useState<string | null>(null);
+  const [showBOQ, setShowBOQ] = useState(false);
 
   // ===== History =====
   const pushHistory = useCallback((newElements: DrawElement[]) => {
@@ -977,9 +1134,12 @@ export default function VoiceDesigner() {
           dragRef.current = { active: true, id: hit.id, startWorld: world, elemStart };
         }
         setShowProperties(true);
+        // Show quick actions toolbar above the element
+        setQuickActionsPos({ x: sx, y: sy - 50 });
       } else {
         setSelectedIds(new Set());
         setShowProperties(false);
+        setQuickActionsPos(null);
         panRef.current = { active: true, startX: sx, startY: sy, offsetStart: { ...viewOffset } };
       }
       return;
@@ -1252,6 +1412,10 @@ export default function VoiceDesigner() {
           pushHistory(newEls);
           setSelectedIds(new Set([newRoom.id]));
           setShowProperties(true);
+          const canvas = canvasRef.current;
+          if (canvas && lastTouchRef.current) {
+            setQuickActionsPos({ x: lastTouchRef.current.x - canvas.getBoundingClientRect().left, y: lastTouchRef.current.y - canvas.getBoundingClientRect().top - 60 });
+          }
           setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
           setActiveTool("select");
         }
@@ -1273,6 +1437,7 @@ export default function VoiceDesigner() {
     pushHistory(newEls);
     setSelectedIds(new Set());
     setShowProperties(false);
+    setQuickActionsPos(null);
   };
 
   const copyRef = useRef<DrawElement[]>([]);
@@ -1333,22 +1498,44 @@ export default function VoiceDesigner() {
 
   // Add room from library
   const addFromLibrary = (preset: typeof ROOM_LIBRARY[0]) => {
+    const rx = snap((-viewOffset.x + 80) / (SCALE * zoom));
+    const ry = snap((-viewOffset.y + 80) / (SCALE * zoom));
     const newRoom: RoomShape = {
       id: generateId(), type: "room",
-      x: snap((-viewOffset.x + 80) / (SCALE * zoom)),
-      y: snap((-viewOffset.y + 80) / (SCALE * zoom)),
+      x: rx, y: ry,
       width: preset.w, height: preset.h,
       label: preset.label.split(" ")[0],
       color: preset.color,
       wallThickness: drawingState.wallThickness,
     };
-    const newEls = [...elements, newRoom];
+    // Build preset openings
+    const presetOpenings: DrawElement[] = (preset.openings || []).map(op => {
+      let ox = rx, oy = ry;
+      let rot = 0;
+      if (op.side === "top") { ox = rx + preset.w * op.pos; oy = ry; rot = 0; }
+      else if (op.side === "bottom") { ox = rx + preset.w * op.pos; oy = ry + preset.h; rot = 0; }
+      else if (op.side === "left") { ox = rx; oy = ry + preset.h * op.pos; rot = 90; }
+      else if (op.side === "right") { ox = rx + preset.w; oy = ry + preset.h * op.pos; rot = 90; }
+      if (op.type === "door") {
+        return { id: generateId(), type: "door", x: ox, y: oy, width: op.width, rotation: rot, doorType: op.doorType || "single", swingIn: false } as Opening;
+      } else {
+        return { id: generateId(), type: "window", x: ox, y: oy, width: op.width, rotation: rot, windowType: op.windowType || "standard" } as Opening;
+      }
+    });
+    const newEls = [...elements, newRoom, ...presetOpenings];
     setElements(newEls);
     pushHistory(newEls);
     setSelectedIds(new Set([newRoom.id]));
     setShowLibrary(false);
     setShowProperties(true);
-    toast.success(`تمت إضافة ${preset.label}`);
+    // Position quick actions in center of canvas
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      setQuickActionsPos({ x: rect.width / 2, y: rect.height / 2 - 60 });
+    }
+    const opCount = presetOpenings.length;
+    toast.success(`تمت إضافة ${preset.label}${opCount > 0 ? ` مع ${opCount} فتحة` : ""}`);
   };
 
   // ===== Selected Element =====
@@ -1411,6 +1598,23 @@ export default function VoiceDesigner() {
           <button onClick={clearAll}
             className="p-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 active:scale-90 transition-all">
             <Trash2 className="w-3.5 h-3.5" />
+          </button>
+          <div className="h-4 w-px bg-[#e8d9c0]" />
+          <button
+            onClick={() => setShow3DModal(true)}
+            disabled={elements.length === 0}
+            className="px-2 py-1.5 rounded-lg bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-[9px] font-black flex items-center gap-1 active:scale-90 transition-all disabled:opacity-40"
+          >
+            <Box className="w-3 h-3" />
+            3D
+          </button>
+          <button
+            onClick={() => setShowBOQ(true)}
+            disabled={elements.length === 0}
+            className="px-2 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-[9px] font-black flex items-center gap-1 active:scale-90 transition-all disabled:opacity-40 border border-[#e8d9c0]"
+          >
+            <Check className="w-3 h-3" />
+            BOQ
           </button>
         </div>
       </header>
@@ -1958,7 +2162,318 @@ export default function VoiceDesigner() {
             {activeTool === "wall" && " • دبل-كليك للإنهاء"}
           </div>
         )}
+
+        {/* ===== Quick Actions Floating Toolbar ===== */}
+        {quickActionsPos && selectedEl && (
+          <div
+            className="absolute z-30 flex gap-1 bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-[#e8d9c0] px-2 py-1.5"
+            style={{
+              left: Math.min(Math.max(quickActionsPos.x - 80, 8), window.innerWidth - 180),
+              top: Math.max(quickActionsPos.y - 8, 8),
+              direction: "rtl"
+            }}
+          >
+            {/* Delete */}
+            <button
+              onClick={deleteSelected}
+              className="w-9 h-9 rounded-xl bg-red-50 text-red-400 hover:bg-red-100 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all"
+              title="حذف"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-[7px] font-bold">حذف</span>
+            </button>
+
+            {/* Rotate CCW */}
+            <button
+              onClick={() => rotateSelected(-90)}
+              className="w-9 h-9 rounded-xl bg-[#f5f0e8] text-[#5C3D11] hover:bg-[#ede4d0] flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all"
+              title="دوران يسار"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="text-[7px] font-bold">يسار</span>
+            </button>
+
+            {/* Rotate CW */}
+            <button
+              onClick={() => rotateSelected(90)}
+              className="w-9 h-9 rounded-xl bg-[#f5f0e8] text-[#5C3D11] hover:bg-[#ede4d0] flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all"
+              title="دوران يمين"
+            >
+              <RotateCw className="w-4 h-4" />
+              <span className="text-[7px] font-bold">يمين</span>
+            </button>
+
+            {/* Flip swing (doors only) */}
+            {selectedEl.type === "door" && (
+              <button
+                onClick={() => updateSelectedEl({ swingIn: !(selectedEl as Opening).swingIn })}
+                className="w-9 h-9 rounded-xl bg-[#f5f0e8] text-[#5C3D11] hover:bg-[#ede4d0] flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all"
+                title="عكس الفتح"
+              >
+                <span className="text-base">⇆</span>
+                <span className="text-[7px] font-bold">عكس</span>
+              </button>
+            )}
+
+            {/* Copy */}
+            <button
+              onClick={() => { copySelected(); pasteSelected(); }}
+              className="w-9 h-9 rounded-xl bg-[#f5f0e8] text-[#5C3D11] hover:bg-[#ede4d0] flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-all"
+              title="نسخ"
+            >
+              <Copy className="w-4 h-4" />
+              <span className="text-[7px] font-bold">نسخ</span>
+            </button>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setQuickActionsPos(null)}
+              className="w-7 h-9 rounded-xl bg-transparent text-[#8B6914]/40 hover:text-[#8B6914] flex items-center justify-center active:scale-90 transition-all"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* ===== 3D Render Modal ===== */}
+      {show3DModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShow3DModal(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()} dir="rtl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-[#5C3D11] text-base">تصدير 3D Perspective</h3>
+              <button onClick={() => setShow3DModal(false)} className="p-1.5 rounded-xl hover:bg-[#f5f0e8]"><X className="w-4 h-4 text-[#8B6914]" /></button>
+            </div>
+
+            {/* Style */}
+            <div className="mb-4">
+              <p className="text-[10px] text-[#8B6914] font-bold mb-2">الستايل</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["modern", "classic", "gulf", "minimal"] as const).map(s => (
+                  <button key={s} onClick={() => setRenderStyle(s)}
+                    className={`py-2 rounded-xl text-[9px] font-bold transition-all ${
+                      renderStyle === s ? "bg-[#C9A84C] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                    }`}>
+                    {{
+                      modern: "معاصر",
+                      classic: "كلاسيك",
+                      gulf: "خليجي",
+                      minimal: "مينيمال"
+                    }[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* View */}
+            <div className="mb-5">
+              <p className="text-[10px] text-[#8B6914] font-bold mb-2">زاوية الرؤية</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(["perspective", "top", "front", "aerial"] as const).map(v => (
+                  <button key={v} onClick={() => setRenderView(v)}
+                    className={`py-2 rounded-xl text-[9px] font-bold transition-all ${
+                      renderView === v ? "bg-[#5C3D11] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                    }`}>
+                    {{
+                      perspective: "منظور",
+                      top: "مسقط",
+                      front: "واجهة",
+                      aerial: "جوي"
+                    }[v]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Render result */}
+            {render3DUrl && (
+              <div className="mb-4 rounded-2xl overflow-hidden border border-[#e8d9c0]">
+                <img src={render3DUrl} alt="3D Render" className="w-full object-cover" />
+                <div className="flex gap-2 p-2">
+                  <a href={render3DUrl} download="render-3d.png"
+                    className="flex-1 py-2 rounded-xl bg-[#C9A84C] text-white text-[10px] font-bold text-center">
+                    تحميل
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                setIs3DLoading(true);
+                setRender3DUrl(null);
+                try {
+                  // Build description from elements
+                  const rooms = elements.filter(e => e.type === "room") as RoomShape[];
+                  const doors = elements.filter(e => e.type === "door") as Opening[];
+                  const windows = elements.filter(e => e.type === "window") as Opening[];
+                  const desc = rooms.map(r => `${r.label} ${r.width}x${r.height}m`).join(", ");
+                  const styleKeywords: Record<string, string> = {
+                    modern: "contemporary modern interior, clean lines, neutral palette, minimalist furniture, warm LED lighting, polished surfaces",
+                    classic: "classic luxury interior, ornate moldings, rich wood paneling, chandeliers, marble floors, warm gold accents",
+                    gulf: "Saudi Gulf luxury interior, mashrabiya screens, arabesque patterns, warm beige tones, majlis seating, ornate ceiling details",
+                    minimal: "minimalist interior, white walls, natural light, simple furniture, monochrome palette, zen atmosphere"
+                  };
+                  const viewKeywords: Record<string, string> = {
+                    perspective: "interior perspective view from eye level, 3-point perspective, standing inside the main room looking toward entrance",
+                    top: "bird's eye floor plan view from directly above, architectural top-down view",
+                    front: "front elevation exterior view, straight-on facade perspective",
+                    aerial: "aerial perspective view from 45 degrees above, isometric-style architectural visualization"
+                  };
+                  const roomsDetail = rooms.map(r => `${r.label} (${r.width}m × ${r.height}m, area ${(r.width*r.height).toFixed(1)}m²)`).join("; ");
+                  const prompt = `Photorealistic architectural interior visualization. Floor plan contains: ${roomsDetail}. ${doors.length} doors, ${windows.length} windows. Ceiling height 3m. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
+                  const res = await fetch("/api/trpc/design.generateImage", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ json: { prompt } }),
+                    credentials: "include"
+                  });
+                  const data = await res.json();
+                  const url = data?.result?.data?.json?.url || data?.result?.data?.url;
+                  if (url) setRender3DUrl(url);
+                  else toast.error("حدث خطأ في الرندر");
+                } catch {
+                  toast.error("حدث خطأ في الرندر");
+                } finally {
+                  setIs3DLoading(false);
+                }
+              }}
+              disabled={is3DLoading}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-60"
+            >
+              {is3DLoading ? (
+                <><span className="animate-spin text-base">⌛</span> جاري الرندر...</>
+              ) : (
+                <><Box className="w-4 h-4" /> إنشاء رندر 3D</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== BOQ Modal ===== */}
+      {showBOQ && (() => {
+        const rooms = elements.filter(e => e.type === "room") as RoomShape[];
+        const walls = elements.filter(e => e.type === "wall") as Wall[];
+        const doors = elements.filter(e => e.type === "door") as Opening[];
+        const windows = elements.filter(e => e.type === "window") as Opening[];
+        const electricals = elements.filter(e => e.type === "electrical") as ElectricalSymbol[];
+        const acs = elements.filter(e => e.type === "ac") as ACSymbol[];
+        const totalArea = rooms.reduce((s, r) => s + r.width * r.height, 0);
+        const totalWallLen = walls.reduce((s, w) => s + dist({ x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }), 0);
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShowBOQ(false)}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir="rtl">
+              <div className="sticky top-0 bg-white/95 backdrop-blur rounded-t-3xl px-5 pt-5 pb-3 border-b border-[#e8d9c0] flex items-center justify-between">
+                <h3 className="font-black text-[#5C3D11] text-base">جدول الكميات BOQ</h3>
+                <button onClick={() => setShowBOQ(false)} className="p-1.5 rounded-xl hover:bg-[#f5f0e8]"><X className="w-4 h-4 text-[#8B6914]" /></button>
+              </div>
+              <div className="p-5 space-y-3">
+                {/* Summary */}
+                <div className="bg-gradient-to-r from-[#C9A84C]/10 to-[#8B6914]/5 rounded-2xl p-3">
+                  <p className="text-[10px] text-[#8B6914] font-bold mb-1">ملخص المشروع</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center">
+                      <p className="text-xl font-black text-[#5C3D11]">{totalArea.toFixed(1)}</p>
+                      <p className="text-[9px] text-[#8B6914]">مساحة إجمالية م²</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xl font-black text-[#5C3D11]">{totalWallLen.toFixed(1)}</p>
+                      <p className="text-[9px] text-[#8B6914]">طول جدران م</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rooms */}
+                {rooms.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">الغرف ({rooms.length})</p>
+                    {rooms.map(r => (
+                      <div key={r.id} className="flex items-center justify-between py-1.5 border-b border-[#f0e8d8] last:border-0">
+                        <span className="text-xs text-[#5C3D11] font-bold">{r.label}</span>
+                        <span className="text-xs text-[#8B6914]">{r.width.toFixed(1)} × {r.height.toFixed(1)} = <strong>{(r.width * r.height).toFixed(2)} م²</strong></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Walls */}
+                {walls.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">الجدران ({walls.length})</p>
+                    {walls.map((w, i) => (
+                      <div key={w.id} className="flex items-center justify-between py-1.5 border-b border-[#f0e8d8] last:border-0">
+                        <span className="text-xs text-[#5C3D11]">جدار {i + 1} ({({ normal: "عادي", load_bearing: "حامل", glass: "زجاجي", partition: "فاصل" } as Record<string,string>)[w.wallType]})</span>
+                        <span className="text-xs text-[#8B6914]">{dist({ x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }).toFixed(2)} م × {w.thickness}سم</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Doors */}
+                {doors.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">الأبواب ({doors.length})</p>
+                    {doors.map((d, i) => (
+                      <div key={d.id} className="flex items-center justify-between py-1.5 border-b border-[#f0e8d8] last:border-0">
+                        <span className="text-xs text-[#5C3D11]">باب {i + 1} ({({ single: "مفرد", double: "مزدوج", sliding: "منزلق", folding: "طي", pocket: "خفي" } as Record<string,string>)[d.doorType || "single"]})</span>
+                        <span className="text-xs text-[#8B6914]">{d.width.toFixed(1)} م × 2.1م</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Windows */}
+                {windows.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">النوافذ ({windows.length})</p>
+                    {windows.map((w, i) => (
+                      <div key={w.id} className="flex items-center justify-between py-1.5 border-b border-[#f0e8d8] last:border-0">
+                        <span className="text-xs text-[#5C3D11]">نافذة {i + 1} ({({ standard: "عادية", panoramic: "بانوراميك", french: "فرنسية", opening: "مفتوحة", fixed: "ثابتة" } as Record<string,string>)[w.windowType || "standard"]})</span>
+                        <span className="text-xs text-[#8B6914]">{w.width.toFixed(1)} م</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Electrical */}
+                {electricals.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">الكهرباء ({electricals.length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(electricals.reduce((acc, e) => ({ ...acc, [e.elType]: (acc[e.elType] || 0) + 1 }), {} as Record<string, number>)).map(([type, count]) => {
+                        const elLabels: Record<string, string> = { outlet: "مخرج", switch: "مفتاح", light: "إضاءة", panel: "لوحة", tv: "تلفزيون", data: "بيانات" };
+                        return (
+                          <span key={type} className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[9px] font-bold">
+                            {elLabels[type] || type} ×{count}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* AC */}
+                {acs.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-[#8B6914] font-bold mb-1.5">التكييف ({acs.length})</p>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(acs.reduce((acc, e) => ({ ...acc, [e.acType]: (acc[e.acType] || 0) + 1 }), {} as Record<string, number>)).map(([type, count]) => {
+                        const acLabels: Record<string, string> = { split: "سبليت", central: "مركزي", window_unit: "شباك", cassette: "كاسيت" };
+                        return (
+                          <span key={type} className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[9px] font-bold">
+                            {acLabels[type] || type} ×{count}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ===== Bottom Status Bar ===== */}
       <div className="bg-white border-t border-[#e8d9c0] px-3 py-1.5 flex items-center gap-3 text-[9px] text-[#8B6914]">
