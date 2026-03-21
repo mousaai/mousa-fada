@@ -2752,13 +2752,149 @@ export default function VoiceDesigner() {
                     `CRITICAL: Reproduce ONLY the doors and windows listed above. Do NOT add any extra openings. Do NOT move any opening to a different wall.`,
                   ].filter(Boolean).join(". ");
 
-                  const prompt = `Photorealistic architectural interior visualization. CRITICAL STRUCTURAL REQUIREMENTS - MUST FOLLOW EXACTLY: ${structuralConstraints}. DO NOT add, move, or remove any doors or windows. DO NOT change room proportions. Full floor plan: ${roomsDetail}. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. The visualization MUST accurately reflect the floor plan geometry. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
-                  // Capture floor plan canvas as reference image
+                  const prompt = `Photorealistic architectural interior rendering. USE THE REFERENCE FLOOR PLAN IMAGE PROVIDED AS THE EXACT BLUEPRINT - every door (shown in RED) and window (shown in BLUE) must appear in EXACTLY the same wall position as in the reference image. STRUCTURAL RULES - STRICTLY ENFORCE: ${structuralConstraints}. ABSOLUTE PROHIBITIONS: (1) DO NOT add any doors or windows not shown in the reference plan. (2) DO NOT move any opening to a different wall. (3) DO NOT change room dimensions or proportions. (4) DO NOT add furniture that blocks openings. Room details: ${roomsDetail}. Interior style: ${styleKeywords[renderStyle]}. Camera angle: ${viewKeywords[renderView]}. Ceiling height: 3 meters. The reference floor plan image is the GROUND TRUTH - match it exactly. Ultra-realistic 8K rendering, professional architectural photography, cinematic lighting, no people, no text, no watermarks.`;
+                  // Capture a clean high-contrast floor plan for AI reference
                   let planImageBase64: string | undefined;
                   try {
-                    const canvas = canvasRef.current;
-                    if (canvas) {
-                      planImageBase64 = canvas.toDataURL("image/png", 0.8);
+                    const rooms = elements.filter(e => e.type === "room") as RoomShape[];
+                    const doors = elements.filter(e => e.type === "door") as Opening[];
+                    const windows = elements.filter(e => e.type === "window") as Opening[];
+                    if (rooms.length > 0) {
+                      // Find bounding box of all rooms
+                      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                      for (const r of rooms) {
+                        minX = Math.min(minX, r.x);
+                        minY = Math.min(minY, r.y);
+                        maxX = Math.max(maxX, r.x + r.width);
+                        maxY = Math.max(maxY, r.y + r.height);
+                      }
+                      const PAD = 2; // 2m padding
+                      const planW = maxX - minX + PAD * 2;
+                      const planH = maxY - minY + PAD * 2;
+                      const SC = 80; // 80px per meter
+                      const cw = Math.round(planW * SC);
+                      const ch = Math.round(planH * SC);
+                      const offX = (-minX + PAD) * SC;
+                      const offY = (-minY + PAD) * SC;
+                      const tmpCanvas = document.createElement("canvas");
+                      tmpCanvas.width = cw;
+                      tmpCanvas.height = ch;
+                      const tc = tmpCanvas.getContext("2d")!;
+                      // White background
+                      tc.fillStyle = "#ffffff";
+                      tc.fillRect(0, 0, cw, ch);
+                      // Draw rooms
+                      for (const r of rooms) {
+                        const px = r.x * SC + offX;
+                        const py = r.y * SC + offY;
+                        const rw = r.width * SC;
+                        const rh = r.height * SC;
+                        const tw = Math.max((r.wallThickness / 100) * SC, 6);
+                        // Room fill
+                        tc.fillStyle = "#f5f0e8";
+                        tc.fillRect(px, py, rw, rh);
+                        // Thick walls
+                        tc.strokeStyle = "#1a1a1a";
+                        tc.lineWidth = tw;
+                        tc.strokeRect(px, py, rw, rh);
+                        // Room label
+                        const fs = Math.max(12, Math.min(SC * 0.25, 20));
+                        tc.font = `bold ${fs}px Arial`;
+                        tc.fillStyle = "#333333";
+                        tc.textAlign = "center";
+                        tc.textBaseline = "middle";
+                        tc.fillText(r.label, px + rw / 2, py + rh / 2 - fs * 0.5);
+                        tc.font = `${fs * 0.75}px Arial`;
+                        tc.fillStyle = "#666666";
+                        tc.fillText(`${r.width}×${r.height}m`, px + rw / 2, py + rh / 2 + fs * 0.5);
+                        // Wall labels (N/S/E/W)
+                        tc.font = `bold ${Math.max(9, fs * 0.6)}px Arial`;
+                        tc.fillStyle = "#999999";
+                        tc.fillText("N", px + rw / 2, py + 10);
+                        tc.fillText("S", px + rw / 2, py + rh - 10);
+                        tc.fillText("W", px + 10, py + rh / 2);
+                        tc.fillText("E", px + rw - 10, py + rh / 2);
+                      }
+                      // Draw doors (red)
+                      for (const d of doors) {
+                        const cx = d.x * SC + offX;
+                        const cy = d.y * SC + offY;
+                        const dw = d.width * SC;
+                        const rad = (d.rotation * Math.PI) / 180;
+                        tc.save();
+                        tc.translate(cx, cy);
+                        tc.rotate(rad);
+                        // Clear wall gap
+                        tc.clearRect(-dw / 2, -8, dw, 16);
+                        tc.fillStyle = "#ffffff";
+                        tc.fillRect(-dw / 2, -8, dw, 16);
+                        // Door symbol (red)
+                        tc.strokeStyle = "#cc0000";
+                        tc.lineWidth = 3;
+                        tc.beginPath();
+                        tc.moveTo(-dw / 2, 0);
+                        tc.lineTo(dw / 2, 0);
+                        tc.stroke();
+                        // Swing arc
+                        tc.lineWidth = 1.5;
+                        tc.setLineDash([4, 3]);
+                        tc.strokeStyle = "#cc000066";
+                        tc.beginPath();
+                        tc.arc(-dw / 2, 0, dw, 0, Math.PI / 2);
+                        tc.stroke();
+                        tc.setLineDash([]);
+                        // Label
+                        tc.font = "bold 10px Arial";
+                        tc.fillStyle = "#cc0000";
+                        tc.textAlign = "center";
+                        tc.fillText(`D ${d.width}m`, 0, 18);
+                        tc.restore();
+                      }
+                      // Draw windows (blue)
+                      for (const w of windows) {
+                        const cx = w.x * SC + offX;
+                        const cy = w.y * SC + offY;
+                        const ww = w.width * SC;
+                        const rad = (w.rotation * Math.PI) / 180;
+                        tc.save();
+                        tc.translate(cx, cy);
+                        tc.rotate(rad);
+                        // Clear wall gap
+                        tc.clearRect(-ww / 2, -6, ww, 12);
+                        tc.fillStyle = "#d0e8f8";
+                        tc.fillRect(-ww / 2, -6, ww, 12);
+                        // Window symbol (blue)
+                        tc.strokeStyle = "#0066cc";
+                        tc.lineWidth = 2;
+                        tc.strokeRect(-ww / 2, -6, ww, 12);
+                        // Center line
+                        tc.beginPath();
+                        tc.moveTo(-ww / 2, 0);
+                        tc.lineTo(ww / 2, 0);
+                        tc.stroke();
+                        // Label
+                        tc.font = "bold 10px Arial";
+                        tc.fillStyle = "#0066cc";
+                        tc.textAlign = "center";
+                        tc.fillText(`W ${w.width}m`, 0, 16);
+                        tc.restore();
+                      }
+                      // North arrow
+                      tc.save();
+                      tc.translate(cw - 30, 30);
+                      tc.fillStyle = "#333";
+                      tc.font = "bold 14px Arial";
+                      tc.textAlign = "center";
+                      tc.fillText("N", 0, -12);
+                      tc.beginPath();
+                      tc.moveTo(0, -8);
+                      tc.lineTo(-5, 8);
+                      tc.lineTo(0, 4);
+                      tc.lineTo(5, 8);
+                      tc.closePath();
+                      tc.fill();
+                      tc.restore();
+                      planImageBase64 = tmpCanvas.toDataURL("image/png", 1.0);
                     }
                   } catch {
                     // Continue without canvas image
