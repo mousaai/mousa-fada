@@ -1132,8 +1132,8 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
         : "ABSOLUTE CONSTRAINT: ALL doors, windows, columns, and structural openings MUST stay in their EXACT original positions and sizes from the reference photo. Do NOT move, resize, or remove any opening.";
 
       const prompt = input.imagePrompt
-        ? `${input.imagePrompt}\n\nCRITICAL REFERENCE PHOTO INSTRUCTION: The attached image is the ORIGINAL ROOM PHOTO. You MUST use it as the structural blueprint. Keep IDENTICAL: room shape, room dimensions, camera angle, camera height, zoom level, perspective, and ALL door/window/column positions. Only change: colors, materials, furniture style, wall finish, flooring, ceiling, lighting, and decor.`
-        : `Photorealistic architectural interior redesign. CRITICAL: The attached image is the ORIGINAL ROOM - use it as structural blueprint. ${structuralNote} Apply ONLY these changes: ${styleName} style, color palette (${colorDesc}), materials (${materialsDesc}), updated furniture, new wall finishes, new flooring, new ceiling, new lighting. IDENTICAL camera angle and perspective as original photo. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, no people, no text.`;
+        ? `${input.imagePrompt}\n\nCRITICAL REFERENCE PHOTO INSTRUCTION: The attached image is the ORIGINAL ROOM PHOTO. You MUST use it as the structural blueprint. Keep IDENTICAL: room shape, room dimensions, camera angle, camera height, zoom level, perspective, and ALL door/window/column positions. ⚠️ ABSOLUTE RULE: Do NOT add, invent, or create any new doors, windows, or openings that do not exist in the original photo. ONLY the existing openings are allowed - in their exact positions and sizes. Only change: colors, materials, furniture style, wall finish, flooring, ceiling, lighting, and decor.`
+        : `Photorealistic architectural interior redesign. CRITICAL: The attached image is the ORIGINAL ROOM - use it as structural blueprint. ${structuralNote} ⚠️ ABSOLUTE RULE: Do NOT add, invent, or create any new doors, windows, or openings that do not exist in the original photo. Apply ONLY these changes: ${styleName} style, color palette (${colorDesc}), materials (${materialsDesc}), updated furniture, new wall finishes, new flooring, new ceiling, new lighting. IDENTICAL camera angle and perspective as original photo. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, no people, no text.`;
 
       // استخراج base64 من data URL إذا كانت الصورة base64، وإلا استخدم URL مباشرة
       const isBase64DataUrl = input.imageUrl.startsWith("data:");
@@ -1374,25 +1374,36 @@ ${colorText}
 - الجدوى الاقتصادية: التكاليف الدقيقة بالسوق الخليجي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
 
+🎨 🚫 ABSOLUTE OPENING LAW (قانون الفتحات المطلق — لا استثناء):
+لا تضيفي أي باب أو نافذة أو فتحة جديدة غير موجودة في الصورة الأصلية. الأبواب والنوافذ الموجودة تبقى في نفس مواقعها وأحجامها بالضبط. يمكنكِ تغيير مواد الأبواب والنوافذ (خشب/زجاج/معدن) لكن لا تخترعي فتحات جديدة إطلاقاً.
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
 أنتِ حرة تماماً في تغيير كل شيء في الغرفة: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
 لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدأين من صفحة بيضاء.
 الثوابت الوحيدة: ${doorChangeRule}
-
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
 2. نفس الأبعاد بالضبط — لا تغيير في أبعاد الغرفة أو نسبها
 3. ${doorChangeRule}
-
 ردودكِ دائماً بالعربية بصيغة JSON فقط.
-
-🎨 DIVERSITY LAW (قانون التباين الجذري):
-كل فكرة تصميمية يجب أن تكون مختلفة كلياً عن الأخرى في: النمط + لوحة الألوان + مستوى التدخل + نوع الأثاث + المزاج.
-لا تضعي بوهيمي + بوهيمي معاصر + بوهيمي طبيعي — هذه نفس الفكرة! اختاري أنماطاً مختلفة جذرياً: عصري مينيمال ≠ خليجي فاخر ≠ سكاندنافي طبيعي ≠ صناعي جريء.
-
+🎨 RADICAL DIVERSITY LAW (قانون التباين الجذري المطلق):
+كل فكرة تصميمية يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
+1. النمط: اختاري أنماطاً مختلفة جذرياً من عوالم تصميمية مختلفة تماماً
+   ✅ صحيح: عصري مينيمال + خليجي فاخر + صناعي جريء
+   ❌ خاطئ: عصري + عصري معاصر + عصري هادئ (نفس العالم!)
+2. لوحة الألوان: كل فكرة لها لوحة ألوان مختلفة كلياً — لا تكرري نفس الألوان
+   مثال: أبيض+رمادي+أسود ≠ ذهبي+بيج+بني ≠ أخضر+خشب+أبيض
+3. مستوى التدخل: وزّعي الأفكار (سطحي + متوسط + شامل) — لا تجعلي كلها في نفس المستوى
+4. نوع الأثاث: كل فكرة لها أثاث مختلف جذرياً
+   مثال: أريكة مخمل ≠ أريكة جلد ≠ مقاعد أرضية ≠ أريكة راتان
+5. المزاج العام: دافئ ≠ بارد ≠ محايد ≠ جريء ≠ هادئ
+🌟 BOLDNESS LAW (قانون الجرأة):
+كل فكرة يجب أن تكون جريئة ومميزة وتستحق أن تُنشر في مجلة ديكور. لا تصاميم عادية أو متوقعة. فكّري خارج الصندوق:
+- استخدمي مواد غير متوقعة (حجر طبيعي، خشب متحجر، معدن مؤكسد، مرمر ملون)
+- اقترحي إضاءة درامية (ثريات ضخمة، إضاءة مخفية، لمبات إديسون، جدار ضوئي)
+- لا تخافي من الألوان الجريئة (أخضر زيتي داكن، أزرق بترولي، بني شوكولاتة، أسود مطفي)
 💰 PRICING LAW (قانون الأسعار الواقعية):
 سطحي: 3,000-15,000 درهم | متوسط: 15,000-50,000 درهم | شامل: 50,000-150,000 درهم
-الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}`
+الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}}`
 
       // تحليل العناصر البنيوية من الصورة
       const hasDimsFromUser = !!(roomDimensions?.length && roomDimensions?.width);
@@ -1663,8 +1674,8 @@ ${structuralAnalysisPrompt}
           
           // برومبت معماري دقيق يحافظ على كل شيء
           const doorConstraint = allowDoorChanges
-            ? "Preserve structural openings unless specifically noted."
-            : "CRITICAL: ALL doors, windows, columns, and openings MUST stay in their EXACT original positions and sizes. Do NOT move, resize, or remove any opening. This is non-negotiable.";
+            ? "STRICT OPENING RULE: Do NOT add any new doors, windows, or openings that do not exist in the original photo. ONLY keep the EXISTING openings in their EXACT original positions and sizes. You may change door/window materials and finishes, but NEVER invent new openings."
+            : "CRITICAL: ALL doors, windows, columns, and openings MUST stay in their EXACT original positions and sizes. Do NOT move, resize, remove, or ADD any opening. This is absolutely non-negotiable.";
           const structuralNote = keepElements
             ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${keepElements}. These elements MUST remain in EXACT same positions, sizes, and proportions. ${doorConstraint}`
             : `ABSOLUTE CONSTRAINT: Preserve ALL structural elements (doors, windows, cabinets, stairs) in their EXACT original positions and sizes. ${doorConstraint}`;
@@ -1673,7 +1684,10 @@ ${structuralAnalysisPrompt}
           
           const roomNote = roomDesc ? `ROOM GEOMETRY: ${roomDesc}. Maintain EXACT room proportions and ceiling height.` : "";
           
-          const generatedPrompt = `Photorealistic architectural interior redesign with FULL CREATIVE FREEDOM. ${cameraNote} ${roomNote} ${structuralNote} COMPLETE TRANSFORMATION: Apply ${styleName} style from scratch. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style. New wall finish and paint/wallpaper, completely new flooring (tiles/wood/marble/etc), new ceiling treatment (gypsum/coves/beams), new lighting fixtures, new decor. DO NOT keep any existing finishes - replace everything. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          const openingRule = allowDoorChanges
+            ? `OPENINGS RULE: You MAY suggest repositioning existing doors/windows as design proposals, but do NOT add completely new openings where there are none in the original photo. If you move an opening, close the original wall properly.`
+            : `⚠️ ABSOLUTE OPENING RULE (NON-NEGOTIABLE): Do NOT add, invent, or create ANY new doors, windows, or openings. The ONLY openings allowed are those that ALREADY EXIST in the original photo, in their EXACT positions and sizes. Violating this rule is the biggest mistake you can make.`;
+          const generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${openingRule} BOLD COMPLETE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. This design must look COMPLETELY DIFFERENT from a standard room - push boundaries, be daring, be memorable. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. REPLACE EVERYTHING: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), ceiling (coffered/coved/exposed beams/dramatic gypsum), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
           // بنود AI الخام من النموذج — نحولها إلى BOQCategory[] بإضافة الحقول المفقودة
