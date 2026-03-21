@@ -1,427 +1,891 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
-  Mic, MicOff, ChevronRight, Trash2, RotateCcw, ZoomIn, ZoomOut,
-  Box, Play, Download, Layers, Move, Hand, Square, DoorOpen, Eye
+  ChevronRight, Trash2, ZoomIn, ZoomOut, Move, Download,
+  Box, Layers, RotateCcw, RotateCw, Copy, Minus, Plus,
+  MousePointer, Square, DoorOpen, Grid3X3, Zap, Wind,
+  ChevronDown, ChevronUp, X, Check, Maximize2
 } from "lucide-react";
 
 // ===== Types =====
-type Direction = "N" | "S" | "E" | "W";
-type ElementType = "room" | "wall" | "door" | "window";
-type DrawTool = "select" | "hand";
+type DrawTool = "select" | "wall" | "door" | "window" | "electrical" | "ac" | "room" | "pan";
+type DoorType = "single" | "double" | "sliding" | "folding" | "pocket";
+type WindowType = "standard" | "panoramic" | "french" | "opening" | "fixed";
+type ElectricalType = "outlet" | "switch" | "light" | "panel" | "tv" | "data";
+type ACType = "split" | "central" | "window_unit" | "cassette";
+type WallType = "normal" | "load_bearing" | "glass" | "partition";
 
 interface Point { x: number; y: number; }
+interface Rect { x: number; y: number; w: number; h: number; }
 
-interface Room {
+interface Wall {
   id: string;
+  type: "wall";
+  x1: number; y1: number; x2: number; y2: number;
+  thickness: number; // cm: 10-40
+  wallType: WallType;
+  rotation: number;
+}
+
+interface Opening {
+  id: string;
+  type: "door" | "window";
+  x: number; y: number;
+  width: number; // meters
+  height: number; // meters
+  rotation: number; // degrees
+  doorType?: DoorType;
+  windowType?: WindowType;
+  swingIn?: boolean; // door swing direction
+  label?: string;
+}
+
+interface ElectricalSymbol {
+  id: string;
+  type: "electrical";
+  x: number; y: number;
+  elType: ElectricalType;
+  rotation: number;
+  label?: string;
+}
+
+interface ACSymbol {
+  id: string;
+  type: "ac";
+  x: number; y: number;
+  acType: ACType;
+  rotation: number;
+  capacity?: string; // e.g. "18000 BTU"
+}
+
+interface RoomShape {
+  id: string;
+  type: "room";
   x: number; y: number;
   width: number; height: number;
   label: string;
   color: string;
+  wallThickness: number; // cm
 }
 
-interface Door {
-  id: string;
-  wallId: string;
-  roomId: string;
-  side: Direction; // which wall of the room
-  position: number; // 0-1 along the wall
-  width: number; // in meters
-  swingDirection: "in" | "out";
-}
+type DrawElement = Wall | Opening | ElectricalSymbol | ACSymbol | RoomShape;
 
-interface Window {
-  id: string;
-  roomId: string;
-  side: Direction;
-  position: number; // 0-1 along the wall
-  width: number; // meters
-  height: number; // meters
-  sillHeight: number; // meters from floor
-}
+interface HistoryEntry { elements: DrawElement[]; }
 
-interface FloorPlan {
-  rooms: Room[];
-  doors: Door[];
-  windows: Window[];
-  scale: number; // pixels per meter
-  northAngle: number; // degrees, 0 = up
-}
-
-interface SarahMessage {
-  id: string;
-  role: "sarah" | "user";
-  text: string;
-  timestamp: number;
-  isProcessing?: boolean;
-}
-
-// ===== Constants =====
-const SCALE = 60; // pixels per meter
-const ROOM_COLORS = [
-  "#E8D5B7", "#D4E8D5", "#D5D4E8", "#E8D5D5",
-  "#E8E4D5", "#D5E8E4", "#E4D5E8", "#E8E0D5",
+// ===== Library Presets =====
+const ROOM_LIBRARY = [
+  // مجالس وغرف معيشة
+  { label: "مجلس 6×8", cat: "مجالس", w: 6, h: 8, color: "#E8D5B7" },
+  { label: "مجلس 5×6", cat: "مجالس", w: 5, h: 6, color: "#E8D5B7" },
+  { label: "غرفة معيشة 5×6", cat: "معيشة", w: 5, h: 6, color: "#D4E8D5" },
+  { label: "غرفة معيشة 4×5", cat: "معيشة", w: 4, h: 5, color: "#D4E8D5" },
+  { label: "غرفة معيشة 4×4", cat: "معيشة", w: 4, h: 4, color: "#D4E8D5" },
+  // غرف نوم
+  { label: "ماستر 4×5", cat: "نوم", w: 4, h: 5, color: "#D5D4E8" },
+  { label: "ماستر 5×6", cat: "نوم", w: 5, h: 6, color: "#D5D4E8" },
+  { label: "غرفة نوم 4×4", cat: "نوم", w: 4, h: 4, color: "#E8D5D5" },
+  { label: "غرفة نوم 3×4", cat: "نوم", w: 3, h: 4, color: "#E8D5D5" },
+  { label: "غرفة نوم 3×3", cat: "نوم", w: 3, h: 3, color: "#E8D5D5" },
+  // حمامات
+  { label: "حمام ماستر 2×3", cat: "حمام", w: 2, h: 3, color: "#D5E8E4" },
+  { label: "حمام 2×2.5", cat: "حمام", w: 2, h: 2.5, color: "#D5E8E4" },
+  { label: "حمام 1.5×2", cat: "حمام", w: 1.5, h: 2, color: "#D5E8E4" },
+  { label: "حمام ضيوف 1.5×1.5", cat: "حمام", w: 1.5, h: 1.5, color: "#D5E8E4" },
+  // دريسينج
+  { label: "دريسينج 3×3", cat: "دريسينج", w: 3, h: 3, color: "#E4D5E8" },
+  { label: "دريسينج 2×3", cat: "دريسينج", w: 2, h: 3, color: "#E4D5E8" },
+  { label: "دريسينج 2×2", cat: "دريسينج", w: 2, h: 2, color: "#E4D5E8" },
+  // مطابخ
+  { label: "مطبخ 3×4", cat: "مطبخ", w: 3, h: 4, color: "#E8E4D5" },
+  { label: "مطبخ 2×4", cat: "مطبخ", w: 2, h: 4, color: "#E8E4D5" },
+  { label: "مطبخ 3×3", cat: "مطبخ", w: 3, h: 3, color: "#E8E4D5" },
+  // ممرات وردهات
+  { label: "ردهة 3×4", cat: "ردهة", w: 3, h: 4, color: "#F0EAD8" },
+  { label: "ممر 1.2×4", cat: "ممر", w: 1.2, h: 4, color: "#F0EAD8" },
+  { label: "ممر 1.5×5", cat: "ممر", w: 1.5, h: 5, color: "#F0EAD8" },
+  // مداخل وصالات
+  { label: "مدخل 3×3", cat: "مدخل", w: 3, h: 3, color: "#E8E0D5" },
+  { label: "صالة 4×4", cat: "صالة", w: 4, h: 4, color: "#E8E0D5" },
+  // خدمات
+  { label: "غرفة غسيل 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5" },
+  { label: "غرفة خادمة 2×3", cat: "خدمات", w: 2, h: 3, color: "#DDE8D5" },
+  { label: "مخزن 2×2", cat: "خدمات", w: 2, h: 2, color: "#DDE8D5" },
 ];
-const COMPASS_LABELS: Record<Direction, string> = { N: "ش", S: "ج", E: "ش.ق", W: "غ" };
 
-// Wall labels: A=شمال, B=جنوب, C=شرق, D=غرب
-const WALL_LABELS: Record<Direction, string> = { N: "A", S: "B", E: "C", W: "D" };
-const WALL_NAMES: Record<Direction, string> = { N: "A (شمال)", S: "B (جنوب)", E: "C (شرق)", W: "D (غرب)" };
+const DOOR_TYPES: { type: DoorType; label: string; icon: string }[] = [
+  { type: "single", label: "باب واحد", icon: "🚪" },
+  { type: "double", label: "باب مزدوج", icon: "🚪🚪" },
+  { type: "sliding", label: "باب منزلق", icon: "↔️" },
+  { type: "folding", label: "باب طي", icon: "📂" },
+  { type: "pocket", label: "باب جيب", icon: "📥" },
+];
 
-// ===== Utility =====
+const WINDOW_TYPES: { type: WindowType; label: string; icon: string }[] = [
+  { type: "standard", label: "نافذة عادية", icon: "🪟" },
+  { type: "panoramic", label: "بانورامية", icon: "🖼️" },
+  { type: "french", label: "فرنسية", icon: "🚪" },
+  { type: "opening", label: "فتحة", icon: "⬜" },
+  { type: "fixed", label: "ثابتة", icon: "🔲" },
+];
+
+const ELECTRICAL_TYPES: { type: ElectricalType; label: string; symbol: string; color: string }[] = [
+  { type: "outlet", label: "مخرج كهرباء", symbol: "⊕", color: "#e74c3c" },
+  { type: "switch", label: "مفتاح إضاءة", symbol: "S", color: "#e67e22" },
+  { type: "light", label: "نقطة إضاءة", symbol: "✦", color: "#f1c40f" },
+  { type: "panel", label: "لوحة كهربائية", symbol: "⊞", color: "#8e44ad" },
+  { type: "tv", label: "مخرج TV", symbol: "TV", color: "#2980b9" },
+  { type: "data", label: "مخرج بيانات", symbol: "D", color: "#27ae60" },
+];
+
+const AC_TYPES: { type: ACType; label: string; symbol: string; color: string }[] = [
+  { type: "split", label: "سبليت", symbol: "AC", color: "#3498db" },
+  { type: "central", label: "مركزي", symbol: "⊙", color: "#2ecc71" },
+  { type: "window_unit", label: "شباك", symbol: "W", color: "#1abc9c" },
+  { type: "cassette", label: "كاسيت", symbol: "⊞", color: "#9b59b6" },
+];
+
+const ROOM_COLORS = ["#E8D5B7","#D4E8D5","#D5D4E8","#E8D5D5","#E8E4D5","#D5E8E4","#E4D5E8","#E8E0D5","#DDE8D5","#F0EAD8"];
+const SCALE = 60; // px per meter
+const GRID_SIZE = 0.5; // snap to 0.5m grid
+
 function generateId() { return Math.random().toString(36).slice(2, 9); }
+function snap(v: number, grid = GRID_SIZE) { return Math.round(v / grid) * grid; }
+function dist(a: Point, b: Point) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
 
-function metersToPixels(m: number, scale = SCALE) { return m * scale; }
-function pixelsToMeters(px: number, scale = SCALE) { return px / scale; }
-
-// ===== Draw floor plan on canvas =====
-function drawFloorPlan(
+// ===== Canvas Drawing Engine =====
+function drawAll(
   ctx: CanvasRenderingContext2D,
-  plan: FloorPlan,
-  selectedId: string | null,
+  elements: DrawElement[],
+  selectedIds: Set<string>,
   viewOffset: Point,
-  zoom: number
+  zoom: number,
+  drawingState: DrawingState | null,
+  hoveredId: string | null
 ) {
-  const sc = plan.scale * zoom;
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const sc = SCALE * zoom;
+  const W = ctx.canvas.width;
+  const H = ctx.canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = "#f8f4ee";
+  ctx.fillRect(0, 0, W, H);
 
   // Grid
   ctx.save();
-  ctx.strokeStyle = "#e0d4c0";
-  ctx.lineWidth = 0.5;
-  const gridSize = sc; // 1m grid
-  const startX = viewOffset.x % gridSize;
-  const startY = viewOffset.y % gridSize;
-  for (let x = startX; x < ctx.canvas.width; x += gridSize) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ctx.canvas.height); ctx.stroke();
+  const gridPx = sc * GRID_SIZE;
+  const startX = ((viewOffset.x % gridPx) + gridPx) % gridPx;
+  const startY = ((viewOffset.y % gridPx) + gridPx) % gridPx;
+  ctx.strokeStyle = "#e8ddd0";
+  ctx.lineWidth = 0.4;
+  for (let x = startX; x < W; x += gridPx) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
   }
-  for (let y = startY; y < ctx.canvas.height; y += gridSize) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(ctx.canvas.width, y); ctx.stroke();
+  for (let y = startY; y < H; y += gridPx) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // 1m grid accent
+  const meterPx = sc;
+  const mStartX = ((viewOffset.x % meterPx) + meterPx) % meterPx;
+  const mStartY = ((viewOffset.y % meterPx) + meterPx) % meterPx;
+  ctx.strokeStyle = "#d4c8b8";
+  ctx.lineWidth = 0.8;
+  for (let x = mStartX; x < W; x += meterPx) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = mStartY; y < H; y += meterPx) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
   ctx.restore();
 
-  // Compass rose (top-right)
-  drawCompass(ctx, ctx.canvas.width - 60, 60, plan.northAngle);
-
-  // Rooms
-  for (const room of plan.rooms) {
-    const rx = room.x * sc + viewOffset.x;
-    const ry = room.y * sc + viewOffset.y;
-    const rw = room.width * sc;
-    const rh = room.height * sc;
-
-    // Fill
-    ctx.fillStyle = room.color + "cc";
-    ctx.fillRect(rx, ry, rw, rh);
-
-    // Border
-    ctx.strokeStyle = selectedId === room.id ? "#C9A84C" : "#5C3D11";
-    ctx.lineWidth = selectedId === room.id ? 3 : 2;
-    ctx.strokeRect(rx, ry, rw, rh);
-
-    // Label
-    ctx.fillStyle = "#3d2a0a";
-    ctx.font = `bold ${Math.max(11, sc * 0.22)}px Cairo, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(room.label, rx + rw / 2, ry + rh / 2 - sc * 0.1);
-    ctx.font = `${Math.max(9, sc * 0.16)}px Cairo, sans-serif`;
-    ctx.fillStyle = "#7a5c2a";
-    ctx.fillText(`${room.width}×${room.height}م`, rx + rw / 2, ry + rh / 2 + sc * 0.15);
-
-    // Wall labels A/B/C/D on each side of the room
-    const wallLabelSize = Math.max(9, sc * 0.14);
-    ctx.font = `bold ${wallLabelSize}px Cairo, sans-serif`;
-    ctx.fillStyle = "#C9A84C";
-    const wallPad = Math.max(8, sc * 0.12);
-    // North wall = A
-    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-    ctx.fillText("A", rx + rw / 2, ry + wallPad);
-    // South wall = B
-    ctx.textBaseline = "top";
-    ctx.fillText("B", rx + rw / 2, ry + rh - wallPad);
-    // East wall = C (right in LTR canvas)
-    ctx.textAlign = "right"; ctx.textBaseline = "middle";
-    ctx.fillText("C", rx + rw - wallPad * 0.5, ry + rh / 2);
-    // West wall = D (left)
-    ctx.textAlign = "left";
-    ctx.fillText("D", rx + wallPad * 0.5, ry + rh / 2);
+  // Draw elements
+  for (const el of elements) {
+    const isSelected = selectedIds.has(el.id);
+    const isHovered = hoveredId === el.id;
+    drawElement(ctx, el, isSelected, isHovered, viewOffset, sc);
   }
 
-  // Doors
-  for (const door of plan.doors) {
-    const room = plan.rooms.find(r => r.id === door.roomId);
-    if (!room) continue;
-    drawDoor(ctx, room, door, sc, viewOffset, selectedId === door.id);
+  // Drawing preview
+  if (drawingState) {
+    drawPreview(ctx, drawingState, viewOffset, sc);
   }
 
-  // Windows
-  for (const win of plan.windows) {
-    const room = plan.rooms.find(r => r.id === win.roomId);
-    if (!room) continue;
-    drawWindow(ctx, room, win, sc, viewOffset, selectedId === win.id);
+  // Compass
+  drawCompass(ctx, W - 50, 50);
+}
+
+function worldToScreen(x: number, y: number, offset: Point, sc: number): Point {
+  return { x: x * sc + offset.x, y: y * sc + offset.y };
+}
+
+function drawElement(
+  ctx: CanvasRenderingContext2D,
+  el: DrawElement,
+  selected: boolean,
+  hovered: boolean,
+  offset: Point,
+  sc: number
+) {
+  ctx.save();
+  if (el.type === "room") {
+    drawRoom(ctx, el as RoomShape, selected, hovered, offset, sc);
+  } else if (el.type === "wall") {
+    drawWall(ctx, el as Wall, selected, hovered, offset, sc);
+  } else if (el.type === "door") {
+    drawDoor(ctx, el as Opening, selected, hovered, offset, sc);
+  } else if (el.type === "window") {
+    drawWindow(ctx, el as Opening, selected, hovered, offset, sc);
+  } else if (el.type === "electrical") {
+    drawElectrical(ctx, el as ElectricalSymbol, selected, hovered, offset, sc);
+  } else if (el.type === "ac") {
+    drawAC(ctx, el as ACSymbol, selected, hovered, offset, sc);
+  }
+  ctx.restore();
+}
+
+function drawRoom(ctx: CanvasRenderingContext2D, room: RoomShape, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const p = worldToScreen(room.x, room.y, offset, sc);
+  const rw = room.width * sc;
+  const rh = room.height * sc;
+  const tw = (room.wallThickness / 100) * sc;
+
+  // Fill
+  ctx.fillStyle = room.color + "cc";
+  ctx.fillRect(p.x, p.y, rw, rh);
+
+  // Wall thickness visual
+  ctx.strokeStyle = selected ? "#C9A84C" : hovered ? "#b8960f" : "#5C3D11";
+  ctx.lineWidth = Math.max(tw, 2);
+  ctx.strokeRect(p.x, p.y, rw, rh);
+
+  // Selection highlight
+  if (selected) {
+    ctx.strokeStyle = "#C9A84C";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 3]);
+    ctx.strokeRect(p.x - 4, p.y - 4, rw + 8, rh + 8);
+    ctx.setLineDash([]);
+    drawResizeHandles(ctx, p.x, p.y, rw, rh);
+  }
+
+  // Label
+  const fontSize = Math.max(10, Math.min(sc * 0.22, 18));
+  ctx.font = `bold ${fontSize}px Cairo, sans-serif`;
+  ctx.fillStyle = "#3d2a0a";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(room.label, p.x + rw / 2, p.y + rh / 2 - fontSize * 0.6);
+
+  // Dimensions
+  const dimFont = Math.max(8, Math.min(sc * 0.15, 13));
+  ctx.font = `${dimFont}px Cairo, sans-serif`;
+  ctx.fillStyle = "#7a5c2a";
+  ctx.fillText(`${room.width}×${room.height}م`, p.x + rw / 2, p.y + rh / 2 + dimFont * 0.8);
+
+  // Dimension lines
+  if (selected || hovered) {
+    drawDimensionLine(ctx, p.x, p.y + rh + 12, p.x + rw, p.y + rh + 12, `${room.width}م`);
+    drawDimensionLine(ctx, p.x - 12, p.y, p.x - 12, p.y + rh, `${room.height}م`, true);
   }
 }
 
-function drawCompass(ctx: CanvasRenderingContext2D, cx: number, cy: number, northAngle: number) {
+function drawWall(ctx: CanvasRenderingContext2D, wall: Wall, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const x1 = wall.x1 * sc + offset.x;
+  const y1 = wall.y1 * sc + offset.y;
+  const x2 = wall.x2 * sc + offset.x;
+  const y2 = wall.y2 * sc + offset.y;
+  const tw = Math.max((wall.thickness / 100) * sc, 3);
+
+  const colors: Record<WallType, string> = {
+    normal: "#5C3D11",
+    load_bearing: "#2c1a05",
+    glass: "#4a90d9",
+    partition: "#8B6914",
+  };
+
+  ctx.strokeStyle = selected ? "#C9A84C" : hovered ? "#b8960f" : colors[wall.wallType];
+  ctx.lineWidth = tw;
+  ctx.lineCap = "square";
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  if (wall.wallType === "glass") {
+    ctx.strokeStyle = "#a8d4f5";
+    ctx.lineWidth = tw * 0.4;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (wall.wallType === "load_bearing") {
+    // Hatch pattern for load bearing
+    const len = dist({ x: x1, y: y1 }, { x: x2, y: y2 });
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+    ctx.strokeStyle = "#2c1a05";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < len; i += 8) {
+      ctx.beginPath();
+      ctx.moveTo(i, -tw / 2);
+      ctx.lineTo(i + 4, tw / 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Dimension on hover/select
+  if (selected || hovered) {
+    const length = dist({ x: wall.x1, y: wall.y1 }, { x: wall.x2, y: wall.y2 });
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    ctx.fillStyle = "#5C3D11";
+    ctx.font = "bold 11px Cairo, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(`${length.toFixed(2)}م`, mx, my - 4);
+    ctx.fillText(`${wall.thickness}سم`, mx, my + 14);
+  }
+
+  // Endpoints
+  if (selected) {
+    [{ x: x1, y: y1 }, { x: x2, y: y2 }].forEach(pt => {
+      ctx.fillStyle = "#C9A84C";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+}
+
+function drawDoor(ctx: CanvasRenderingContext2D, door: Opening, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const cx = door.x * sc + offset.x;
+  const cy = door.y * sc + offset.y;
+  const dw = door.width * sc;
+  const rad = (door.rotation * Math.PI) / 180;
+
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate((northAngle * Math.PI) / 180);
-  // Arrow
+  ctx.rotate(rad);
+
+  const color = selected ? "#C9A84C" : hovered ? "#b8960f" : "#5C3D11";
+  ctx.strokeStyle = color;
+  ctx.fillStyle = "#faf6f0";
+  ctx.lineWidth = 2;
+
+  if (door.doorType === "sliding") {
+    // Sliding door: two parallel lines with arrow
+    ctx.fillRect(-dw / 2, -4, dw, 8);
+    ctx.strokeRect(-dw / 2, -4, dw, 8);
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2 + 4, 0);
+    ctx.lineTo(dw / 2 - 4, 0);
+    ctx.stroke();
+    // Arrows
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2 + 4, -3); ctx.lineTo(-dw / 2, 0); ctx.lineTo(-dw / 2 + 4, 3);
+    ctx.moveTo(dw / 2 - 4, -3); ctx.lineTo(dw / 2, 0); ctx.lineTo(dw / 2 - 4, 3);
+    ctx.stroke();
+  } else if (door.doorType === "double") {
+    // Double door: two arcs
+    const hw = dw / 2;
+    ctx.clearRect(-hw, -3, dw, 6);
+    ctx.fillRect(-hw, -2, dw, 4);
+    ctx.strokeRect(-hw, -2, dw, 4);
+    // Left arc
+    ctx.beginPath();
+    ctx.moveTo(-hw, 0);
+    ctx.arc(-hw, 0, hw, 0, -Math.PI / 2, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-hw, 0);
+    ctx.lineTo(-hw, -hw);
+    ctx.stroke();
+    // Right arc
+    ctx.beginPath();
+    ctx.moveTo(hw, 0);
+    ctx.arc(hw, 0, hw, Math.PI, -Math.PI / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(hw, 0);
+    ctx.lineTo(hw, -hw);
+    ctx.stroke();
+  } else if (door.doorType === "folding") {
+    // Folding door: zigzag
+    ctx.clearRect(-dw / 2, -3, dw, 6);
+    ctx.fillRect(-dw / 2, -2, dw, 4);
+    ctx.strokeRect(-dw / 2, -2, dw, 4);
+    ctx.beginPath();
+    const seg = dw / 4;
+    ctx.moveTo(-dw / 2, 0);
+    ctx.lineTo(-dw / 2 + seg, -dw / 4);
+    ctx.lineTo(-dw / 2 + seg * 2, 0);
+    ctx.lineTo(-dw / 2 + seg * 3, -dw / 4);
+    ctx.lineTo(dw / 2, 0);
+    ctx.stroke();
+  } else {
+    // Single door (default): arc swing
+    ctx.clearRect(-dw / 2, -3, dw, 6);
+    ctx.fillRect(-dw / 2, -2, dw, 4);
+    ctx.strokeRect(-dw / 2, -2, dw, 4);
+    const swingDir = door.swingIn ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2, 0);
+    ctx.arc(-dw / 2, 0, dw, 0, swingDir * Math.PI / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-dw / 2, 0);
+    ctx.lineTo(-dw / 2 + dw * Math.cos(swingDir * Math.PI / 2), dw * Math.sin(swingDir * Math.PI / 2));
+    ctx.stroke();
+  }
+
+  // Label
+  ctx.font = "bold 9px Cairo, sans-serif";
+  ctx.fillStyle = "#8B6914";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(`باب ${door.width}م`, 0, dw / 2 + 4);
+
+  if (selected) {
+    drawRotateHandle(ctx, 0, -dw / 2 - 16);
+    ctx.strokeStyle = "#C9A84C";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(-dw / 2 - 4, -dw / 2 - 4, dw + 8, dw + 8);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawWindow(ctx: CanvasRenderingContext2D, win: Opening, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const cx = win.x * sc + offset.x;
+  const cy = win.y * sc + offset.y;
+  const ww = win.width * sc;
+  const rad = (win.rotation * Math.PI) / 180;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+
+  const color = selected ? "#C9A84C" : hovered ? "#b8960f" : "#4a90d9";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+
+  if (win.windowType === "panoramic") {
+    // Wide panoramic
+    ctx.clearRect(-ww / 2, -5, ww, 10);
+    ctx.strokeRect(-ww / 2, -5, ww, 10);
+    ctx.fillStyle = "#d0e8f8aa";
+    ctx.fillRect(-ww / 2, -5, ww, 10);
+    // Multiple panes
+    const panes = Math.max(3, Math.floor(win.width / 0.6));
+    for (let i = 1; i < panes; i++) {
+      const px = -ww / 2 + (ww / panes) * i;
+      ctx.beginPath();
+      ctx.moveTo(px, -5); ctx.lineTo(px, 5);
+      ctx.stroke();
+    }
+  } else if (win.windowType === "french") {
+    // French door/window
+    ctx.clearRect(-ww / 2, -5, ww, 10);
+    ctx.strokeRect(-ww / 2, -5, ww, 10);
+    ctx.fillStyle = "#d0e8f8aa";
+    ctx.fillRect(-ww / 2, -5, ww, 10);
+    ctx.beginPath();
+    ctx.moveTo(0, -5); ctx.lineTo(0, 5);
+    ctx.stroke();
+    // Arcs
+    ctx.beginPath();
+    ctx.arc(-ww / 4, 5, ww / 4, 0, -Math.PI, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ww / 4, 5, ww / 4, Math.PI, 0, true);
+    ctx.stroke();
+  } else {
+    // Standard window
+    ctx.clearRect(-ww / 2, -4, ww, 8);
+    ctx.strokeRect(-ww / 2, -4, ww, 8);
+    ctx.fillStyle = "#d0e8f8aa";
+    ctx.fillRect(-ww / 2, -4, ww, 8);
+    // Glass lines
+    const panes = Math.max(2, Math.floor(win.width / 0.5));
+    for (let i = 1; i < panes; i++) {
+      const px = -ww / 2 + (ww / panes) * i;
+      ctx.beginPath();
+      ctx.moveTo(px, -4); ctx.lineTo(px, 4);
+      ctx.stroke();
+    }
+  }
+
+  // Label
+  ctx.font = "bold 8px Cairo, sans-serif";
+  ctx.fillStyle = "#4a90d9";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(`نافذة ${win.width}م`, 0, 8);
+
+  if (selected) {
+    drawRotateHandle(ctx, 0, -16);
+    ctx.strokeStyle = "#C9A84C";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(-ww / 2 - 4, -12, ww + 8, 24);
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawElectrical(ctx: CanvasRenderingContext2D, el: ElectricalSymbol, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const cx = el.x * sc + offset.x;
+  const cy = el.y * sc + offset.y;
+  const info = ELECTRICAL_TYPES.find(e => e.type === el.elType)!;
+  const r = 10;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((el.rotation * Math.PI) / 180);
+
+  // Circle background
+  ctx.fillStyle = selected ? "#C9A84C22" : hovered ? "#e8d9c022" : "#fff";
+  ctx.strokeStyle = selected ? "#C9A84C" : info.color;
+  ctx.lineWidth = selected ? 2.5 : 1.5;
   ctx.beginPath();
-  ctx.moveTo(0, -22); ctx.lineTo(6, 8); ctx.lineTo(0, 4); ctx.lineTo(-6, 8); ctx.closePath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Symbol
+  ctx.fillStyle = info.color;
+  ctx.font = `bold ${el.elType === "tv" || el.elType === "data" ? 7 : 11}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(info.symbol, 0, 0);
+
+  // Label
+  ctx.font = "7px Cairo, sans-serif";
+  ctx.fillStyle = "#5C3D11";
+  ctx.textBaseline = "top";
+  ctx.fillText(info.label, 0, r + 2);
+
+  if (selected) drawRotateHandle(ctx, 0, -r - 12);
+  ctx.restore();
+}
+
+function drawAC(ctx: CanvasRenderingContext2D, ac: ACSymbol, selected: boolean, hovered: boolean, offset: Point, sc: number) {
+  const cx = ac.x * sc + offset.x;
+  const cy = ac.y * sc + offset.y;
+  const info = AC_TYPES.find(a => a.type === ac.acType)!;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((ac.rotation * Math.PI) / 180);
+
+  // Rectangle body
+  const bw = 28, bh = 14;
+  ctx.fillStyle = selected ? "#e8f4fd" : hovered ? "#d0eaf8" : "#f0f8ff";
+  ctx.strokeStyle = selected ? "#C9A84C" : info.color;
+  ctx.lineWidth = selected ? 2.5 : 1.5;
+  ctx.fillRect(-bw / 2, -bh / 2, bw, bh);
+  ctx.strokeRect(-bw / 2, -bh / 2, bw, bh);
+
+  // Symbol
+  ctx.fillStyle = info.color;
+  ctx.font = `bold 8px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(info.symbol, 0, 0);
+
+  // Airflow lines
+  ctx.strokeStyle = info.color + "88";
+  ctx.lineWidth = 1;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 6, bh / 2);
+    ctx.lineTo(i * 6, bh / 2 + 6);
+    ctx.stroke();
+  }
+
+  // Label
+  ctx.font = "7px Cairo, sans-serif";
+  ctx.fillStyle = "#5C3D11";
+  ctx.textBaseline = "top";
+  ctx.fillText(info.label, 0, bh / 2 + 8);
+  if (ac.capacity) ctx.fillText(ac.capacity, 0, bh / 2 + 16);
+
+  if (selected) drawRotateHandle(ctx, 0, -bh / 2 - 12);
+  ctx.restore();
+}
+
+function drawResizeHandles(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const handles = [
+    { x: x, y: y }, { x: x + w / 2, y: y }, { x: x + w, y: y },
+    { x: x + w, y: y + h / 2 }, { x: x + w, y: y + h },
+    { x: x + w / 2, y: y + h }, { x: x, y: y + h }, { x: x, y: y + h / 2 },
+  ];
+  handles.forEach(h => {
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#C9A84C";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.rect(h.x - 4, h.y - 4, 8, 8);
+    ctx.fill();
+    ctx.stroke();
+  });
+}
+
+function drawRotateHandle(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.fillStyle = "#C9A84C";
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, 3, 0, Math.PI * 1.5);
+  ctx.stroke();
+}
+
+function drawDimensionLine(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, label: string, vertical = false) {
+  ctx.save();
+  ctx.strokeStyle = "#C9A84C";
+  ctx.fillStyle = "#C9A84C";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 2]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Ticks
+  if (!vertical) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1 - 4); ctx.lineTo(x1, y1 + 4);
+    ctx.moveTo(x2, y2 - 4); ctx.lineTo(x2, y2 + 4);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x1 - 4, y1); ctx.lineTo(x1 + 4, y1);
+    ctx.moveTo(x2 - 4, y2); ctx.lineTo(x2 + 4, y2);
+    ctx.stroke();
+  }
+  // Label
+  ctx.font = "bold 10px Cairo, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(mx - 16, my - 7, 32, 14);
+  ctx.fillStyle = "#C9A84C";
+  ctx.fillText(label, mx, my);
+  ctx.restore();
+}
+
+function drawPreview(ctx: CanvasRenderingContext2D, state: DrawingState, offset: Point, sc: number) {
+  if (state.tool === "wall" && state.startPoint && state.currentPoint) {
+    const x1 = state.startPoint.x * sc + offset.x;
+    const y1 = state.startPoint.y * sc + offset.y;
+    const x2 = state.currentPoint.x * sc + offset.x;
+    const y2 = state.currentPoint.y * sc + offset.y;
+    const tw = Math.max((state.wallThickness / 100) * sc, 3);
+    ctx.strokeStyle = "#C9A84C88";
+    ctx.lineWidth = tw;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const len = dist(state.startPoint, state.currentPoint);
+    ctx.fillStyle = "#C9A84C";
+    ctx.font = "bold 11px Cairo, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`${len.toFixed(2)}م`, (x1 + x2) / 2, (y1 + y2) / 2 - 10);
+  } else if (state.tool === "room" && state.startPoint && state.currentPoint) {
+    const x = Math.min(state.startPoint.x, state.currentPoint.x) * sc + offset.x;
+    const y = Math.min(state.startPoint.y, state.currentPoint.y) * sc + offset.y;
+    const w = Math.abs(state.currentPoint.x - state.startPoint.x) * sc;
+    const h = Math.abs(state.currentPoint.y - state.startPoint.y) * sc;
+    ctx.fillStyle = "#C9A84C22";
+    ctx.strokeStyle = "#C9A84C";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 3]);
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    const rw = Math.abs(state.currentPoint.x - state.startPoint.x);
+    const rh = Math.abs(state.currentPoint.y - state.startPoint.y);
+    ctx.fillStyle = "#C9A84C";
+    ctx.font = "bold 11px Cairo, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`${snap(rw).toFixed(1)}×${snap(rh).toFixed(1)}م`, x + w / 2, y + h / 2);
+    drawDimensionLine(ctx, x, y + h + 12, x + w, y + h + 12, `${snap(rw).toFixed(1)}م`);
+    drawDimensionLine(ctx, x - 12, y, x - 12, y + h, `${snap(rh).toFixed(1)}م`, true);
+  }
+}
+
+function drawCompass(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.beginPath();
+  ctx.moveTo(0, -18); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath();
   ctx.fillStyle = "#C9A84C";
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(0, 22); ctx.lineTo(6, -8); ctx.lineTo(0, -4); ctx.lineTo(-6, -8); ctx.closePath();
+  ctx.moveTo(0, 18); ctx.lineTo(5, -6); ctx.lineTo(0, -3); ctx.lineTo(-5, -6); ctx.closePath();
   ctx.fillStyle = "#ccc";
   ctx.fill();
-  ctx.restore();
-  // N label
-  ctx.save();
-  ctx.font = "bold 12px Cairo, sans-serif";
+  ctx.font = "bold 11px Cairo, sans-serif";
   ctx.fillStyle = "#5C3D11";
   ctx.textAlign = "center";
-  ctx.fillText("ش", cx, cy - 30);
+  ctx.fillText("ش", 0, -26);
   ctx.restore();
 }
 
-function drawDoor(
-  ctx: CanvasRenderingContext2D,
-  room: Room,
-  door: Door,
-  sc: number,
-  offset: Point,
-  selected: boolean
-) {
-  const rx = room.x * sc + offset.x;
-  const ry = room.y * sc + offset.y;
-  const rw = room.width * sc;
-  const rh = room.height * sc;
-  const dw = door.width * sc;
-
-  ctx.save();
-  ctx.strokeStyle = selected ? "#C9A84C" : "#5C3D11";
-  ctx.lineWidth = selected ? 3 : 2.5;
-  ctx.fillStyle = "#faf6f0";
-
-  let dx = 0, dy = 0, angle = 0;
-  if (door.side === "S") { // bottom wall
-    dx = rx + door.position * rw - dw / 2;
-    dy = ry + rh;
-    // Clear wall segment
-    ctx.clearRect(dx, dy - 3, dw, 6);
-    ctx.fillRect(dx, dy - 2, dw, 4);
-    // Door swing arc
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.arc(dx, dy, dw, 0, Math.PI / 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.lineTo(dx + dw, dy);
-    ctx.stroke();
-  } else if (door.side === "N") { // top wall
-    dx = rx + door.position * rw - dw / 2;
-    dy = ry;
-    ctx.clearRect(dx, dy - 3, dw, 6);
-    ctx.fillRect(dx, dy - 2, dw, 4);
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.arc(dx, dy, dw, 0, -Math.PI / 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.lineTo(dx + dw, dy);
-    ctx.stroke();
-  } else if (door.side === "E") { // right wall
-    dx = rx + rw;
-    dy = ry + door.position * rh - dw / 2;
-    ctx.clearRect(dx - 3, dy, 6, dw);
-    ctx.fillRect(dx - 2, dy, 4, dw);
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.arc(dx, dy, dw, Math.PI / 2, Math.PI);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.lineTo(dx, dy + dw);
-    ctx.stroke();
-  } else { // W - left wall
-    dx = rx;
-    dy = ry + door.position * rh - dw / 2;
-    ctx.clearRect(dx - 3, dy, 6, dw);
-    ctx.fillRect(dx - 2, dy, 4, dw);
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.arc(dx, dy, dw, 0, Math.PI / 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(dx, dy);
-    ctx.lineTo(dx, dy + dw);
-    ctx.stroke();
-  }
-
-  // Door label
-  ctx.font = `${Math.max(8, sc * 0.12)}px Cairo, sans-serif`;
-  ctx.fillStyle = "#8B6914";
-  ctx.textAlign = "center";
-  ctx.fillText("باب", dx + dw / 2, dy + (door.side === "N" || door.side === "S" ? -8 : dw / 2));
-  ctx.restore();
-
-  void angle;
+// ===== Drawing State =====
+interface DrawingState {
+  tool: DrawTool;
+  startPoint: Point | null;
+  currentPoint: Point | null;
+  wallThickness: number;
+  wallType: WallType;
+  doorType: DoorType;
+  windowType: WindowType;
+  elType: ElectricalType;
+  acType: ACType;
+  doorWidth: number;
+  windowWidth: number;
 }
 
-function drawWindow(
-  ctx: CanvasRenderingContext2D,
-  room: Room,
-  win: Window,
-  sc: number,
-  offset: Point,
-  selected: boolean
-) {
-  const rx = room.x * sc + offset.x;
-  const ry = room.y * sc + offset.y;
-  const rw = room.width * sc;
-  const rh = room.height * sc;
-  const ww = win.width * sc;
-
-  ctx.save();
-  ctx.strokeStyle = selected ? "#C9A84C" : "#4a90d9";
-  ctx.lineWidth = selected ? 3 : 2;
-
-  if (win.side === "N") {
-    const wx = rx + win.position * rw - ww / 2;
-    ctx.clearRect(wx, ry - 3, ww, 6);
-    ctx.strokeRect(wx, ry - 4, ww, 8);
-    // Glass lines
-    ctx.beginPath();
-    ctx.moveTo(wx + ww / 3, ry - 4);
-    ctx.lineTo(wx + ww / 3, ry + 4);
-    ctx.moveTo(wx + (2 * ww) / 3, ry - 4);
-    ctx.lineTo(wx + (2 * ww) / 3, ry + 4);
-    ctx.stroke();
-  } else if (win.side === "S") {
-    const wx = rx + win.position * rw - ww / 2;
-    ctx.clearRect(wx, ry + rh - 3, ww, 6);
-    ctx.strokeRect(wx, ry + rh - 4, ww, 8);
-    ctx.beginPath();
-    ctx.moveTo(wx + ww / 3, ry + rh - 4);
-    ctx.lineTo(wx + ww / 3, ry + rh + 4);
-    ctx.moveTo(wx + (2 * ww) / 3, ry + rh - 4);
-    ctx.lineTo(wx + (2 * ww) / 3, ry + rh + 4);
-    ctx.stroke();
-  } else if (win.side === "E") {
-    const wy = ry + win.position * rh - ww / 2;
-    ctx.clearRect(rx + rw - 3, wy, 6, ww);
-    ctx.strokeRect(rx + rw - 4, wy, 8, ww);
-    ctx.beginPath();
-    ctx.moveTo(rx + rw - 4, wy + ww / 3);
-    ctx.lineTo(rx + rw + 4, wy + ww / 3);
-    ctx.moveTo(rx + rw - 4, wy + (2 * ww) / 3);
-    ctx.lineTo(rx + rw + 4, wy + (2 * ww) / 3);
-    ctx.stroke();
-  } else {
-    const wy = ry + win.position * rh - ww / 2;
-    ctx.clearRect(rx - 3, wy, 6, ww);
-    ctx.strokeRect(rx - 4, wy, 8, ww);
-    ctx.beginPath();
-    ctx.moveTo(rx - 4, wy + ww / 3);
-    ctx.lineTo(rx + 4, wy + ww / 3);
-    ctx.moveTo(rx - 4, wy + (2 * ww) / 3);
-    ctx.lineTo(rx + 4, wy + (2 * ww) / 3);
-    ctx.stroke();
+// ===== Hit Testing =====
+function hitTest(el: DrawElement, px: number, py: number, sc: number, offset: Point): boolean {
+  if (el.type === "room") {
+    const r = el as RoomShape;
+    const x = r.x * sc + offset.x;
+    const y = r.y * sc + offset.y;
+    return px >= x && px <= x + r.width * sc && py >= y && py <= y + r.height * sc;
   }
-
-  ctx.font = `${Math.max(7, sc * 0.1)}px Cairo, sans-serif`;
-  ctx.fillStyle = "#4a90d9";
-  ctx.textAlign = "center";
-  ctx.restore();
+  if (el.type === "wall") {
+    const w = el as Wall;
+    const x1 = w.x1 * sc + offset.x;
+    const y1 = w.y1 * sc + offset.y;
+    const x2 = w.x2 * sc + offset.x;
+    const y2 = w.y2 * sc + offset.y;
+    const tw = Math.max((w.thickness / 100) * sc, 8);
+    // Distance from point to line segment
+    const len2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+    if (len2 === 0) return dist({ x: px, y: py }, { x: x1, y: y1 }) < tw;
+    const t = Math.max(0, Math.min(1, ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / len2));
+    const projX = x1 + t * (x2 - x1);
+    const projY = y1 + t * (y2 - y1);
+    return dist({ x: px, y: py }, { x: projX, y: projY }) < tw / 2 + 4;
+  }
+  if (el.type === "door" || el.type === "window") {
+    const o = el as Opening;
+    const cx = o.x * sc + offset.x;
+    const cy = o.y * sc + offset.y;
+    return dist({ x: px, y: py }, { x: cx, y: cy }) < o.width * sc / 2 + 12;
+  }
+  if (el.type === "electrical" || el.type === "ac") {
+    const s = el as ElectricalSymbol | ACSymbol;
+    const cx = s.x * sc + offset.x;
+    const cy = s.y * sc + offset.y;
+    return dist({ x: px, y: py }, { x: cx, y: cy }) < 18;
+  }
+  return false;
 }
 
 // ===== Main Component =====
 export default function VoiceDesigner() {
   const [, navigate] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [plan, setPlan] = useState<FloorPlan>({
-    rooms: [],
-    doors: [],
-    windows: [],
-    scale: SCALE,
-    northAngle: 0,
-  });
-
-  const [messages, setMessages] = useState<SarahMessage[]>([
-    {
-      id: "welcome",
-      role: "sarah",
-      text: "مرحباً! أنا م. سارة، مهندستك المعمارية. أخبرني بما تريد تصميمه — قل مثلاً: \"ارسمي غرفة معيشة 5 في 4 متر\" أو \"أضيفي باب على الجدار الغربي\"",
-      timestamp: Date.now(),
-    }
-  ]);
-
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [elements, setElements] = useState<DrawElement[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [viewOffset, setViewOffset] = useState<Point>({ x: 40, y: 60 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState<Point>({ x: 0, y: 0 });
-  const [panOffsetStart, setPanOffsetStart] = useState<Point>({ x: 0, y: 0 });
-  const [is3DView, setIs3DView] = useState(false);
-  const [view3DUrl, setView3DUrl] = useState<string | null>(null);
-  const [isGenerating3D, setIsGenerating3D] = useState(false);
-  const [showMessages, setShowMessages] = useState(true);
-  const [textInput, setTextInput] = useState("");
+  const [viewOffset, setViewOffset] = useState<Point>({ x: 60, y: 80 });
+  const [activeTool, setActiveTool] = useState<DrawTool>("select");
 
-  const voiceCommandMutation = trpc.voiceDesignCommand.useMutation({
-    onSuccess: (data) => {
-      setIsProcessing(false);
-      if (data.updatedPlan) {
-        setPlan(data.updatedPlan as FloorPlan);
-      }
-      if (data.sarahResponse) {
-        addSarahMessage(data.sarahResponse);
-      }
-    },
-    onError: (err) => {
-      setIsProcessing(false);
-      addSarahMessage("عذراً، لم أفهم الأمر. هل يمكنك إعادة الصياغة؟");
-      console.error(err);
-    },
+  // History for undo/redo
+  const historyRef = useRef<HistoryEntry[]>([{ elements: [] }]);
+  const historyIndexRef = useRef(0);
+
+  // Drawing state
+  const [drawingState, setDrawingState] = useState<DrawingState>({
+    tool: "select",
+    startPoint: null,
+    currentPoint: null,
+    wallThickness: 20,
+    wallType: "normal",
+    doorType: "single",
+    windowType: "standard",
+    elType: "outlet",
+    acType: "split",
+    doorWidth: 0.9,
+    windowWidth: 1.2,
   });
 
-  const generate3DMutation = trpc.generateFloorPlan3D.useMutation({
-    onSuccess: (data) => {
-      setIsGenerating3D(false);
-      if (data.imageUrl) {
-        setView3DUrl(data.imageUrl);
-        setIs3DView(true);
-        addSarahMessage("هذا هو المنظور ثلاثي الأبعاد لتصميمك! يمكنك تحميله أو مشاركته.");
-      }
-    },
-    onError: () => {
-      setIsGenerating3D(false);
-      toast.error("فشل توليد المنظور 3D");
-    },
+  // Pan state
+  const panRef = useRef<{ active: boolean; startX: number; startY: number; offsetStart: Point }>({
+    active: false, startX: 0, startY: 0, offsetStart: { x: 0, y: 0 }
   });
 
-  // Draw whenever plan/zoom/offset changes
+  // Drag state
+  const dragRef = useRef<{ active: boolean; id: string; startWorld: Point; elemStart: Point }>({
+    active: false, id: "", startWorld: { x: 0, y: 0 }, elemStart: { x: 0, y: 0 }
+  });
+
+  // UI state
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [showProperties, setShowProperties] = useState(false);
+  const [libCategory, setLibCategory] = useState<string>("معيشة");
+  const [showElPanel, setShowElPanel] = useState(false);
+  const [showACPanel, setShowACPanel] = useState(false);
+  const [showDoorPanel, setShowDoorPanel] = useState(false);
+  const [showWinPanel, setShowWinPanel] = useState(false);
+
+  // ===== History =====
+  const pushHistory = useCallback((newElements: DrawElement[]) => {
+    const idx = historyIndexRef.current;
+    historyRef.current = historyRef.current.slice(0, idx + 1);
+    historyRef.current.push({ elements: JSON.parse(JSON.stringify(newElements)) });
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyIndexRef.current > 0) {
+      historyIndexRef.current--;
+      const entry = historyRef.current[historyIndexRef.current];
+      setElements(JSON.parse(JSON.stringify(entry.elements)));
+      setSelectedIds(new Set());
+    }
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      historyIndexRef.current++;
+      const entry = historyRef.current[historyIndexRef.current];
+      setElements(JSON.parse(JSON.stringify(entry.elements)));
+      setSelectedIds(new Set());
+    }
+  }, []);
+
+  // ===== Canvas Redraw =====
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    drawFloorPlan(ctx, plan, selectedId, viewOffset, zoom);
-  }, [plan, selectedId, zoom, viewOffset]);
+    drawAll(ctx, elements, selectedIds, viewOffset, zoom, drawingState, hoveredId);
+  }, [elements, selectedIds, viewOffset, zoom, drawingState, hoveredId]);
 
-  // Resize canvas
   useEffect(() => {
     const resize = () => {
       const canvas = canvasRef.current;
@@ -431,425 +895,1076 @@ export default function VoiceDesigner() {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       const ctx = canvas.getContext("2d");
-      if (ctx) drawFloorPlan(ctx, plan, selectedId, viewOffset, zoom);
+      if (ctx) drawAll(ctx, elements, selectedIds, viewOffset, zoom, drawingState, hoveredId);
     };
     resize();
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, [plan, selectedId, viewOffset, zoom]);
+  }, [elements, selectedIds, viewOffset, zoom, drawingState, hoveredId]);
 
-  const addSarahMessage = useCallback((text: string) => {
-    setMessages(prev => [...prev, {
-      id: generateId(),
-      role: "sarah",
-      text,
-      timestamp: Date.now(),
-    }]);
-  }, []);
+  // ===== Keyboard Shortcuts =====
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "z") { e.preventDefault(); undo(); }
+        if (e.key === "y") { e.preventDefault(); redo(); }
+        if (e.key === "c") { e.preventDefault(); copySelected(); }
+        if (e.key === "v") { e.preventDefault(); pasteSelected(); }
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedIds.size > 0) deleteSelected();
+      }
+      if (e.key === "Escape") {
+        setActiveTool("select");
+        setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+        setSelectedIds(new Set());
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedIds, elements]);
 
-  // ===== Voice Recording =====
-  const startListening = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunksRef.current = [];
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await processVoiceCommand(blob);
+  // ===== Screen to World =====
+  const screenToWorld = useCallback((sx: number, sy: number): Point => {
+    return {
+      x: snap((sx - viewOffset.x) / (SCALE * zoom)),
+      y: snap((sy - viewOffset.y) / (SCALE * zoom)),
+    };
+  }, [viewOffset, zoom]);
+
+  // ===== Mouse Handlers =====
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const world = screenToWorld(sx, sy);
+    const sc = SCALE * zoom;
+
+    if (activeTool === "pan" || e.button === 1 || (e.button === 0 && e.altKey)) {
+      panRef.current = { active: true, startX: sx, startY: sy, offsetStart: { ...viewOffset } };
+      return;
+    }
+
+    if (activeTool === "select") {
+      // Hit test
+      let hit: DrawElement | null = null;
+      for (let i = elements.length - 1; i >= 0; i--) {
+        if (hitTest(elements[i], sx, sy, sc, viewOffset)) {
+          hit = elements[i];
+          break;
+        }
+      }
+      if (hit) {
+        if (e.shiftKey) {
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(hit!.id) ? next.delete(hit!.id) : next.add(hit!.id);
+            return next;
+          });
+        } else {
+          setSelectedIds(new Set([hit.id]));
+          // Start drag
+          const el = hit;
+          let elemStart: Point = { x: 0, y: 0 };
+          if (el.type === "room") elemStart = { x: (el as RoomShape).x, y: (el as RoomShape).y };
+          else if (el.type === "wall") elemStart = { x: (el as Wall).x1, y: (el as Wall).y1 };
+          else if (el.type === "door" || el.type === "window") elemStart = { x: (el as Opening).x, y: (el as Opening).y };
+          else if (el.type === "electrical") elemStart = { x: (el as ElectricalSymbol).x, y: (el as ElectricalSymbol).y };
+          else if (el.type === "ac") elemStart = { x: (el as ACSymbol).x, y: (el as ACSymbol).y };
+          dragRef.current = { active: true, id: hit.id, startWorld: world, elemStart };
+        }
+        setShowProperties(true);
+      } else {
+        setSelectedIds(new Set());
+        setShowProperties(false);
+        panRef.current = { active: true, startX: sx, startY: sy, offsetStart: { ...viewOffset } };
+      }
+      return;
+    }
+
+    // Drawing tools
+    if (activeTool === "wall" || activeTool === "room") {
+      setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
+    } else if (activeTool === "door") {
+      const newDoor: Opening = {
+        id: generateId(), type: "door",
+        x: world.x, y: world.y,
+        width: drawingState.doorWidth, height: 2.1,
+        rotation: 0, doorType: drawingState.doorType, swingIn: true,
       };
-      mr.start(100);
-      mediaRecorderRef.current = mr;
-      setIsListening(true);
-
-      // Auto-stop after 15 seconds
-      recordingTimerRef.current = setTimeout(() => stopListening(), 15000) as unknown as ReturnType<typeof setInterval>;
-    } catch {
-      toast.error("لا يمكن الوصول للميكروفون");
+      const newEls = [...elements, newDoor];
+      setElements(newEls);
+      pushHistory(newEls);
+      setSelectedIds(new Set([newDoor.id]));
+      setShowProperties(true);
+    } else if (activeTool === "window") {
+      const newWin: Opening = {
+        id: generateId(), type: "window",
+        x: world.x, y: world.y,
+        width: drawingState.windowWidth, height: 1.2,
+        rotation: 0, windowType: drawingState.windowType,
+      };
+      const newEls = [...elements, newWin];
+      setElements(newEls);
+      pushHistory(newEls);
+      setSelectedIds(new Set([newWin.id]));
+      setShowProperties(true);
+    } else if (activeTool === "electrical") {
+      const newEl: ElectricalSymbol = {
+        id: generateId(), type: "electrical",
+        x: world.x, y: world.y,
+        elType: drawingState.elType, rotation: 0,
+      };
+      const newEls = [...elements, newEl];
+      setElements(newEls);
+      pushHistory(newEls);
+    } else if (activeTool === "ac") {
+      const newAC: ACSymbol = {
+        id: generateId(), type: "ac",
+        x: world.x, y: world.y,
+        acType: drawingState.acType, rotation: 0,
+      };
+      const newEls = [...elements, newAC];
+      setElements(newEls);
+      pushHistory(newEls);
     }
   };
 
-  const stopListening = () => {
-    if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current as unknown as ReturnType<typeof setTimeout>);
-    mediaRecorderRef.current?.stop();
-    setIsListening(false);
-    setIsProcessing(true);
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const world = screenToWorld(sx, sy);
+    const sc = SCALE * zoom;
+
+    // Pan
+    if (panRef.current.active) {
+      setViewOffset({
+        x: panRef.current.offsetStart.x + (sx - panRef.current.startX),
+        y: panRef.current.offsetStart.y + (sy - panRef.current.startY),
+      });
+      return;
+    }
+
+    // Drag element
+    if (dragRef.current.active) {
+      const dx = world.x - dragRef.current.startWorld.x;
+      const dy = world.y - dragRef.current.startWorld.y;
+      const id = dragRef.current.id;
+      setElements(prev => prev.map(el => {
+        if (el.id !== id) return el;
+        if (el.type === "room") {
+          return { ...el, x: snap(dragRef.current.elemStart.x + dx), y: snap(dragRef.current.elemStart.y + dy) };
+        }
+        if (el.type === "wall") {
+          const w = el as Wall;
+          const newX1 = snap(dragRef.current.elemStart.x + dx);
+          const newY1 = snap(dragRef.current.elemStart.y + dy);
+          const dxw = w.x2 - w.x1;
+          const dyw = w.y2 - w.y1;
+          return { ...w, x1: newX1, y1: newY1, x2: newX1 + dxw, y2: newY1 + dyw };
+        }
+        if (el.type === "door" || el.type === "window" || el.type === "electrical" || el.type === "ac") {
+          return { ...el, x: snap(dragRef.current.elemStart.x + dx), y: snap(dragRef.current.elemStart.y + dy) };
+        }
+        return el;
+      }));
+      return;
+    }
+
+    // Drawing preview
+    if ((activeTool === "wall" || activeTool === "room") && drawingState.startPoint) {
+      setDrawingState(s => ({ ...s, currentPoint: world }));
+    }
+
+    // Hover
+    if (activeTool === "select") {
+      let hit: string | null = null;
+      for (let i = elements.length - 1; i >= 0; i--) {
+        if (hitTest(elements[i], sx, sy, sc, viewOffset)) {
+          hit = elements[i].id;
+          break;
+        }
+      }
+      setHoveredId(hit);
+    }
   };
 
-  const processVoiceCommand = async (audioBlob: Blob) => {
-    // Convert blob to base64 using arrayBuffer (more reliable than FileReader)
-    try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < uint8Array.byteLength; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const world = screenToWorld(sx, sy);
+
+    if (panRef.current.active) {
+      panRef.current.active = false;
+      return;
+    }
+
+    if (dragRef.current.active) {
+      dragRef.current.active = false;
+      pushHistory(elements);
+      return;
+    }
+
+    if (activeTool === "wall" && drawingState.startPoint) {
+      const len = dist(drawingState.startPoint, world);
+      if (len > 0.1) {
+        const newWall: Wall = {
+          id: generateId(), type: "wall",
+          x1: drawingState.startPoint.x, y1: drawingState.startPoint.y,
+          x2: world.x, y2: world.y,
+          thickness: drawingState.wallThickness,
+          wallType: drawingState.wallType,
+          rotation: 0,
+        };
+        const newEls = [...elements, newWall];
+        setElements(newEls);
+        pushHistory(newEls);
+        // Continue from end point
+        setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
       }
-      const base64 = btoa(binary);
+    } else if (activeTool === "room" && drawingState.startPoint) {
+      const w = snap(Math.abs(world.x - drawingState.startPoint.x));
+      const h = snap(Math.abs(world.y - drawingState.startPoint.y));
+      if (w > 0.5 && h > 0.5) {
+        const newRoom: RoomShape = {
+          id: generateId(), type: "room",
+          x: Math.min(drawingState.startPoint.x, world.x),
+          y: Math.min(drawingState.startPoint.y, world.y),
+          width: w, height: h,
+          label: "غرفة",
+          color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
+          wallThickness: drawingState.wallThickness,
+        };
+        const newEls = [...elements, newRoom];
+        setElements(newEls);
+        pushHistory(newEls);
+        setSelectedIds(new Set([newRoom.id]));
+        setShowProperties(true);
+        setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+        setActiveTool("select");
+      }
+    }
+  };
 
-      // Add user message placeholder
-      const userMsgId = generateId();
-      setMessages(prev => [...prev, {
-        id: userMsgId,
-        role: "user",
-        text: "🎙️ جاري المعالجة...",
-        timestamp: Date.now(),
-        isProcessing: true,
-      }]);
+  // Touch support
+  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPinchRef = useRef<number | null>(null);
 
-      voiceCommandMutation.mutate({
-        audioBase64: base64,
-        currentPlan: plan,
-      }, {
-        onSuccess: (data) => {
-          // Update user message with transcription
-          if (data.transcription) {
-            setMessages(prev => prev.map(m =>
-              m.id === userMsgId
-                ? { ...m, text: data.transcription!, isProcessing: false }
-                : m
-            ));
-          } else {
-            setMessages(prev => prev.filter(m => m.id !== userMsgId));
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      lastTouchRef.current = { x: t.clientX, y: t.clientY };
+      panRef.current = {
+        active: activeTool === "pan" || activeTool === "select",
+        startX: t.clientX, startY: t.clientY,
+        offsetStart: { ...viewOffset }
+      };
+      // Simulate mouse down for drawing tools
+      if (activeTool !== "pan" && activeTool !== "select") {
+        const rect = canvasRef.current!.getBoundingClientRect();
+        const sx = t.clientX - rect.left;
+        const sy = t.clientY - rect.top;
+        const world = screenToWorld(sx, sy);
+        if (activeTool === "wall" || activeTool === "room") {
+          setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
+        }
+      }
+    } else if (e.touches.length === 2) {
+      panRef.current.active = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastPinchRef.current = Math.sqrt(dx * dx + dy * dy);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      if (panRef.current.active) {
+        setViewOffset({
+          x: panRef.current.offsetStart.x + (t.clientX - panRef.current.startX),
+          y: panRef.current.offsetStart.y + (t.clientY - panRef.current.startY),
+        });
+      }
+      if ((activeTool === "wall" || activeTool === "room") && drawingState.startPoint) {
+        const rect = canvasRef.current!.getBoundingClientRect();
+        const world = screenToWorld(t.clientX - rect.left, t.clientY - rect.top);
+        setDrawingState(s => ({ ...s, currentPoint: world }));
+      }
+      lastTouchRef.current = { x: t.clientX, y: t.clientY };
+    } else if (e.touches.length === 2 && lastPinchRef.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      const scale = newDist / lastPinchRef.current;
+      setZoom(z => Math.max(0.2, Math.min(4, z * scale)));
+      lastPinchRef.current = newDist;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      panRef.current.active = false;
+      lastPinchRef.current = null;
+      if (lastTouchRef.current && (activeTool === "wall" || activeTool === "room") && drawingState.startPoint) {
+        const rect = canvasRef.current!.getBoundingClientRect();
+        const world = screenToWorld(lastTouchRef.current.x - rect.left, lastTouchRef.current.y - rect.top);
+        // Finalize
+        if (activeTool === "wall") {
+          const len = dist(drawingState.startPoint, world);
+          if (len > 0.1) {
+            const newWall: Wall = {
+              id: generateId(), type: "wall",
+              x1: drawingState.startPoint.x, y1: drawingState.startPoint.y,
+              x2: world.x, y2: world.y,
+              thickness: drawingState.wallThickness, wallType: drawingState.wallType, rotation: 0,
+            };
+            const newEls = [...elements, newWall];
+            setElements(newEls);
+            pushHistory(newEls);
+            setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
+          }
+        } else if (activeTool === "room") {
+          const w = snap(Math.abs(world.x - drawingState.startPoint.x));
+          const h = snap(Math.abs(world.y - drawingState.startPoint.y));
+          if (w > 0.5 && h > 0.5) {
+            const newRoom: RoomShape = {
+              id: generateId(), type: "room",
+              x: Math.min(drawingState.startPoint.x, world.x),
+              y: Math.min(drawingState.startPoint.y, world.y),
+              width: w, height: h,
+              label: "غرفة",
+              color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
+              wallThickness: drawingState.wallThickness,
+            };
+            const newEls = [...elements, newRoom];
+            setElements(newEls);
+            pushHistory(newEls);
+            setSelectedIds(new Set([newRoom.id]));
+            setShowProperties(true);
+            setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+            setActiveTool("select");
           }
         }
-      });
-    } catch (err) {
-      console.error("Voice processing error:", err);
-      setIsProcessing(false);
-      addSarahMessage("عذراً، حدث خطأ في معالجة الصوت. حاول مرة أخرى.");
+      }
     }
   };
 
-  // ===== Canvas interaction =====
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    setIsPanning(true);
-    setPanStart({ x: e.clientX, y: e.clientY });
-    setPanOffsetStart({ ...viewOffset });
+  // Wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(z => Math.max(0.2, Math.min(4, z * delta)));
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (!isPanning) return;
-    setViewOffset({
-      x: panOffsetStart.x + (e.clientX - panStart.x),
-      y: panOffsetStart.y + (e.clientY - panStart.y),
+  // ===== Element Operations =====
+  const deleteSelected = () => {
+    const newEls = elements.filter(el => !selectedIds.has(el.id));
+    setElements(newEls);
+    pushHistory(newEls);
+    setSelectedIds(new Set());
+    setShowProperties(false);
+  };
+
+  const copyRef = useRef<DrawElement[]>([]);
+  const copySelected = () => {
+    copyRef.current = elements.filter(el => selectedIds.has(el.id));
+    toast.success("تم النسخ");
+  };
+
+  const pasteSelected = () => {
+    if (copyRef.current.length === 0) return;
+    const newEls = copyRef.current.map(el => {
+      const newId = generateId();
+      if (el.type === "room") return { ...el, id: newId, x: (el as RoomShape).x + 0.5, y: (el as RoomShape).y + 0.5 };
+      if (el.type === "wall") return { ...el, id: newId, x1: (el as Wall).x1 + 0.5, y1: (el as Wall).y1 + 0.5, x2: (el as Wall).x2 + 0.5, y2: (el as Wall).y2 + 0.5 };
+      if (el.type === "door" || el.type === "window") return { ...el, id: newId, x: (el as Opening).x + 0.5, y: (el as Opening).y + 0.5 };
+      if (el.type === "electrical") return { ...el, id: newId, x: (el as ElectricalSymbol).x + 0.5, y: (el as ElectricalSymbol).y + 0.5 };
+      if (el.type === "ac") return { ...el, id: newId, x: (el as ACSymbol).x + 0.5, y: (el as ACSymbol).y + 0.5 };
+      return { ...el, id: newId };
     });
+    const allEls = [...elements, ...newEls];
+    setElements(allEls);
+    pushHistory(allEls);
+    setSelectedIds(new Set<string>(newEls.map(e => e.id)));
   };
 
-  const handleCanvasMouseUp = () => setIsPanning(false);
-
-  // Touch pan
-  const touchStartRef = useRef<{ clientX: number; clientY: number } | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      touchStartRef.current = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
-      setPanOffsetStart({ ...viewOffset });
-    }
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 1 && touchStartRef.current) {
-      setViewOffset({
-        x: panOffsetStart.x + (e.touches[0].clientX - touchStartRef.current.clientX),
-        y: panOffsetStart.y + (e.touches[0].clientY - touchStartRef.current.clientY),
-      });
-    }
-  };
-
-  const resetView = () => {
-    setZoom(1);
-    setViewOffset({ x: 40, y: 60 });
+  const rotateSelected = (deg: number) => {
+    setElements(prev => prev.map(el => {
+      if (!selectedIds.has(el.id)) return el;
+      if (el.type === "door" || el.type === "window") {
+        return { ...el, rotation: ((el as Opening).rotation + deg + 360) % 360 };
+      }
+      if (el.type === "electrical") {
+        return { ...el, rotation: ((el as ElectricalSymbol).rotation + deg + 360) % 360 };
+      }
+      if (el.type === "ac") {
+        return { ...el, rotation: ((el as ACSymbol).rotation + deg + 360) % 360 };
+      }
+      return el;
+    }));
   };
 
   const clearAll = () => {
-    setPlan({ rooms: [], doors: [], windows: [], scale: SCALE, northAngle: 0 });
-    setView3DUrl(null);
-    setIs3DView(false);
-    addSarahMessage("تم مسح اللوحة. ابدأ من جديد — أخبرني بما تريد تصميمه!");
-  };
-
-  const generate3D = () => {
-    if (plan.rooms.length === 0) {
-      toast.error("ارسم مخططاً أولاً قبل توليد المنظور 3D");
-      return;
-    }
-    setIsGenerating3D(true);
-    addSarahMessage("ممتاز! جاري تحويل مخططك إلى منظور ثلاثي الأبعاد...");
-    generate3DMutation.mutate({ plan });
+    setElements([]);
+    pushHistory([]);
+    setSelectedIds(new Set());
+    setShowProperties(false);
   };
 
   const downloadCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement("a");
-    link.download = "مخطط-م-سارة.png";
-    link.href = canvas.toDataURL("image/png");
+    link.download = `مخطط-م-سارة-${Date.now()}.png`;
+    link.href = canvas.toDataURL("image/png", 1.0);
     link.click();
+    toast.success("تم تحميل المخطط");
   };
 
-  // Quick command buttons
-  const quickCommands = [
-    { label: "غرفة معيشة 5×4", cmd: "ارسمي غرفة معيشة 5 في 4 متر" },
-    { label: "غرفة نوم 4×4", cmd: "أضيفي غرفة نوم 4 في 4 متر" },
-    { label: "مطبخ 3×3", cmd: "أضيفي مطبخ 3 في 3 متر" },
-    { label: "حمام 2×2", cmd: "أضيفي حمام 2 في 2 متر" },
-    { label: "باب D (غرب)", cmd: "أضيفي باب على الجدار D الغربي في المنتصف" },
-    { label: "نافذة A (شمال)", cmd: "أضيفي نافذة على الجدار A الشمالي في المنتصف عرض 1.5 متر" },
-    { label: "نافذة C (شرق)", cmd: "أضيفي نافذة على الجدار C الشرقي في المنتصف عرض 1.2 متر" },
+  // Add room from library
+  const addFromLibrary = (preset: typeof ROOM_LIBRARY[0]) => {
+    const newRoom: RoomShape = {
+      id: generateId(), type: "room",
+      x: snap((-viewOffset.x + 80) / (SCALE * zoom)),
+      y: snap((-viewOffset.y + 80) / (SCALE * zoom)),
+      width: preset.w, height: preset.h,
+      label: preset.label.split(" ")[0],
+      color: preset.color,
+      wallThickness: drawingState.wallThickness,
+    };
+    const newEls = [...elements, newRoom];
+    setElements(newEls);
+    pushHistory(newEls);
+    setSelectedIds(new Set([newRoom.id]));
+    setShowLibrary(false);
+    setShowProperties(true);
+    toast.success(`تمت إضافة ${preset.label}`);
+  };
+
+  // ===== Selected Element =====
+  const selectedEl = selectedIds.size === 1
+    ? elements.find(e => e.id === Array.from(selectedIds)[0]) ?? null
+    : null;
+
+  const updateSelectedEl = (updates: Partial<DrawElement>) => {
+    setElements(prev => prev.map(el => {
+      if (!selectedIds.has(el.id)) return el;
+      return { ...el, ...updates } as DrawElement;
+    }));
+  };
+
+  // ===== Tool definitions =====
+  const tools: { id: DrawTool; icon: React.ReactNode; label: string; color?: string }[] = [
+    { id: "select", icon: <MousePointer className="w-4 h-4" />, label: "تحديد" },
+    { id: "pan", icon: <Move className="w-4 h-4" />, label: "تحريك" },
+    { id: "room", icon: <Square className="w-4 h-4" />, label: "غرفة" },
+    { id: "wall", icon: <Minus className="w-4 h-4" />, label: "جدار" },
+    { id: "door", icon: <DoorOpen className="w-4 h-4" />, label: "باب" },
+    { id: "window", icon: <Maximize2 className="w-4 h-4" />, label: "نافذة" },
+    { id: "electrical", icon: <Zap className="w-4 h-4" />, label: "كهرباء", color: "#e74c3c" },
+    { id: "ac", icon: <Wind className="w-4 h-4" />, label: "تكييف", color: "#3498db" },
   ];
 
-  const sendTextCommand = async (cmd: string) => {
-    setMessages(prev => [...prev, {
-      id: generateId(),
-      role: "user",
-      text: cmd,
-      timestamp: Date.now(),
-    }]);
-    setIsProcessing(true);
-    voiceCommandMutation.mutate({
-      audioBase64: "",
-      textCommand: cmd,
-      currentPlan: plan,
-    });
-  };
+  const libCategories = Array.from(new Set(ROOM_LIBRARY.map(r => r.cat)));
 
   return (
     <div className="fixed inset-0 bg-[#faf6f0] flex flex-col" dir="rtl">
-      {/* Header */}
-      <header className="flex items-center gap-3 px-4 pt-safe pt-3 pb-2 bg-white/95 backdrop-blur border-b border-[#e8d9c0] z-20 shadow-sm">
-        <button onClick={() => navigate("/")}
-          className="p-2 rounded-full hover:bg-[#f0e8d8] transition-colors">
+      {/* ===== Header ===== */}
+      <header className="flex items-center gap-2 px-3 pt-safe pt-2 pb-2 bg-white/95 backdrop-blur border-b border-[#e8d9c0] z-20 shadow-sm">
+        <button onClick={() => navigate("/")} className="p-2 rounded-full hover:bg-[#f0e8d8]">
           <ChevronRight className="w-5 h-5 text-[#8B6914]" />
         </button>
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center">
-          <Layers className="w-5 h-5 text-white" />
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center">
+          <Layers className="w-4 h-4 text-white" />
         </div>
-        <div className="flex-1">
-          <p className="font-black text-[#5C3D11] text-sm">م. سارة ترسم بصوتك</p>
-          <p className="text-[10px] text-[#8B6914]/70">
-            {plan.rooms.length > 0
-              ? `${plan.rooms.length} غرفة • ${plan.doors.length} باب • ${plan.windows.length} نافذة`
-              : "ابدأ بالحديث أو اختر أمراً سريعاً"}
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-[#5C3D11] text-sm truncate">لوحة الرسم المعماري</p>
+          <p className="text-[9px] text-[#8B6914]/60">
+            {elements.length > 0
+              ? `${elements.filter(e => e.type === "room").length} غرفة • ${elements.filter(e => e.type === "wall").length} جدار • ${elements.filter(e => e.type === "door").length} باب • ${elements.filter(e => e.type === "window").length} نافذة`
+              : "ابدأ الرسم أو اختر من المكتبة"}
           </p>
         </div>
-        <div className="flex gap-1.5">
-          <button onClick={() => setShowMessages(!showMessages)}
-            className={`p-2 rounded-xl border transition-all text-xs ${showMessages ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]" : "border-[#e8d9c0] text-[#5C3D11]"}`}>
-            <Eye className="w-4 h-4" />
+        <div className="flex gap-1">
+          <button onClick={undo} title="تراجع (Ctrl+Z)"
+            className="p-1.5 rounded-lg border border-[#e8d9c0] text-[#5C3D11] hover:bg-[#f0e8d8] active:scale-90 transition-all">
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
-          <button onClick={generate3D} disabled={isGenerating3D || plan.rooms.length === 0}
-            className="p-2 rounded-xl border border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914] disabled:opacity-40 transition-all">
-            {isGenerating3D ? (
-              <div className="w-4 h-4 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Box className="w-4 h-4" />
-            )}
+          <button onClick={redo} title="إعادة (Ctrl+Y)"
+            className="p-1.5 rounded-lg border border-[#e8d9c0] text-[#5C3D11] hover:bg-[#f0e8d8] active:scale-90 transition-all">
+            <RotateCw className="w-3.5 h-3.5" />
           </button>
           <button onClick={downloadCanvas}
-            className="p-2 rounded-xl border border-[#e8d9c0] text-[#5C3D11]">
-            <Download className="w-4 h-4" />
+            className="p-1.5 rounded-lg border border-[#e8d9c0] text-[#5C3D11] hover:bg-[#f0e8d8] active:scale-90 transition-all">
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={clearAll}
+            className="p-1.5 rounded-lg border border-red-200 text-red-400 hover:bg-red-50 active:scale-90 transition-all">
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
-      {/* Main layout */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* ===== Main Area ===== */}
+      <div className="flex-1 flex overflow-hidden relative">
 
-        {/* 3D View */}
-        {is3DView && view3DUrl && (
-          <div className="absolute inset-0 z-30 bg-black/90 flex flex-col items-center justify-center">
-            <div className="relative w-full max-w-lg">
-              <img src={view3DUrl} className="w-full rounded-2xl shadow-2xl" alt="منظور 3D" />
-              <button onClick={() => setIs3DView(false)}
-                className="absolute top-3 right-3 p-2 bg-black/50 rounded-full text-white">
-                <ChevronRight className="w-5 h-5" />
+        {/* ===== Vertical Toolbar (right side) ===== */}
+        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1.5">
+          {tools.map(t => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setActiveTool(t.id);
+                setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+                if (t.id === "door") setShowDoorPanel(true);
+                else if (t.id === "window") setShowWinPanel(true);
+                else if (t.id === "electrical") setShowElPanel(true);
+                else if (t.id === "ac") setShowACPanel(true);
+                else { setShowDoorPanel(false); setShowWinPanel(false); setShowElPanel(false); setShowACPanel(false); }
+              }}
+              title={t.label}
+              className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-sm transition-all active:scale-90 border ${
+                activeTool === t.id
+                  ? "bg-[#C9A84C] text-white border-[#C9A84C] shadow-[#C9A84C]/30 shadow-md"
+                  : "bg-white/90 text-[#5C3D11] border-[#e8d9c0] hover:border-[#C9A84C]/50"
+              }`}
+              style={activeTool !== t.id && t.color ? { color: t.color } : {}}
+            >
+              {t.icon}
+              <span className="text-[7px] font-bold leading-none">{t.label}</span>
+            </button>
+          ))}
+
+          <div className="h-px bg-[#e8d9c0] my-0.5" />
+
+          {/* Library button */}
+          <button
+            onClick={() => setShowLibrary(!showLibrary)}
+            title="مكتبة العناصر"
+            className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center gap-0.5 shadow-sm transition-all active:scale-90 border ${
+              showLibrary ? "bg-[#5C3D11] text-white border-[#5C3D11]" : "bg-white/90 text-[#5C3D11] border-[#e8d9c0]"
+            }`}
+          >
+            <Grid3X3 className="w-4 h-4" />
+            <span className="text-[7px] font-bold leading-none">مكتبة</span>
+          </button>
+        </div>
+
+        {/* ===== Sub-tool panels ===== */}
+        {/* Door types panel */}
+        {showDoorPanel && (
+          <div className="absolute right-14 top-[140px] z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] p-2 w-40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-[#5C3D11]">نوع الباب</p>
+              <button onClick={() => setShowDoorPanel(false)}><X className="w-3 h-3 text-[#8B6914]" /></button>
+            </div>
+            {DOOR_TYPES.map(dt => (
+              <button key={dt.type} onClick={() => setDrawingState(s => ({ ...s, doorType: dt.type }))}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1 text-xs transition-all ${
+                  drawingState.doorType === dt.type ? "bg-[#C9A84C] text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                }`}>
+                <span>{dt.icon}</span><span>{dt.label}</span>
               </button>
-              <div className="absolute bottom-3 left-3 right-3 flex gap-2">
-                <button onClick={() => setIs3DView(false)}
-                  className="flex-1 py-2 bg-white/20 backdrop-blur rounded-xl text-white text-sm font-bold">
-                  عودة للمخطط
+            ))}
+            <div className="mt-2 border-t border-[#e8d9c0] pt-2">
+              <p className="text-[9px] text-[#8B6914] mb-1">عرض الباب</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setDrawingState(s => ({ ...s, doorWidth: Math.max(0.6, s.doorWidth - 0.1) }))}
+                  className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                  <Minus className="w-3 h-3" />
                 </button>
-                <a href={view3DUrl} download="منظور-3D.jpg"
-                  className="flex-1 py-2 bg-[#C9A84C] rounded-xl text-white text-sm font-bold text-center">
-                  تحميل
-                </a>
+                <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{drawingState.doorWidth.toFixed(1)}م</span>
+                <button onClick={() => setDrawingState(s => ({ ...s, doorWidth: Math.min(2.4, s.doorWidth + 0.1) }))}
+                  className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                  <Plus className="w-3 h-3" />
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Canvas area */}
-        <div className="flex-1 relative overflow-hidden bg-[#f5f0e8]"
-          style={{ cursor: isPanning ? "grabbing" : "grab" }}>
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full"
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={() => { touchStartRef.current = null; }}
-          />
-
-          {/* Empty state */}
-          {plan.rooms.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div className="w-20 h-20 rounded-3xl bg-[#C9A84C]/10 flex items-center justify-center mb-4">
-                <Square className="w-10 h-10 text-[#C9A84C]/40" />
-              </div>
-              <p className="text-[#8B6914]/50 font-bold text-base">اللوحة فارغة</p>
-              <p className="text-[#8B6914]/30 text-sm mt-1">تحدث مع م. سارة أو اختر أمراً سريعاً</p>
+        {/* Window types panel */}
+        {showWinPanel && (
+          <div className="absolute right-14 top-[180px] z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] p-2 w-40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-[#5C3D11]">نوع النافذة</p>
+              <button onClick={() => setShowWinPanel(false)}><X className="w-3 h-3 text-[#8B6914]" /></button>
             </div>
-          )}
-
-          {/* Zoom controls */}
-          <div className="absolute bottom-4 left-4 flex flex-col gap-2">
-            <button onClick={() => setZoom(z => Math.min(3, z + 0.2))}
-              className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 transition-transform">
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button onClick={() => setZoom(z => Math.max(0.3, z - 0.2))}
-              className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 transition-transform">
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button onClick={resetView}
-              className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 transition-transform">
-              <Move className="w-4 h-4" />
-            </button>
-            <button onClick={clearAll}
-              className="w-9 h-9 rounded-xl bg-red-50 shadow-md flex items-center justify-center text-red-400 active:scale-90 transition-transform">
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {WINDOW_TYPES.map(wt => (
+              <button key={wt.type} onClick={() => setDrawingState(s => ({ ...s, windowType: wt.type }))}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1 text-xs transition-all ${
+                  drawingState.windowType === wt.type ? "bg-[#4a90d9] text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                }`}>
+                <span>{wt.icon}</span><span>{wt.label}</span>
+              </button>
+            ))}
+            <div className="mt-2 border-t border-[#e8d9c0] pt-2">
+              <p className="text-[9px] text-[#8B6914] mb-1">عرض النافذة</p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setDrawingState(s => ({ ...s, windowWidth: Math.max(0.4, s.windowWidth - 0.1) }))}
+                  className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{drawingState.windowWidth.toFixed(1)}م</span>
+                <button onClick={() => setDrawingState(s => ({ ...s, windowWidth: Math.min(4, s.windowWidth + 0.1) }))}
+                  className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Zoom level */}
-          <div className="absolute bottom-4 right-4 bg-white/80 rounded-lg px-2 py-1">
-            <span className="text-[10px] text-[#8B6914] font-bold">{Math.round(zoom * 100)}%</span>
+        {/* Electrical panel */}
+        {showElPanel && (
+          <div className="absolute right-14 top-[220px] z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] p-2 w-40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-[#5C3D11]">نوع الكهرباء</p>
+              <button onClick={() => setShowElPanel(false)}><X className="w-3 h-3 text-[#8B6914]" /></button>
+            </div>
+            {ELECTRICAL_TYPES.map(et => (
+              <button key={et.type} onClick={() => setDrawingState(s => ({ ...s, elType: et.type }))}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1 text-xs transition-all ${
+                  drawingState.elType === et.type ? "text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                }`}
+                style={drawingState.elType === et.type ? { backgroundColor: et.color } : {}}>
+                <span className="font-mono font-bold" style={{ color: drawingState.elType === et.type ? "#fff" : et.color }}>{et.symbol}</span>
+                <span>{et.label}</span>
+              </button>
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* Chat messages */}
-        {showMessages && (
-          <div className="h-36 bg-white border-t border-[#e8d9c0] flex flex-col">
-            <div className="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-1.5">
-              {messages.slice(-6).map(msg => (
-                <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                  {msg.role === "sarah" && (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-white text-[8px] font-black">س</span>
-                    </div>
-                  )}
-                  <div className={`max-w-[75%] px-3 py-1.5 rounded-2xl text-xs leading-relaxed ${
-                    msg.role === "sarah"
-                      ? "bg-[#f5f0e8] text-[#5C3D11] rounded-tr-sm"
-                      : "bg-[#C9A84C] text-white rounded-tl-sm"
-                  } ${msg.isProcessing ? "opacity-60" : ""}`}>
-                    {msg.text}
-                  </div>
-                </div>
+        {/* AC panel */}
+        {showACPanel && (
+          <div className="absolute right-14 top-[260px] z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] p-2 w-40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-[#5C3D11]">نوع التكييف</p>
+              <button onClick={() => setShowACPanel(false)}><X className="w-3 h-3 text-[#8B6914]" /></button>
+            </div>
+            {AC_TYPES.map(at => (
+              <button key={at.type} onClick={() => setDrawingState(s => ({ ...s, acType: at.type }))}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg mb-1 text-xs transition-all ${
+                  drawingState.acType === at.type ? "text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                }`}
+                style={drawingState.acType === at.type ? { backgroundColor: at.color } : {}}>
+                <span className="font-mono font-bold" style={{ color: drawingState.acType === at.type ? "#fff" : at.color }}>{at.symbol}</span>
+                <span>{at.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ===== Library Panel ===== */}
+        {showLibrary && (
+          <div className="absolute right-14 top-2 z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] w-52 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b border-[#e8d9c0]">
+              <p className="font-black text-[#5C3D11] text-sm">مكتبة العناصر</p>
+              <button onClick={() => setShowLibrary(false)}><X className="w-4 h-4 text-[#8B6914]" /></button>
+            </div>
+            {/* Category tabs */}
+            <div className="flex gap-1 p-2 overflow-x-auto no-scrollbar border-b border-[#e8d9c0]">
+              {libCategories.map(cat => (
+                <button key={cat} onClick={() => setLibCategory(cat)}
+                  className={`flex-shrink-0 px-2 py-1 rounded-full text-[9px] font-bold transition-all ${
+                    libCategory === cat ? "bg-[#C9A84C] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                  }`}>
+                  {cat}
+                </button>
               ))}
-              {isProcessing && (
-                <div className="flex gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-[8px] font-black">س</span>
+            </div>
+            {/* Items */}
+            <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
+              {ROOM_LIBRARY.filter(r => r.cat === libCategory).map(preset => (
+                <button key={preset.label} onClick={() => addFromLibrary(preset)}
+                  className="flex items-center gap-2 p-2 rounded-xl border border-[#e8d9c0] hover:border-[#C9A84C] hover:bg-[#faf6f0] transition-all active:scale-95 text-right">
+                  <div className="w-8 h-8 rounded-lg flex-shrink-0 border border-[#e8d9c0]"
+                    style={{ backgroundColor: preset.color }} />
+                  <div>
+                    <p className="text-xs font-bold text-[#5C3D11]">{preset.label}</p>
+                    <p className="text-[9px] text-[#8B6914]">{preset.w}×{preset.h} م</p>
                   </div>
-                  <div className="bg-[#f5f0e8] px-3 py-2 rounded-2xl rounded-tr-sm">
-                    <div className="flex gap-1">
-                      {[0, 1, 2].map(i => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#C9A84C] animate-bounce"
-                          style={{ animationDelay: `${i * 0.15}s` }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===== Properties Panel ===== */}
+        {showProperties && selectedEl && (
+          <div className="absolute left-2 top-2 z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] w-48">
+            <div className="flex items-center justify-between p-2.5 border-b border-[#e8d9c0]">
+              <p className="font-black text-[#5C3D11] text-xs">الخصائص</p>
+              <button onClick={() => setShowProperties(false)}><X className="w-3.5 h-3.5 text-[#8B6914]" /></button>
+            </div>
+            <div className="p-2.5 flex flex-col gap-2">
+
+              {/* Room properties */}
+              {selectedEl.type === "room" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">الاسم</label>
+                    <input
+                      value={(selectedEl as RoomShape).label}
+                      onChange={e => updateSelectedEl({ label: e.target.value })}
+                      className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <label className="text-[9px] text-[#8B6914] font-bold block mb-1">العرض (م)</label>
+                      <input type="number" step="0.1" min="0.5"
+                        value={(selectedEl as RoomShape).width}
+                        onChange={e => updateSelectedEl({ width: parseFloat(e.target.value) || 1 })}
+                        className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] text-[#8B6914] font-bold block mb-1">الطول (م)</label>
+                      <input type="number" step="0.1" min="0.5"
+                        value={(selectedEl as RoomShape).height}
+                        onChange={e => updateSelectedEl({ height: parseFloat(e.target.value) || 1 })}
+                        className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">سماكة الجدار (سم)</label>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateSelectedEl({ wallThickness: Math.max(10, (selectedEl as RoomShape).wallThickness - 5) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as RoomShape).wallThickness} سم</span>
+                      <button onClick={() => updateSelectedEl({ wallThickness: Math.min(40, (selectedEl as RoomShape).wallThickness + 5) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">اللون</label>
+                    <div className="flex gap-1 flex-wrap">
+                      {ROOM_COLORS.map(c => (
+                        <button key={c} onClick={() => updateSelectedEl({ color: c })}
+                          className={`w-5 h-5 rounded-full border-2 transition-all ${(selectedEl as RoomShape).color === c ? "border-[#C9A84C] scale-110" : "border-transparent"}`}
+                          style={{ backgroundColor: c }} />
                       ))}
                     </div>
                   </div>
-                </div>
+                  <div className="text-[9px] text-[#8B6914] bg-[#f5f0e8] rounded-lg px-2 py-1.5">
+                    المساحة: <strong className="text-[#5C3D11]">{((selectedEl as RoomShape).width * (selectedEl as RoomShape).height).toFixed(2)} م²</strong>
+                  </div>
+                </>
               )}
+
+              {/* Wall properties */}
+              {selectedEl.type === "wall" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">نوع الجدار</label>
+                    {(["normal", "load_bearing", "glass", "partition"] as WallType[]).map(wt => (
+                      <button key={wt} onClick={() => updateSelectedEl({ wallType: wt })}
+                        className={`w-full text-right px-2 py-1 rounded-lg text-xs mb-1 transition-all ${
+                          (selectedEl as Wall).wallType === wt ? "bg-[#C9A84C] text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                        }`}>
+                        {{ normal: "عادي", load_bearing: "حامل", glass: "زجاجي", partition: "فاصل" }[wt]}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">السماكة (سم)</label>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateSelectedEl({ thickness: Math.max(10, (selectedEl as Wall).thickness - 5) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as Wall).thickness} سم</span>
+                      <button onClick={() => updateSelectedEl({ thickness: Math.min(40, (selectedEl as Wall).thickness + 5) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-[9px] text-[#8B6914] bg-[#f5f0e8] rounded-lg px-2 py-1.5">
+                    الطول: <strong className="text-[#5C3D11]">{dist({ x: (selectedEl as Wall).x1, y: (selectedEl as Wall).y1 }, { x: (selectedEl as Wall).x2, y: (selectedEl as Wall).y2 }).toFixed(2)} م</strong>
+                  </div>
+                </>
+              )}
+
+              {/* Door properties */}
+              {selectedEl.type === "door" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">نوع الباب</label>
+                    {DOOR_TYPES.map(dt => (
+                      <button key={dt.type} onClick={() => updateSelectedEl({ doorType: dt.type })}
+                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs mb-1 transition-all ${
+                          (selectedEl as Opening).doorType === dt.type ? "bg-[#C9A84C] text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                        }`}>
+                        <span>{dt.icon}</span><span>{dt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">العرض (م)</label>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateSelectedEl({ width: Math.max(0.6, (selectedEl as Opening).width - 0.1) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as Opening).width.toFixed(1)} م</span>
+                      <button onClick={() => updateSelectedEl({ width: Math.min(2.4, (selectedEl as Opening).width + 0.1) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">التدوير</label>
+                    <div className="flex gap-1">
+                      {[0, 90, 180, 270].map(deg => (
+                        <button key={deg} onClick={() => updateSelectedEl({ rotation: deg })}
+                          className={`flex-1 py-1 rounded-lg text-[9px] font-bold transition-all ${
+                            (selectedEl as Opening).rotation === deg ? "bg-[#C9A84C] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                          }`}>
+                          {deg}°
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => rotateSelected(-15)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↺ 15°</button>
+                    <button onClick={() => rotateSelected(15)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↻ 15°</button>
+                  </div>
+                  <button onClick={() => updateSelectedEl({ swingIn: !(selectedEl as Opening).swingIn })}
+                    className="w-full py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">
+                    اتجاه الفتح: {(selectedEl as Opening).swingIn ? "داخل" : "خارج"}
+                  </button>
+                </>
+              )}
+
+              {/* Window properties */}
+              {selectedEl.type === "window" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">نوع النافذة</label>
+                    {WINDOW_TYPES.map(wt => (
+                      <button key={wt.type} onClick={() => updateSelectedEl({ windowType: wt.type })}
+                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs mb-1 transition-all ${
+                          (selectedEl as Opening).windowType === wt.type ? "bg-[#4a90d9] text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                        }`}>
+                        <span>{wt.icon}</span><span>{wt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">العرض (م)</label>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateSelectedEl({ width: Math.max(0.4, (selectedEl as Opening).width - 0.1) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as Opening).width.toFixed(1)} م</span>
+                      <button onClick={() => updateSelectedEl({ width: Math.min(4, (selectedEl as Opening).width + 0.1) })}
+                        className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">التدوير</label>
+                    <div className="flex gap-1">
+                      {[0, 90, 180, 270].map(deg => (
+                        <button key={deg} onClick={() => updateSelectedEl({ rotation: deg })}
+                          className={`flex-1 py-1 rounded-lg text-[9px] font-bold transition-all ${
+                            (selectedEl as Opening).rotation === deg ? "bg-[#4a90d9] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                          }`}>
+                          {deg}°
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => rotateSelected(-15)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↺ 15°</button>
+                    <button onClick={() => rotateSelected(15)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↻ 15°</button>
+                  </div>
+                </>
+              )}
+
+              {/* Electrical properties */}
+              {selectedEl.type === "electrical" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">النوع</label>
+                    {ELECTRICAL_TYPES.map(et => (
+                      <button key={et.type} onClick={() => updateSelectedEl({ elType: et.type })}
+                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs mb-1 transition-all ${
+                          (selectedEl as ElectricalSymbol).elType === et.type ? "text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                        }`}
+                        style={(selectedEl as ElectricalSymbol).elType === et.type ? { backgroundColor: et.color } : {}}>
+                        <span className="font-mono font-bold">{et.symbol}</span><span>{et.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => rotateSelected(-90)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↺ 90°</button>
+                    <button onClick={() => rotateSelected(90)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↻ 90°</button>
+                  </div>
+                </>
+              )}
+
+              {/* AC properties */}
+              {selectedEl.type === "ac" && (
+                <>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">نوع التكييف</label>
+                    {AC_TYPES.map(at => (
+                      <button key={at.type} onClick={() => updateSelectedEl({ acType: at.type })}
+                        className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs mb-1 transition-all ${
+                          (selectedEl as ACSymbol).acType === at.type ? "text-white" : "hover:bg-[#f5f0e8] text-[#5C3D11]"
+                        }`}
+                        style={(selectedEl as ACSymbol).acType === at.type ? { backgroundColor: at.color } : {}}>
+                        <span className="font-mono font-bold">{at.symbol}</span><span>{at.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-[#8B6914] font-bold block mb-1">السعة</label>
+                    <input
+                      value={(selectedEl as ACSymbol).capacity || ""}
+                      onChange={e => updateSelectedEl({ capacity: e.target.value })}
+                      placeholder="مثال: 18000 BTU"
+                      className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => rotateSelected(-90)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↺ 90°</button>
+                    <button onClick={() => rotateSelected(90)} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-xs font-bold">↻ 90°</button>
+                  </div>
+                </>
+              )}
+
+              {/* Common actions */}
+              <div className="flex gap-1 pt-1 border-t border-[#e8d9c0]">
+                <button onClick={copySelected} className="flex-1 py-1.5 rounded-lg bg-[#f5f0e8] text-[#5C3D11] text-[9px] font-bold flex items-center justify-center gap-1">
+                  <Copy className="w-3 h-3" /> نسخ
+                </button>
+                <button onClick={deleteSelected} className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-400 text-[9px] font-bold flex items-center justify-center gap-1">
+                  <Trash2 className="w-3 h-3" /> حذف
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Quick commands */}
-        <div className="bg-white border-t border-[#e8d9c0] px-3 py-2">
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {quickCommands.map(qc => (
-              <button
-                key={qc.cmd}
-                onClick={() => sendTextCommand(qc.cmd)}
-                disabled={isProcessing}
-                className="flex-shrink-0 px-3 py-1.5 bg-[#f5f0e8] border border-[#e8d9c0] rounded-full text-[11px] text-[#5C3D11] font-medium active:bg-[#C9A84C]/20 transition-colors disabled:opacity-50"
-              >
-                {qc.label}
-              </button>
-            ))}
-          </div>
+        {/* ===== Canvas ===== */}
+        <canvas
+          ref={canvasRef}
+          className="flex-1 w-full h-full touch-none"
+          style={{ cursor: activeTool === "pan" ? "grab" : activeTool === "select" ? (hoveredId ? "pointer" : "default") : "crosshair" }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={() => { panRef.current.active = false; dragRef.current.active = false; }}
+          onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onDoubleClick={() => {
+            if (activeTool === "wall") {
+              setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+              setActiveTool("select");
+            }
+          }}
+        />
+
+        {/* ===== Zoom Controls ===== */}
+        <div className="absolute bottom-4 left-2 flex flex-col gap-1.5 z-10">
+          <button onClick={() => setZoom(z => Math.min(4, z * 1.25))}
+            className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 border border-[#e8d9c0]">
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <button onClick={() => setZoom(z => Math.max(0.2, z * 0.8))}
+            className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 border border-[#e8d9c0]">
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <button onClick={() => { setZoom(1); setViewOffset({ x: 60, y: 80 }); }}
+            className="w-9 h-9 rounded-xl bg-white/90 shadow-md flex items-center justify-center text-[#5C3D11] active:scale-90 border border-[#e8d9c0]">
+            <Move className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Input bar: text + voice */}
-        <div className="bg-white border-t border-[#e8d9c0] px-3 pb-safe pb-3 pt-2.5">
-          {/* Wall legend */}
-          <div className="flex gap-2 mb-2 justify-center">
-            {(["A=شمال", "B=جنوب", "C=شرق", "D=غرب"] as const).map(label => (
-              <span key={label} className="text-[10px] bg-[#C9A84C]/10 text-[#8B6914] px-2 py-0.5 rounded-full font-bold border border-[#C9A84C]/30">{label}</span>
-            ))}
-          </div>
-          <div className="flex items-end gap-2">
-            {/* Text input */}
-            <div className="flex-1 relative">
-              <textarea
-                value={textInput}
-                onChange={e => setTextInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (textInput.trim() && !isProcessing) {
-                      sendTextCommand(textInput.trim());
-                      setTextInput("");
-                    }
-                  }
-                }}
-                placeholder={isListening ? "🎤 م. سارة تسمعك..." : isProcessing ? "⏳ م. سارة تفكر..." : "اكتب أمرك هنا... مثلاً: أضيفي باب على الجدار A"}
-                disabled={isProcessing || isListening}
-                rows={1}
-                className="w-full bg-[#f5f0e8] border border-[#e8d9c0] rounded-2xl px-4 py-2.5 text-sm text-[#5C3D11] placeholder:text-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] transition-colors disabled:opacity-60"
-                style={{ minHeight: 42, maxHeight: 80 }}
-              />
-            </div>
-            {/* Send text button */}
-            <button
-              onClick={() => {
-                if (textInput.trim() && !isProcessing) {
-                  sendTextCommand(textInput.trim());
-                  setTextInput("");
-                }
-              }}
-              disabled={!textInput.trim() || isProcessing || isListening}
-              className="w-11 h-11 rounded-xl bg-[#C9A84C]/20 border border-[#C9A84C]/40 flex items-center justify-center text-[#8B6914] disabled:opacity-30 active:scale-90 transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-            {/* Voice button */}
-            <button
-              onPointerDown={startListening}
-              onPointerUp={stopListening}
-              onPointerLeave={isListening ? stopListening : undefined}
-              disabled={isProcessing}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-md disabled:opacity-50 ${
-                isListening
-                  ? "bg-red-500 scale-110 shadow-red-200"
-                  : "bg-gradient-to-br from-[#C9A84C] to-[#8B6914]"
-              }`}
-            >
-              {isListening ? (
-                <MicOff className="w-5 h-5 text-white" />
-              ) : (
-                <Mic className="w-5 h-5 text-white" />
-              )}
-            </button>
-          </div>
+        {/* Zoom level */}
+        <div className="absolute bottom-4 left-14 bg-white/80 rounded-lg px-2 py-1 z-10 border border-[#e8d9c0]">
+          <span className="text-[10px] text-[#8B6914] font-bold">{Math.round(zoom * 100)}%</span>
         </div>
+
+        {/* Wall thickness control (when wall tool active) */}
+        {activeTool === "wall" && (
+          <div className="absolute bottom-4 right-14 z-10 bg-white/95 rounded-xl shadow-md border border-[#e8d9c0] px-3 py-2 flex items-center gap-2">
+            <span className="text-[9px] text-[#8B6914] font-bold">السماكة:</span>
+            <button onClick={() => setDrawingState(s => ({ ...s, wallThickness: Math.max(10, s.wallThickness - 5) }))}
+              className="w-5 h-5 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="text-xs font-black text-[#5C3D11] w-10 text-center">{drawingState.wallThickness} سم</span>
+            <button onClick={() => setDrawingState(s => ({ ...s, wallThickness: Math.min(40, s.wallThickness + 5) }))}
+              className="w-5 h-5 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center">
+              <Plus className="w-3 h-3" />
+            </button>
+            <div className="h-4 w-px bg-[#e8d9c0]" />
+            {(["normal", "load_bearing", "glass", "partition"] as WallType[]).map(wt => (
+              <button key={wt} onClick={() => setDrawingState(s => ({ ...s, wallType: wt }))}
+                className={`px-1.5 py-0.5 rounded text-[8px] font-bold transition-all ${
+                  drawingState.wallType === wt ? "bg-[#C9A84C] text-white" : "bg-[#f5f0e8] text-[#5C3D11]"
+                }`}>
+                {{ normal: "عادي", load_bearing: "حامل", glass: "زجاجي", partition: "فاصل" }[wt]}
+              </button>
+            ))}
+            <span className="text-[8px] text-[#8B6914]/60">دبل-كليك للإنهاء</span>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {elements.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="w-20 h-20 rounded-3xl bg-[#C9A84C]/10 flex items-center justify-center mb-4">
+              <Square className="w-10 h-10 text-[#C9A84C]/30" />
+            </div>
+            <p className="text-[#8B6914]/40 font-bold text-base">اللوحة فارغة</p>
+            <p className="text-[#8B6914]/25 text-sm mt-1">اختر أداة من اليمين أو افتح المكتبة</p>
+          </div>
+        )}
+
+        {/* Active tool indicator */}
+        {activeTool !== "select" && activeTool !== "pan" && (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-[#C9A84C] text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md">
+            {tools.find(t => t.id === activeTool)?.label} — انقر على اللوحة
+            {activeTool === "wall" && " • دبل-كليك للإنهاء"}
+          </div>
+        )}
+      </div>
+
+      {/* ===== Bottom Status Bar ===== */}
+      <div className="bg-white border-t border-[#e8d9c0] px-3 py-1.5 flex items-center gap-3 text-[9px] text-[#8B6914]">
+        <span className="font-bold text-[#5C3D11]">م. سارة — لوحة الرسم المعماري</span>
+        <span>•</span>
+        <span>{elements.filter(e => e.type === "room").length} غرفة</span>
+        <span>{elements.filter(e => e.type === "wall").length} جدار</span>
+        <span>{elements.filter(e => e.type === "door").length} باب</span>
+        <span>{elements.filter(e => e.type === "window").length} نافذة</span>
+        <span>{elements.filter(e => e.type === "electrical").length} كهرباء</span>
+        <span>{elements.filter(e => e.type === "ac").length} تكييف</span>
+        <span className="mr-auto">
+          {selectedEl ? `محدد: ${selectedEl.type === "room" ? (selectedEl as RoomShape).label : selectedEl.type}` : ""}
+        </span>
+        <span>Ctrl+Z تراجع • Ctrl+C نسخ • Del حذف</span>
       </div>
     </div>
   );
