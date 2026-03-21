@@ -912,7 +912,10 @@ export default function VoiceDesigner() {
         if (e.key === "v") { e.preventDefault(); pasteSelected(); }
       }
       if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedIds.size > 0) deleteSelected();
+        // Don't delete element when user is typing in an input/textarea
+        const target = e.target as HTMLElement;
+        const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+        if (!isTyping && selectedIds.size > 0) deleteSelected();
       }
       if (e.key === "Escape") {
         setActiveTool("select");
@@ -1125,26 +1128,27 @@ export default function VoiceDesigner() {
         setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
       }
     } else if (activeTool === "room" && drawingState.startPoint) {
-      const w = snap(Math.abs(world.x - drawingState.startPoint.x));
-      const h = snap(Math.abs(world.y - drawingState.startPoint.y));
-      if (w > 0.5 && h > 0.5) {
-        const newRoom: RoomShape = {
-          id: generateId(), type: "room",
-          x: Math.min(drawingState.startPoint.x, world.x),
-          y: Math.min(drawingState.startPoint.y, world.y),
-          width: w, height: h,
-          label: "غرفة",
-          color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
-          wallThickness: drawingState.wallThickness,
-        };
-        const newEls = [...elements, newRoom];
-        setElements(newEls);
-        pushHistory(newEls);
-        setSelectedIds(new Set([newRoom.id]));
-        setShowProperties(true);
-        setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
-        setActiveTool("select");
-      }
+      const rawW = snap(Math.abs(world.x - drawingState.startPoint.x));
+      const rawH = snap(Math.abs(world.y - drawingState.startPoint.y));
+      // If tap (very small drag), create default 4x5 room
+      const w = rawW < 1 ? 4 : rawW;
+      const h = rawH < 1 ? 5 : rawH;
+      const newRoom: RoomShape = {
+        id: generateId(), type: "room",
+        x: Math.min(drawingState.startPoint.x, world.x),
+        y: Math.min(drawingState.startPoint.y, world.y),
+        width: w, height: h,
+        label: "غرفة",
+        color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
+        wallThickness: drawingState.wallThickness,
+      };
+      const newEls = [...elements, newRoom];
+      setElements(newEls);
+      pushHistory(newEls);
+      setSelectedIds(new Set([newRoom.id]));
+      setShowProperties(true);
+      setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+      setActiveTool("select");
     }
   };
 
@@ -1229,26 +1233,27 @@ export default function VoiceDesigner() {
             setDrawingState(s => ({ ...s, startPoint: world, currentPoint: world }));
           }
         } else if (activeTool === "room") {
-          const w = snap(Math.abs(world.x - drawingState.startPoint.x));
-          const h = snap(Math.abs(world.y - drawingState.startPoint.y));
-          if (w > 0.5 && h > 0.5) {
-            const newRoom: RoomShape = {
-              id: generateId(), type: "room",
-              x: Math.min(drawingState.startPoint.x, world.x),
-              y: Math.min(drawingState.startPoint.y, world.y),
-              width: w, height: h,
-              label: "غرفة",
-              color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
-              wallThickness: drawingState.wallThickness,
-            };
-            const newEls = [...elements, newRoom];
-            setElements(newEls);
-            pushHistory(newEls);
-            setSelectedIds(new Set([newRoom.id]));
-            setShowProperties(true);
-            setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
-            setActiveTool("select");
-          }
+          const rawW = snap(Math.abs(world.x - drawingState.startPoint.x));
+          const rawH = snap(Math.abs(world.y - drawingState.startPoint.y));
+          // If tap (very small drag), create default 4x5 room
+          const w = rawW < 1 ? 4 : rawW;
+          const h = rawH < 1 ? 5 : rawH;
+          const newRoom: RoomShape = {
+            id: generateId(), type: "room",
+            x: Math.min(drawingState.startPoint.x, world.x),
+            y: Math.min(drawingState.startPoint.y, world.y),
+            width: w, height: h,
+            label: "غرفة",
+            color: ROOM_COLORS[elements.filter(e => e.type === "room").length % ROOM_COLORS.length],
+            wallThickness: drawingState.wallThickness,
+          };
+          const newEls = [...elements, newRoom];
+          setElements(newEls);
+          pushHistory(newEls);
+          setSelectedIds(new Set([newRoom.id]));
+          setShowProperties(true);
+          setDrawingState(s => ({ ...s, startPoint: null, currentPoint: null }));
+          setActiveTool("select");
         }
       }
     }
@@ -1597,7 +1602,7 @@ export default function VoiceDesigner() {
 
         {/* ===== Properties Panel ===== */}
         {showProperties && selectedEl && (
-          <div className="absolute left-2 top-2 z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] w-48">
+          <div className="absolute left-2 bottom-16 z-20 bg-white rounded-2xl shadow-xl border border-[#e8d9c0] w-52 max-h-[60vh] overflow-y-auto">
             <div className="flex items-center justify-between p-2.5 border-b border-[#e8d9c0]">
               <p className="font-black text-[#5C3D11] text-xs">الخصائص</p>
               <button onClick={() => setShowProperties(false)}><X className="w-3.5 h-3.5 text-[#8B6914]" /></button>
@@ -1618,19 +1623,23 @@ export default function VoiceDesigner() {
                   <div className="grid grid-cols-2 gap-1.5">
                     <div>
                       <label className="text-[9px] text-[#8B6914] font-bold block mb-1">العرض (م)</label>
-                      <input type="number" step="0.1" min="0.5"
-                        value={(selectedEl as RoomShape).width}
-                        onChange={e => updateSelectedEl({ width: parseFloat(e.target.value) || 1 })}
-                        className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
-                      />
+                      <div className="flex items-center gap-0.5">
+                        <button onPointerDown={e => { e.stopPropagation(); updateSelectedEl({ width: Math.max(0.5, parseFloat(((selectedEl as RoomShape).width - 0.5).toFixed(1))) }); }}
+                          className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center flex-shrink-0 text-sm font-bold">−</button>
+                        <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as RoomShape).width}م</span>
+                        <button onPointerDown={e => { e.stopPropagation(); updateSelectedEl({ width: parseFloat(((selectedEl as RoomShape).width + 0.5).toFixed(1)) }); }}
+                          className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center flex-shrink-0 text-sm font-bold">+</button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[9px] text-[#8B6914] font-bold block mb-1">الطول (م)</label>
-                      <input type="number" step="0.1" min="0.5"
-                        value={(selectedEl as RoomShape).height}
-                        onChange={e => updateSelectedEl({ height: parseFloat(e.target.value) || 1 })}
-                        className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1 text-[#5C3D11] focus:outline-none focus:border-[#C9A84C]"
-                      />
+                      <div className="flex items-center gap-0.5">
+                        <button onPointerDown={e => { e.stopPropagation(); updateSelectedEl({ height: Math.max(0.5, parseFloat(((selectedEl as RoomShape).height - 0.5).toFixed(1))) }); }}
+                          className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center flex-shrink-0 text-sm font-bold">−</button>
+                        <span className="flex-1 text-center text-xs font-bold text-[#5C3D11]">{(selectedEl as RoomShape).height}م</span>
+                        <button onPointerDown={e => { e.stopPropagation(); updateSelectedEl({ height: parseFloat(((selectedEl as RoomShape).height + 0.5).toFixed(1)) }); }}
+                          className="w-6 h-6 rounded bg-[#f5f0e8] text-[#5C3D11] flex items-center justify-center flex-shrink-0 text-sm font-bold">+</button>
+                      </div>
                     </div>
                   </div>
                   <div>
