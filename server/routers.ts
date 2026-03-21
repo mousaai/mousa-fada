@@ -1374,12 +1374,15 @@ ${colorText}
 - الجدوى الاقتصادية: التكاليف الدقيقة بالسوق الخليجي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
 
+🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
+أنتِ حرة تماماً في تغيير كل شيء في الغرفة: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
+لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدأين من صفحة بيضاء.
+الثوابت الوحيدة: ${doorChangeRule}
+
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
 2. نفس الأبعاد بالضبط — لا تغيير في أبعاد الغرفة أو نسبها
-3. نفس مواقع الفتحات بالضبط — الأبواب والنوافذ والأعمدة في نفس أماكنها
-4. التغييرات المسموحة فقط: الألوان، الأثاث، الجدران، الأرضية، الإضاءة، الديكور
-5. ${doorChangeRule}
+3. ${doorChangeRule}
 
 ردودكِ دائماً بالعربية بصيغة JSON فقط.
 
@@ -1389,7 +1392,7 @@ ${colorText}
 
 💰 PRICING LAW (قانون الأسعار الواقعية):
 سطحي: 3,000-15,000 درهم | متوسط: 15,000-50,000 درهم | شامل: 50,000-150,000 درهم
-الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}`;
+الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}`
 
       // تحليل العناصر البنيوية من الصورة
       const hasDimsFromUser = !!(roomDimensions?.length && roomDimensions?.width);
@@ -1442,7 +1445,9 @@ ${colorText}
 ${structuralAnalysisPrompt}
 
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
-قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة، نفس مواقع الفتحات بالضبط. فقط يتغير: الألوان، الأثاث، الجدران، الأرضية، الإضاءة.
+قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة. ${doorChangeRule}
+
+🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات والجدران والأسقف والإضاءة والأثاث والتشطيبات. لا تتقيدي بما هو موجود حالياً.
 
 🎨 قانون التباين الجذري المطلق (DIVERSITY LAW):
 كل فكرة يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -1668,7 +1673,7 @@ ${structuralAnalysisPrompt}
           
           const roomNote = roomDesc ? `ROOM GEOMETRY: ${roomDesc}. Maintain EXACT room proportions and ceiling height.` : "";
           
-          const generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} Apply ONLY these changes: ${styleName} style colors and materials. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style. New wall finish, new flooring, new ceiling treatment, new lighting. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          const generatedPrompt = `Photorealistic architectural interior redesign with FULL CREATIVE FREEDOM. ${cameraNote} ${roomNote} ${structuralNote} COMPLETE TRANSFORMATION: Apply ${styleName} style from scratch. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style. New wall finish and paint/wallpaper, completely new flooring (tiles/wood/marble/etc), new ceiling treatment (gypsum/coves/beams), new lighting fixtures, new decor. DO NOT keep any existing finishes - replace everything. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
           // بنود AI الخام من النموذج — نحولها إلى BOQCategory[] بإضافة الحقول المفقودة
@@ -1723,14 +1728,21 @@ ${structuralAnalysisPrompt}
           const realisticCostMax = pricingResult.costMax;
           const realisticEstimatedCost = `${realisticCostMin.toLocaleString("ar-AE")} - ${realisticCostMax.toLocaleString("ar-AE")} درهم إماراتي`;
 
+          // توافق أسعار: جعل BOQ grandTotal يتطابق مع costMin/costMax
+          const syncedBoq = boqResult ? {
+            ...boqResult,
+            grandTotalMin: realisticCostMin,
+            grandTotalMax: realisticCostMax,
+          } : boqResult;
+
           return {
             ...idea,
             imagePrompt: generatedPrompt,
-            boq: boqResult,
+            boq: syncedBoq,
             costMin: realisticCostMin,
             costMax: realisticCostMax,
             estimatedCost: realisticEstimatedCost,
-          };;
+          };
         });
 
         return {
@@ -2511,5 +2523,39 @@ ${structuralAnalysisPrompt}
         return { imageUrl: null };
       }
     }),
+
+  // ===== refineDesign: تحسين ذكي للتصميم بعد توليد الصورة =====
+  refineDesign: publicProcedure
+    .input(z.object({
+      originalImageUrl: z.string(),
+      generatedImageUrl: z.string(),
+      refinementRequest: z.string(),
+      clickX: z.number().optional(),
+      clickY: z.number().optional(),
+      originalPrompt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { originalImageUrl, generatedImageUrl, refinementRequest, clickX, clickY, originalPrompt } = input;
+
+      const locationHint = (clickX !== undefined && clickY !== undefined)
+        ? `\nThe user clicked on the image at position (${Math.round(clickX)}%, ${Math.round(clickY)}%) from top-left. Focus the refinement on that area.`
+        : "";
+
+      const refinementPrompt = `${originalPrompt || "Photorealistic interior design"} REFINEMENT REQUEST: ${refinementRequest}.${locationHint} Keep everything else exactly the same. Only change what was specifically requested. Maintain same camera angle, same room proportions, same structural elements.`;
+
+      try {
+        const { url: imageUrl } = await generateImage({
+          prompt: refinementPrompt,
+          originalImages: [
+            { url: originalImageUrl, mimeType: "image/jpeg" },
+            { url: generatedImageUrl, mimeType: "image/jpeg" },
+          ],
+        });
+        return { imageUrl, success: true };
+      } catch {
+        return { imageUrl: null, success: false };
+      }
+    }),
+
 });
 export type AppRouter = typeof appRouter;
