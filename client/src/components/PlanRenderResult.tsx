@@ -53,115 +53,169 @@ const STYLE_LABELS: Record<string, string> = {
   scandinavian: "سكندنافي", moroccan: "مغربي", industrial: "صناعي"
 };
 
-// ===== PDF Export =====
+// ===== PDF Export (html2canvas approach for proper Arabic rendering) =====
 async function generateRenderPDF(imageUrl: string, data: DesignData, style: string) {
   const { jsPDF } = await import("jspdf");
-  const autoTable = (await import("jspdf-autotable")).default;
+  const html2canvas = (await import("html2canvas")).default;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const W = 210;
-  const gold = [201, 168, 76] as [number, number, number];
-  const darkBrown = [92, 61, 17] as [number, number, number];
-  const lightBg = [250, 246, 240] as [number, number, number];
-  const white = [255, 255, 255] as [number, number, number];
-  const emerald = [16, 124, 90] as [number, number, number];
+  const H = 297;
 
-  // صفحة 1: الغلاف
-  doc.setFillColor(...lightBg); doc.rect(0, 0, W, 297, "F");
-  doc.setFillColor(...gold); doc.rect(0, 0, W, 18, "F");
-  doc.setFillColor(...darkBrown); doc.rect(0, 18, W, 2, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...white);
-  doc.text("م. سارة | خبيرة التصميم الداخلي بالذكاء الاصطناعي", W / 2, 11, { align: "center" });
-  if (imageUrl) {
-    try { doc.addImage(imageUrl, "JPEG", 10, 28, W - 20, 90, undefined, "FAST"); doc.setDrawColor(...gold); doc.setLineWidth(0.8); doc.rect(10, 28, W - 20, 90); } catch { /* skip */ }
+  // Helper: render an HTML string to a canvas and add to PDF
+  async function addHtmlPage(html: string, isFirst = false) {
+    const container = document.createElement("div");
+    container.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:794px;background:#faf6f0;font-family:'Tajawal','Arial',sans-serif;direction:rtl;`;
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    try {
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#faf6f0", logging: false });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      if (!isFirst) doc.addPage();
+      doc.addImage(imgData, "JPEG", 0, 0, W, H);
+    } finally {
+      document.body.removeChild(container);
+    }
   }
-  doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.setTextColor(...darkBrown);
-  doc.text(data.title, W / 2, 132, { align: "center" });
-  doc.setFontSize(11); doc.setTextColor(gold[0], gold[1], gold[2]);
-  doc.text(`${STYLE_LABELS[style] || style}  •  رندر 3D من المسقط`, W / 2, 141, { align: "center" });
-  doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.line(30, 146, W - 30, 146);
-  doc.setFontSize(10); doc.setTextColor(80, 60, 30); doc.setFont("helvetica", "normal");
-  const descLines = doc.splitTextToSize(data.description, W - 40);
-  doc.text(descLines, W / 2, 153, { align: "center" });
-  // لوحة الألوان
-  const paletteY = 170;
-  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(...darkBrown);
-  doc.text("لوحة الألوان", W / 2, paletteY, { align: "center" });
-  const swatchW = 28; const swatchH = 12;
-  const totalPW = data.palette.length * (swatchW + 4) - 4;
-  const startX = (W - totalPW) / 2;
-  data.palette.forEach((c, i) => {
-    const x = startX + i * (swatchW + 4);
-    const hex = c.hex.replace("#", "");
-    doc.setFillColor(parseInt(hex.substring(0,2),16), parseInt(hex.substring(2,4),16), parseInt(hex.substring(4,6),16));
-    doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "F");
-    doc.setDrawColor(200, 180, 140); doc.setLineWidth(0.3); doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "S");
-    doc.setFontSize(7); doc.setTextColor(80, 60, 30); doc.text(c.name, x + swatchW / 2, paletteY + 18, { align: "center" });
-  });
-  doc.setFillColor(...gold); doc.roundedRect(20, 195, W - 40, 20, 4, 4, "F");
-  doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(...white);
-  doc.text(`التكلفة التقديرية: ${data.estimatedCost}`, W / 2, 208, { align: "center" });
-  if (data.executionTime) { doc.setFontSize(9); doc.text(`المدة الزمنية: ${data.executionTime}`, W / 2, 214, { align: "center" }); }
 
-  // صفحة 2: المواد والمزايا
-  doc.addPage();
-  doc.setFillColor(...lightBg); doc.rect(0, 0, W, 297, "F");
-  doc.setFillColor(...gold); doc.rect(0, 0, W, 14, "F");
-  doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(...white);
-  doc.text("م. سارة | التصميم الداخلي", 10, 9); doc.text(data.title, W - 10, 9, { align: "right" });
-  let yPos = 22;
-  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(...darkBrown);
-  doc.text("المواد والتشطيبات", W / 2, yPos, { align: "center" }); yPos += 8;
-  doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.line(20, yPos, W - 20, yPos); yPos += 8;
-  const cols = 2; const colW = (W - 40) / cols;
-  data.materials.forEach((m, i) => {
-    const col = i % cols; const row = Math.floor(i / cols);
-    const x = 20 + col * colW; const y = yPos + row * 8;
-    doc.setFillColor(...gold); doc.circle(x + 3, y - 1, 1.5, "F");
-    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 60, 30); doc.text(m, x + 8, y);
-  });
-  yPos += Math.ceil(data.materials.length / cols) * 8 + 10;
-  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(...darkBrown);
-  doc.text("مزايا التصميم", W / 2, yPos, { align: "center" }); yPos += 8;
-  doc.setDrawColor(...gold); doc.line(20, yPos, W - 20, yPos); yPos += 8;
-  data.highlights.forEach((h, i) => {
-    const col = i % cols; const row = Math.floor(i / cols);
-    const x = 20 + col * colW; const y = yPos + row * 8;
-    doc.setFillColor(...emerald); doc.circle(x + 3, y - 1, 1.5, "F");
-    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 60, 30); doc.text(h, x + 8, y);
-  });
+  const styleLabel = STYLE_LABELS[style] || style;
+  const goldHex = "#C9A84C";
+  const brownHex = "#5C3D11";
+  const emeraldHex = "#107C5A";
 
-  // صفحة 3: BOQ
+  // ===== صفحة 1: الغلاف =====
+  let imgTag = "";
+  if (imageUrl) {
+    imgTag = `<img src="${imageUrl}" style="width:100%;height:340px;object-fit:cover;border-radius:8px;border:3px solid ${goldHex};display:block;margin-bottom:16px;" crossorigin="anonymous" />`;
+  }
+  const paletteSwatches = data.palette.map(c => `
+    <div style="display:inline-block;text-align:center;margin:0 6px;">
+      <div style="width:56px;height:32px;background:${c.hex};border-radius:6px;border:1px solid #d4b87a;"></div>
+      <div style="font-size:10px;color:${brownHex};margin-top:4px;">${c.name}</div>
+    </div>`).join("");
+
+  await addHtmlPage(`
+    <div style="background:#faf6f0;min-height:1123px;padding:0;">
+      <div style="background:${goldHex};padding:14px 20px;text-align:center;">
+        <span style="color:#fff;font-size:14px;font-weight:bold;">م. سارة | خبيرة التصميم الداخلي بالذكاء الاصطناعي</span>
+      </div>
+      <div style="background:${brownHex};height:3px;"></div>
+      <div style="padding:20px 24px;">
+        ${imgTag}
+        <h1 style="font-size:26px;font-weight:bold;color:${brownHex};text-align:center;margin:0 0 8px;">${data.title}</h1>
+        <p style="font-size:13px;color:${goldHex};text-align:center;margin:0 0 12px;">${styleLabel} • رندر 3D من المسقط</p>
+        <hr style="border:none;border-top:1px solid ${goldHex};margin:0 40px 16px;" />
+        <p style="font-size:12px;color:#503c1e;text-align:center;line-height:1.7;margin:0 0 20px;">${data.description}</p>
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:bold;color:${brownHex};margin-bottom:10px;">لوحة الألوان</div>
+          <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;">${paletteSwatches}</div>
+        </div>
+        <div style="background:${goldHex};border-radius:8px;padding:14px 24px;text-align:center;margin-top:16px;">
+          <div style="color:#fff;font-size:16px;font-weight:bold;">التكلفة التقديرية: ${data.estimatedCost}</div>
+          ${data.executionTime ? `<div style="color:#fff;font-size:11px;margin-top:4px;">المدة الزمنية: ${data.executionTime}</div>` : ""}
+        </div>
+      </div>
+    </div>`, true);
+
+  // ===== صفحة 2: المواد والمزايا =====
+  const materialsHtml = data.materials.map(m => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0e8d8;">
+      <div style="width:8px;height:8px;background:${goldHex};border-radius:50%;flex-shrink:0;"></div>
+      <span style="font-size:12px;color:#503c1e;">${m}</span>
+    </div>`).join("");
+  const highlightsHtml = data.highlights.map(h => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e8f5ee;">
+      <div style="width:8px;height:8px;background:${emeraldHex};border-radius:50%;flex-shrink:0;"></div>
+      <span style="font-size:12px;color:#503c1e;">${h}</span>
+    </div>`).join("");
+  const furnitureHtml = (data.furniture || []).slice(0, 6).map(f => `
+    <div style="background:#fff;border:1px solid #e8d9c0;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:bold;color:${brownHex};">${f.name}</div>
+      <div style="font-size:10px;color:#666;margin:2px 0;">${f.description}</div>
+      <div style="font-size:11px;color:${goldHex};font-weight:bold;">${f.priceRange}</div>
+    </div>`).join("");
+
+  await addHtmlPage(`
+    <div style="background:#faf6f0;min-height:1123px;padding:0;">
+      <div style="background:${goldHex};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:#fff;font-size:12px;font-weight:bold;">م. سارة | التصميم الداخلي</span>
+        <span style="color:#fff;font-size:12px;font-weight:bold;">${data.title}</span>
+      </div>
+      <div style="padding:20px 24px;">
+        <h2 style="font-size:18px;font-weight:bold;color:${brownHex};text-align:center;margin:0 0 6px;">المواد والتشطيبات</h2>
+        <hr style="border:none;border-top:1px solid ${goldHex};margin:0 0 12px;" />
+        <div style="column-count:2;column-gap:20px;margin-bottom:24px;">${materialsHtml}</div>
+        <h2 style="font-size:18px;font-weight:bold;color:${brownHex};text-align:center;margin:0 0 6px;">مزايا التصميم</h2>
+        <hr style="border:none;border-top:1px solid ${goldHex};margin:0 0 12px;" />
+        <div style="column-count:2;column-gap:20px;margin-bottom:24px;">${highlightsHtml}</div>
+        ${data.furniture && data.furniture.length > 0 ? `
+        <h2 style="font-size:18px;font-weight:bold;color:${brownHex};text-align:center;margin:0 0 6px;">الأثاث المقترح</h2>
+        <hr style="border:none;border-top:1px solid ${goldHex};margin:0 0 12px;" />
+        <div style="column-count:2;column-gap:16px;">${furnitureHtml}</div>` : ""}
+      </div>
+    </div>`);
+
+  // ===== صفحة 3: BOQ =====
   if (data.boq && data.boq.length > 0) {
-    doc.addPage();
-    doc.setFillColor(...lightBg); doc.rect(0, 0, W, 297, "F");
-    doc.setFillColor(...gold); doc.rect(0, 0, W, 14, "F");
-    doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(...white);
-    doc.text("م. سارة | جدول الكميات BOQ", 10, 9); doc.text(data.title, W - 10, 9, { align: "right" });
-    yPos = 22;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(...darkBrown);
-    doc.text("جدول الكميات التقديري (BOQ)", W / 2, yPos, { align: "center" }); yPos += 8;
-    const boqByCat = data.boq.reduce((acc, item) => { if (!acc[item.category]) acc[item.category] = []; acc[item.category].push(item); return acc; }, {} as Record<string, BOQItem[]>);
+    const boqByCat = data.boq.reduce((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
+      return acc;
+    }, {} as Record<string, BOQItem[]>);
     let grandTotal = 0;
-    Object.entries(boqByCat).forEach(([cat, items]) => {
+    const tablesHtml = Object.entries(boqByCat).map(([cat, items]) => {
       const catTotal = items.reduce((s, i) => s + (i.total || 0), 0);
       grandTotal += catTotal;
-      autoTable(doc, {
-        startY: yPos,
-        head: [[cat, "الوحدة", "الكمية", "سعر الوحدة", "الإجمالي"]],
-        body: items.map(i => [i.item, i.unit, i.qty, `${i.unitPrice.toLocaleString()} ر.س`, `${i.total.toLocaleString()} ر.س`]),
-        foot: [["المجموع الفرعي", "", "", "", `${catTotal.toLocaleString()} ر.س`]],
-        styles: { fontSize: 8, font: "helvetica", halign: "right" },
-        headStyles: { fillColor: emerald, textColor: white, fontStyle: "bold" },
-        footStyles: { fillColor: [230, 245, 238], textColor: emerald, fontStyle: "bold" },
-        alternateRowStyles: { fillColor: [245, 252, 248] },
-        margin: { left: 10, right: 10 },
-      });
-      yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
-    });
-    doc.setFillColor(...gold); doc.roundedRect(10, yPos, W - 20, 14, 3, 3, "F");
-    doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(...white);
-    doc.text(`الإجمالي التقديري: ${grandTotal.toLocaleString()} ر.س`, W / 2, yPos + 9, { align: "center" });
+      const rows = items.map(i => `
+        <tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8f5ee;font-size:11px;">${i.item}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8f5ee;font-size:11px;text-align:center;">${i.unit}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8f5ee;font-size:11px;text-align:center;">${i.qty}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8f5ee;font-size:11px;text-align:center;">${i.unitPrice.toLocaleString()}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e8f5ee;font-size:11px;font-weight:bold;text-align:center;">${i.total.toLocaleString()}</td>
+        </tr>`).join("");
+      return `
+        <div style="margin-bottom:16px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:${emeraldHex};">
+                <th colspan="5" style="padding:8px 10px;color:#fff;font-size:12px;text-align:right;">${cat}</th>
+              </tr>
+              <tr style="background:#e8f5ee;">
+                <th style="padding:6px 10px;font-size:10px;color:${brownHex};">البند</th>
+                <th style="padding:6px 10px;font-size:10px;color:${brownHex};text-align:center;">الوحدة</th>
+                <th style="padding:6px 10px;font-size:10px;color:${brownHex};text-align:center;">الكمية</th>
+                <th style="padding:6px 10px;font-size:10px;color:${brownHex};text-align:center;">سعر الوحدة</th>
+                <th style="padding:6px 10px;font-size:10px;color:${brownHex};text-align:center;">الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+              <tr style="background:#e8f5ee;">
+                <td colspan="4" style="padding:6px 10px;font-size:11px;font-weight:bold;color:${emeraldHex};">المجموع الفرعي</td>
+                <td style="padding:6px 10px;font-size:12px;font-weight:bold;color:${emeraldHex};text-align:center;">${catTotal.toLocaleString()} ر.س</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>`;
+    }).join("");
+
+    await addHtmlPage(`
+      <div style="background:#faf6f0;min-height:1123px;padding:0;">
+        <div style="background:${goldHex};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#fff;font-size:12px;font-weight:bold;">م. سارة | جدول الكميات BOQ</span>
+          <span style="color:#fff;font-size:12px;font-weight:bold;">${data.title}</span>
+        </div>
+        <div style="padding:20px 24px;">
+          <h2 style="font-size:18px;font-weight:bold;color:${brownHex};text-align:center;margin:0 0 6px;">جدول الكميات التقديري (BOQ)</h2>
+          <hr style="border:none;border-top:1px solid ${goldHex};margin:0 0 16px;" />
+          ${tablesHtml}
+          <div style="background:${goldHex};border-radius:8px;padding:14px 24px;text-align:center;margin-top:16px;">
+            <span style="color:#fff;font-size:16px;font-weight:bold;">الإجمالي التقديري: ${grandTotal.toLocaleString()} ر.س</span>
+          </div>
+        </div>
+      </div>`);
   }
+
   doc.save(`render-3d-${style}-${Date.now()}.pdf`);
 }
 
