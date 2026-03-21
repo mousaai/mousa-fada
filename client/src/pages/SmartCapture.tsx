@@ -588,7 +588,45 @@ function IdeaCard({
   const [isRefining, setIsRefining] = useState(false);
   const refineImageRef = useRef<HTMLDivElement>(null);
 
+  // حالة تغيير النمط
+  const [showStyleChanger, setShowStyleChanger] = useState(false);
+  const [selectedNewStyle, setSelectedNewStyle] = useState<string | null>(null);
+  const [selectedNewColors, setSelectedNewColors] = useState<string[]>([]);
+  const [isApplyingStyle, setIsApplyingStyle] = useState(false);
+
   const refineMutation = trpc.refineDesign.useMutation();
+  const applyStyleMutation = trpc.applyStyleToIdea.useMutation();
+
+  const handleApplyStyle = async () => {
+    if (!selectedNewStyle || !idea.imageUrl) return;
+    setIsApplyingStyle(true);
+    try {
+      const result = await applyStyleMutation.mutateAsync({
+        currentImageUrl: idea.imageUrl,
+        currentTitle: idea.title,
+        currentDescription: idea.description,
+        newStyle: selectedNewStyle,
+        newColors: selectedNewColors.length > 0 ? selectedNewColors : undefined,
+        spaceType: spaceType,
+      });
+      if (result.success && result.imageUrl) {
+        onUpdateIdea?.(idea.id, {
+          imageUrl: result.imageUrl,
+          title: result.newTitle,
+          description: result.newDescription,
+        });
+        setShowStyleChanger(false);
+        setSelectedNewStyle(null);
+        setSelectedNewColors([]);
+      } else {
+        toast.error("حدث خطأ أثناء تغيير النمط");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء تغيير النمط");
+    } finally {
+      setIsApplyingStyle(false);
+    }
+  };
 
   const handleRefineImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -717,6 +755,17 @@ function IdeaCard({
               title="تحسين التصميم"
             >
               <span className="text-sm">✏️</span>
+            </button>
+          )}
+          {idea.imageUrl && (
+            <button
+              onClick={() => setShowStyleChanger(!showStyleChanger)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
+                showStyleChanger ? "bg-[#C9A84C] text-white" : "bg-white/90 text-[#8B6914]"
+              }`}
+              title="غيّر النمط"
+            >
+              <Palette className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -1074,6 +1123,120 @@ function IdeaCard({
                   <>
                     <span>✨</span>
                     تطبيق التحسين
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* شاشة تغيير النمط — full-screen */}
+        {showStyleChanger && idea.imageUrl && (
+          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
+              <button onClick={() => { setShowStyleChanger(false); setSelectedNewStyle(null); setSelectedNewColors([]); }}
+                className="w-9 h-9 rounded-full bg-[#f0e8d8] flex items-center justify-center text-[#5C3D11]">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-sm font-black text-[#5C3D11]">🎨 غيّر النمط</p>
+                <p className="text-[10px] text-[#8B6914]/60">{idea.title}</p>
+              </div>
+              <div className="w-9" />
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {/* معاينة الصورة الحالية */}
+              <div className="relative">
+                <img src={idea.imageUrl} className="w-full object-cover" style={{ maxHeight: '35vh' }} alt="التصميم الحالي" />
+                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full">التصميم الحالي</div>
+              </div>
+
+              <div className="px-4 py-4 space-y-4">
+                {/* اختيار النمط الجديد */}
+                <div>
+                  <p className="text-sm font-bold text-[#5C3D11] mb-2">🎨 اختر النمط الجديد</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: "modern", label: "عصري", icon: "🏙️", colors: ["#E0E0E0","#212121","#2196F3"] },
+                      { key: "gulf", label: "خليجي", icon: "🌙", colors: ["#F5F0E8","#C9A84C","#5C3D11"] },
+                      { key: "classic", label: "كلاسيكي", icon: "🏛️", colors: ["#FFF8F0","#8B6914","#4A2C0A"] },
+                      { key: "minimal", label: "مينيمال", icon: "⬜", colors: ["#FAFAFA","#9E9E9E","#212121"] },
+                      { key: "luxury", label: "فاخر", icon: "✨", colors: ["#1A1A1A","#C9A84C","#F5F0E8"] },
+                      { key: "scandinavian", label: "سكاندنافي", icon: "❄️", colors: ["#ECEFF1","#90A4AE","#546E7A"] },
+                      { key: "moroccan", label: "مغربي", icon: "🕌", colors: ["#E65100","#1565C0","#F9A825"] },
+                      { key: "industrial", label: "صناعي", icon: "🔩", colors: ["#455A64","#78909C","#B0BEC5"] },
+                      { key: "bohemian", label: "بوهيمي", icon: "🌿", colors: ["#8D6E63","#A5D6A7","#FFB74D"] },
+                      { key: "mediterranean", label: "متوسطي", icon: "🌊", colors: ["#1565C0","#F5F5DC","#FF8F00"] },
+                      { key: "neoclassical", label: "نيوكلاسيك", icon: "🏛️", colors: ["#F5F0E8","#B8860B","#4A4A4A"] },
+                      { key: "art_deco", label: "آرت ديكو", icon: "💎", colors: ["#1A1A1A","#FFD700","#FFFFFF"] },
+                    ].map(({ key, label, icon, colors }) => (
+                      <button key={key} onClick={() => setSelectedNewStyle(selectedNewStyle === key ? null : key)}
+                        className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all border-2 flex flex-col items-center gap-1 ${
+                          selectedNewStyle === key
+                            ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914] shadow-sm"
+                            : "border-[#e8d9c0] text-[#5C3D11]"
+                        }`}>
+                        <span className="text-lg">{icon}</span>
+                        <div className="flex gap-0.5">
+                          {colors.map(c => <div key={c} className="w-2.5 h-2.5 rounded-full" style={{backgroundColor:c}} />)}
+                        </div>
+                        <span className="text-[10px] leading-tight text-center">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* اختيار الألوان الجديدة (اختياري) */}
+                <div>
+                  <p className="text-sm font-bold text-[#5C3D11] mb-2">
+                    🎨 ألوان محددة <span className="text-[10px] text-[#8B6914]/60 font-normal">(اختياري — متعدد)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: "أبيض", hex: "#F5F5F5" }, { name: "بيج", hex: "#F5F0E8" },
+                      { name: "رمادي", hex: "#9E9E9E" }, { name: "أسود", hex: "#212121" },
+                      { name: "ذهبي", hex: "#C9A84C" }, { name: "بني", hex: "#8B4513" },
+                      { name: "خشبي", hex: "#795548" }, { name: "أخضر زيتي", hex: "#558B2F" },
+                      { name: "أزرق", hex: "#1565C0" }, { name: "أزرق بترولي", hex: "#00838F" },
+                      { name: "وردي", hex: "#F48FB1" }, { name: "برتقالي", hex: "#FF9800" },
+                      { name: "أحمر خمري", hex: "#880E4F" }, { name: "بنفسجي", hex: "#7B1FA2" },
+                    ].map(({ name, hex }) => {
+                      const isSel = selectedNewColors.includes(name);
+                      return (
+                        <button key={name}
+                          onClick={() => setSelectedNewColors(prev => isSel ? prev.filter(c => c !== name) : [...prev, name])}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border-2 transition-all ${
+                            isSel ? "border-[#C9A84C] bg-[#C9A84C]/10 shadow-sm" : "border-[#e8d9c0]"
+                          }`}>
+                          <div className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: hex }} />
+                          <span className="text-[11px] text-[#5C3D11] font-medium">{name}</span>
+                          {isSel && <Check className="w-3 h-3 text-[#C9A84C]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* زر التطبيق */}
+            <div className="px-4 py-4 bg-white border-t border-[#e8d9c0] safe-area-pb">
+              <button
+                onClick={handleApplyStyle}
+                disabled={!selectedNewStyle || isApplyingStyle}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all shadow-lg"
+              >
+                {isApplyingStyle ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    م. سارة تغيّر النمط...
+                  </>
+                ) : (
+                  <>
+                    <Palette className="w-4 h-4" />
+                    طبّق {selectedNewStyle ? `نمط ${selectedNewStyle}` : "النمط"} على هذه الفكرة
                   </>
                 )}
               </button>
@@ -2263,128 +2426,111 @@ export default function SmartCapture() {
               </div>
             </div>
 
-            {/* قسم النمط المفضّل (اختياري) */}
+            {/* قسم النمط المفضّل — دائماً مرئي */}
             <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
-              <button
-                onClick={() => setPreferredStyle(preferredStyle ? null : "modern")}
-                className="w-full flex items-center justify-between px-4 py-3.5"
-              >
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-[#C9A84C]" />
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#5C3D11]">النمط المفضّل</p>
-                    <p className="text-[10px] text-[#8B6914]/60">اختياري — حدّدي الطابع الذي تريدينه</p>
-                  </div>
+              <div className="px-4 py-3.5 flex items-center gap-2 border-b border-[#e8d9c0]/50">
+                <Palette className="w-4 h-4 text-[#C9A84C]" />
+                <div className="text-right flex-1">
+                  <p className="text-sm font-bold text-[#5C3D11]">🎨 النمط المفضّل</p>
+                  <p className="text-[10px] text-[#8B6914]/60">اختر الطابع الذي تريده — م. سارة ستلتزم به في كل الأفكار</p>
                 </div>
-                <div className={`w-12 h-6 rounded-full transition-all relative ${
-                  preferredStyle ? "bg-[#C9A84C]" : "bg-gray-200"
-                }`}>
-                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
-                    preferredStyle ? "left-6" : "left-0.5"
-                  }`} />
+                {preferredStyle && (
+                  <button onClick={() => setPreferredStyle(null)}
+                    className="text-[10px] text-[#C9A84C] border border-[#C9A84C] rounded-full px-2 py-0.5">
+                    إلغاء
+                  </button>
+                )}
+              </div>
+              <div className="px-4 py-3">
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: "modern", label: "عصري", icon: "🏙️", colors: ["#E0E0E0","#212121","#2196F3"] },
+                    { key: "gulf", label: "خليجي", icon: "🌙", colors: ["#F5F0E8","#C9A84C","#5C3D11"] },
+                    { key: "classical", label: "كلاسيكي", icon: "🏛️", colors: ["#FFF8F0","#8B6914","#4A2C0A"] },
+                    { key: "minimal", label: "مينيمال", icon: "⬜", colors: ["#FAFAFA","#9E9E9E","#212121"] },
+                    { key: "industrial", label: "صناعي", icon: "🔩", colors: ["#455A64","#78909C","#B0BEC5"] },
+                    { key: "bohemian", label: "بوهيمي", icon: "🌿", colors: ["#8D6E63","#A5D6A7","#FFB74D"] },
+                    { key: "scandinavian", label: "سكاندنافي", icon: "❄️", colors: ["#ECEFF1","#90A4AE","#546E7A"] },
+                    { key: "luxury", label: "فاخر", icon: "✨", colors: ["#1A1A1A","#C9A84C","#F5F0E8"] },
+                    { key: "moroccan", label: "مغربي", icon: "🕌", colors: ["#E65100","#1565C0","#F9A825"] },
+                    { key: "mediterranean", label: "متوسطي", icon: "🌊", colors: ["#1565C0","#F5F5DC","#FF8F00"] },
+                    { key: "arabic_facade", label: "واجهة عربية", icon: "🏛️", colors: ["#F5F0E8","#8B6914","#C9A84C"] },
+                    { key: "modern_facade", label: "واجهة عصرية", icon: "🏗️", colors: ["#263238","#546E7A","#B0BEC5"] },
+                  ].map(({ key, label, icon, colors }) => (
+                    <button key={key} onClick={() => setPreferredStyle(preferredStyle === key ? null : key)}
+                      className={`py-2.5 px-1 rounded-xl text-xs font-bold transition-all border-2 flex flex-col items-center gap-1 ${
+                        preferredStyle === key
+                          ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914] shadow-sm"
+                          : "border-[#e8d9c0] text-[#5C3D11] hover:border-[#C9A84C]/50"
+                      }`}>
+                      <span className="text-lg">{icon}</span>
+                      <div className="flex gap-0.5">
+                        {colors.map(c => <div key={c} className="w-2.5 h-2.5 rounded-full" style={{backgroundColor:c}} />)}
+                      </div>
+                      <span className="text-[10px] leading-tight text-center">{label}</span>
+                    </button>
+                  ))}
                 </div>
-              </button>
-              {preferredStyle && (
-                <div className="px-4 pb-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { key: "modern", label: "عصري", icon: "🏙️" },
-                      { key: "gulf", label: "خليجي", icon: "🌙" },
-                      { key: "classical", label: "كلاسيكي", icon: "🏙️" },
-                      { key: "minimal", label: "مينيمال", icon: "⬜" },
-                      { key: "industrial", label: "صناعي", icon: "🔩" },
-                      { key: "bohemian", label: "بوهيمي", icon: "🌿" },
-                      { key: "scandinavian", label: "سكاندنافي", icon: "❄️" },
-                      { key: "luxury", label: "فاخر", icon: "✨" },
-                      { key: "moroccan", label: "مغربي", icon: "🕌" },
-                      { key: "mediterranean", label: "متوسطي", icon: "🌊" },
-                      { key: "tropical", label: "استوائي", icon: "🌴" },
-                      { key: "arabic_facade", label: "واجهة عربية", icon: "🏛️" },
-                      { key: "modern_facade", label: "واجهة عصرية", icon: "🏗️" },
-                      { key: "zen_garden", label: "حديقة زن", icon: "🌾" },
-                      { key: "gulf_garden", label: "حديقة خليجية", icon: "🌴" },
-                      { key: "pool_luxury", label: "مسبح فاخر", icon: "🏊" },
-                      { key: "outdoor_lounge", label: "جلسة خارجية", icon: "⛱️" },
-                      { key: "stone_pathway", label: "ممر حجري", icon: "🛶" },
-                      { key: "rooftop_garden", label: "سطح مفتوح", icon: "🏙️" },
-                    ].map(({ key, label, icon }) => (
-                      <button key={key} onClick={() => setPreferredStyle(key)}
-                        className={`py-2.5 rounded-xl text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${
-                          preferredStyle === key
-                            ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914]"
-                            : "border-[#e8d9c0] text-[#5C3D11]"
-                        }`}>
-                        <span className="text-base">{icon}</span>
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
 
-            {/* قسم الألوان المفضّلة (اختياري) */}
+            {/* قسم الألوان المفضّلة — دائماً مرئي */}
             <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
-              <button
-                onClick={() => setPreferredColors(preferredColors.length > 0 ? [] : ["أبيض"])}
-                className="w-full flex items-center justify-between px-4 py-3.5"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-rose-400" />
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#5C3D11]">الألوان المفضّلة</p>
-                    <p className="text-[10px] text-[#8B6914]/60">اختياري — حدّدي الألوان التي تريدينها</p>
-                  </div>
+              <div className="px-4 py-3.5 flex items-center gap-2 border-b border-[#e8d9c0]/50">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-rose-400" />
+                <div className="text-right flex-1">
+                  <p className="text-sm font-bold text-[#5C3D11]">🎨 الألوان المفضّلة</p>
+                  <p className="text-[10px] text-[#8B6914]/60">اختر ألواناً محددة — م. سارة ستبني عليها (متعدد الاختيار)</p>
                 </div>
-                <div className={`w-12 h-6 rounded-full transition-all relative ${
-                  preferredColors.length > 0 ? "bg-[#C9A84C]" : "bg-gray-200"
-                }`}>
-                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
-                    preferredColors.length > 0 ? "left-6" : "left-0.5"
-                  }`} />
+                {preferredColors.length > 0 && (
+                  <button onClick={() => setPreferredColors([])}
+                    className="text-[10px] text-[#C9A84C] border border-[#C9A84C] rounded-full px-2 py-0.5">
+                    مسح ({preferredColors.length})
+                  </button>
+                )}
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { name: "أبيض", hex: "#F5F5F5" },
+                    { name: "بيج", hex: "#F5F0E8" },
+                    { name: "رمادي فاتح", hex: "#E0E0E0" },
+                    { name: "رمادي", hex: "#9E9E9E" },
+                    { name: "أسود", hex: "#212121" },
+                    { name: "ذهبي", hex: "#C9A84C" },
+                    { name: "بني فاتح", hex: "#D7B899" },
+                    { name: "بني", hex: "#8B4513" },
+                    { name: "خشبي", hex: "#795548" },
+                    { name: "أخضر زيتي", hex: "#558B2F" },
+                    { name: "أخضر", hex: "#4CAF50" },
+                    { name: "أزرق فاتح", hex: "#90CAF9" },
+                    { name: "أزرق", hex: "#1565C0" },
+                    { name: "أزرق بترولي", hex: "#00838F" },
+                    { name: "وردي", hex: "#F48FB1" },
+                    { name: "برتقالي", hex: "#FF9800" },
+                    { name: "أحمر خمري", hex: "#880E4F" },
+                    { name: "بنفسجي", hex: "#7B1FA2" },
+                  ].map(({ name, hex }) => {
+                    const isSelected = preferredColors.includes(name);
+                    return (
+                      <button key={name}
+                        onClick={() => setPreferredColors(prev =>
+                          isSelected ? prev.filter(c => c !== name) : [...prev, name]
+                        )}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border-2 transition-all ${
+                          isSelected
+                            ? "border-[#C9A84C] bg-[#C9A84C]/10 shadow-sm"
+                            : "border-[#e8d9c0] hover:border-[#C9A84C]/50"
+                        }`}>
+                        <div className="w-4 h-4 rounded-full border border-gray-200 shadow-sm flex-shrink-0"
+                          style={{ backgroundColor: hex }} />
+                        <span className="text-[11px] text-[#5C3D11] font-medium whitespace-nowrap">{name}</span>
+                        {isSelected && <Check className="w-3 h-3 text-[#C9A84C] flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
-              </button>
-              {preferredColors.length > 0 && (
-                <div className="px-4 pb-4">
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { name: "أبيض", hex: "#F5F5F5" },
-                      { name: "بيج", hex: "#F5F0E8" },
-                      { name: "رمادي", hex: "#9E9E9E" },
-                      { name: "أسود", hex: "#212121" },
-                      { name: "ذهبي", hex: "#C9A84C" },
-                      { name: "بني", hex: "#8B4513" },
-                      { name: "أخضر", hex: "#4CAF50" },
-                      { name: "أزرق", hex: "#2196F3" },
-                      { name: "وردي", hex: "#E91E63" },
-                      { name: "برتقالي", hex: "#FF9800" },
-                      { name: "خشبي", hex: "#795548" },
-                      { name: "نعناعي", hex: "#9C27B0" },
-                    ].map(({ name, hex }) => {
-                      const isSelected = preferredColors.includes(name);
-                      return (
-                        <button key={name}
-                          onClick={() => setPreferredColors(prev =>
-                            isSelected ? prev.filter(c => c !== name) : [...prev, name]
-                          )}
-                          className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
-                            isSelected ? "border-[#C9A84C] bg-[#C9A84C]/10" : "border-[#e8d9c0]"
-                          }`}>
-                          <div className="w-8 h-8 rounded-full border border-gray-200 shadow-sm"
-                            style={{ backgroundColor: hex }} />
-                          <span className="text-[9px] text-[#5C3D11] font-medium">{name}</span>
-                          {isSelected && <Check className="w-3 h-3 text-[#C9A84C]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {preferredColors.length > 0 && (
-                    <p className="text-[10px] text-[#8B6914]/60 mt-2 text-center">
-                      تم اختيار {preferredColors.length} لون: {preferredColors.join("، ")}
-                    </p>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
 
             {/* قسم تقليد نمط معين (اختياري) */}

@@ -2638,5 +2638,64 @@ ${structuralAnalysisPrompt}
       }
     }),
 
+  applyStyleToIdea: publicProcedure
+    .input(z.object({
+      currentImageUrl: z.string(),
+      currentTitle: z.string(),
+      currentDescription: z.string(),
+      newStyle: z.string(),
+      newColors: z.array(z.string()).optional(),
+      spaceType: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { currentImageUrl, currentTitle, currentDescription, newStyle, newColors, spaceType } = input;
+
+      const styleInfo = GLOBAL_STYLES[newStyle] || { name: newStyle, description: newStyle, keywords: newStyle };
+      const colorInstruction = newColors && newColors.length > 0
+        ? `Use ONLY these colors as the dominant palette: ${newColors.join(", ")}. `
+        : "";
+
+      const prompt = `Photorealistic ${spaceType || "interior"} design. Transform this space into ${styleInfo.name} style (${styleInfo.keywords}). ${colorInstruction}Keep the same room structure, proportions, doors and windows positions. Apply ${styleInfo.name} aesthetic: ${styleInfo.description}. High quality architectural visualization, professional photography, 8K resolution.`;
+
+      const toImageEntry = (imgUrl: string): { url?: string; b64Json?: string; mimeType?: string } => {
+        if (imgUrl.startsWith("data:")) {
+          const [header, b64Data] = imgUrl.split(",");
+          const mimeMatch = header.match(/data:([^;]+);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+          return { b64Json: b64Data, mimeType };
+        }
+        return { url: imgUrl, mimeType: "image/jpeg" };
+      };
+
+      try {
+        const { url: imageUrl } = await generateImage({
+          prompt,
+          originalImages: [toImageEntry(currentImageUrl)],
+        });
+
+        // توليد عنوان ووصف جديدين بالعربية
+        const titleRes = await invokeLLM({
+          messages: [
+            { role: "system", content: "أنتِ م. سارة مصممة داخلية. أجيبي بـ JSON فقط بدون أي نص إضافي." },
+            { role: "user", content: `أعطيني عنواناً قصيراً (4-6 كلمات) ووصفاً موجزاً (جملة واحدة) لتصميم ${styleInfo.name} ${newColors && newColors.length > 0 ? `بألوان: ${newColors.join("، ")}` : ""} لـ ${spaceType || "غرفة"}. JSON: {"title": "...", "description": "..."}` },
+          ],
+          response_format: { type: "json_schema", json_schema: { name: "idea_title", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" } }, required: ["title", "description"], additionalProperties: false } } },
+        });
+
+        let newTitle = currentTitle;
+        let newDescription = currentDescription;
+        try {
+          const parsed = JSON.parse(titleRes.choices[0].message.content as string);
+          newTitle = parsed.title || currentTitle;
+          newDescription = parsed.description || currentDescription;
+        } catch { /* keep original */ }
+
+        return { imageUrl, newTitle, newDescription, success: true };
+      } catch (err) {
+        console.error("[applyStyleToIdea] Error:", err);
+        return { imageUrl: null, newTitle: currentTitle, newDescription: currentDescription, success: false };
+      }
+    }),
+
 });
 export type AppRouter = typeof appRouter;
