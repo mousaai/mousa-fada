@@ -2761,5 +2761,20 @@ ${structuralAnalysisPrompt}
       }
     }),
 
+  // ===== توليد رندر 3D من مخطط الرسم =====
+  generate3DFromPlan: publicProcedure
+    .input(z.object({
+      prompt: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { url } = await generateImage({ prompt: input.prompt });
+        return { url, success: true };
+      } catch (err) {
+        console.error("[generate3DFromPlan] Error:", err);
+        return { url: null, success: false };
+      }
+    }),
+
 });
 export type AppRouter = typeof appRouter;

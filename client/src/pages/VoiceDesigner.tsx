@@ -2322,7 +2322,7 @@ export default function VoiceDesigner() {
                   };
                   const roomsDetail = rooms.map(r => `${r.label} (${r.width}m × ${r.height}m, area ${(r.width*r.height).toFixed(1)}m²)`).join("; ");
                   const prompt = `Photorealistic architectural interior visualization. Floor plan contains: ${roomsDetail}. ${doors.length} doors, ${windows.length} windows. Ceiling height 3m. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
-                  const res = await fetch("/api/trpc/design.generateImage", {
+                  const res = await fetch("/api/trpc/generate3DFromPlan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ json: { prompt } }),
