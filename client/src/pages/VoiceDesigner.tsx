@@ -2727,10 +2727,29 @@ export default function VoiceDesigner() {
                     aerial: `aerial perspective view from 45 degrees above, isometric-style. Camera positioned above the ${cameraFrom} corner looking toward the ${doorWallSide} wall. Door clearly visible on the ${doorWallSide} wall.`
                   };
                   // Build strict structural constraints
+                  // SCALE_3D=100 matches the scale used in mainRoom/mainDoors/mainWindows filtering
+                  const SCALE_3D = 100;
+                  const getWallSide3D = (elemX: number, elemY: number, room: RoomShape) => {
+                    const relX = (elemX - room.x) / SCALE_3D;  // meters from room left
+                    const relY = (elemY - room.y) / SCALE_3D;  // meters from room top
+                    const roomW = room.width;   // room width in meters
+                    const roomH = room.height;  // room height in meters
+                    // Distance to each wall in meters
+                    const dNorth = relY;
+                    const dSouth = roomH - relY;
+                    const dWest  = relX;
+                    const dEast  = roomW - relX;
+                    const minD = Math.min(dNorth, dSouth, dWest, dEast);
+                    if (minD === dNorth) return { side: "north", posX: `${(relX / roomW * 100).toFixed(0)}%` };
+                    if (minD === dSouth) return { side: "south", posX: `${(relX / roomW * 100).toFixed(0)}%` };
+                    if (minD === dWest)  return { side: "west",  posX: `${(relY / roomH * 100).toFixed(0)}%` };
+                    return                      { side: "east",  posX: `${(relY / roomH * 100).toFixed(0)}%` };
+                  };
                   const structuralConstraints = [
                     `EXACT room dimensions: ${mainRoom.width.toFixed(1)}m wide × ${mainRoom.height.toFixed(1)}m deep × 3m ceiling height`,
-                    mainDoors.length > 0 ? `EXACT door placement: ${mainDoors.map(d => { const relX = (d.x - mainRoom.x) / SCALE; const relY = (d.y - mainRoom.y) / SCALE; let side = relY < 0.3 ? "north" : relY > mainRoom.height - 0.3 ? "south" : relX < 0.3 ? "west" : "east"; return `${d.doorType || "single"} door (${d.width.toFixed(1)}m) on ${side} wall at ${(relX/mainRoom.width*100).toFixed(0)}% from left`; }).join(", ")}` : "",
-                    mainWindows.length > 0 ? `EXACT window placement: ${mainWindows.map(w => { const relX = (w.x - mainRoom.x) / SCALE; const relY = (w.y - mainRoom.y) / SCALE; let side = relY < 0.3 ? "north" : relY > mainRoom.height - 0.3 ? "south" : relX < 0.3 ? "west" : "east"; return `${w.windowType || "standard"} window (${w.width.toFixed(1)}m) on ${side} wall`; }).join(", ")}` : "",
+                    mainDoors.length > 0 ? `EXACT door placement: ${mainDoors.map(d => { const { side, posX } = getWallSide3D(d.x, d.y, mainRoom); return `${d.doorType || "single"} door (${d.width.toFixed(1)}m wide) on ${side} wall at ${posX} from left`; }).join(", ")}` : "",
+                    mainWindows.length > 0 ? `EXACT window placement: ${mainWindows.map(w => { const { side, posX } = getWallSide3D(w.x, w.y, mainRoom); return `${w.windowType || "standard"} window (${w.width.toFixed(1)}m wide) on ${side} wall at ${posX} from left`; }).join(", ")}` : "",
+                    `CRITICAL: Reproduce ONLY the doors and windows listed above. Do NOT add any extra openings. Do NOT move any opening to a different wall.`,
                   ].filter(Boolean).join(". ");
 
                   const prompt = `Photorealistic architectural interior visualization. CRITICAL STRUCTURAL REQUIREMENTS - MUST FOLLOW EXACTLY: ${structuralConstraints}. DO NOT add, move, or remove any doors or windows. DO NOT change room proportions. Full floor plan: ${roomsDetail}. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. The visualization MUST accurately reflect the floor plan geometry. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
