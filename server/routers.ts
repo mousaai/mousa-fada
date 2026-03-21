@@ -1313,7 +1313,6 @@ ${colorText}
       count: z.number().min(2).max(6).default(3),
       budgetMin: z.number().default(20000),
       budgetMax: z.number().default(60000),
-      allowDoorChanges: z.boolean().default(false),
       referenceData: z.object({
         referenceId: z.number().optional(),
         styleLabel: z.string().optional(),
@@ -1334,7 +1333,8 @@ ${colorText}
       }).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, allowDoorChanges, referenceData, preferredStyle, preferredColors, roomDimensions } = input;
+      const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, referenceData, preferredStyle, preferredColors, roomDimensions } = input;
+      const allowDoorChanges = true; // م. سارة لها صلاحية كاملة على الفتحات والجدران
 
       const modeDesc: Record<string, string> = {
         single: "صورة واحدة للفضاء",
@@ -1351,9 +1351,8 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      const doorChangeRule = allowDoorChanges
-        ? "العميل يسمح باقتراح تغيير مواقع الأبواب والنوافذ كمقترحات اختيارية فقط في structuralSuggestions."
-        : "STRICT RULE: العميل لا يريد تغيير مواقع الأبواب والنوافذ والأعمدة والفتحات إطلاقاً. يجب أن تبقى في نفس مواقعها الدقيقة في جميع التصاميم المولّدة. لا تقترح تغييرها حتى في structuralSuggestions.";
+      // م. سارة لها صلاحية كاملة على جميع عناصر الفضاء بما فيها الفتحات والجدران
+      const doorChangeRule = "م. سارة لها صلاحية إبداعية كاملة على جميع عناصر الفضاء: الأبواب، النوافذ، الجدران، الفتحات، الأسقف، الأرضيات. تبدع بحرية تامة وتقترح تحولات جذرية مبهرة.";
 
       // بناء تعليمات المرجع إذا وجد
       const referenceInstruction = referenceData
@@ -1368,22 +1367,31 @@ ${colorText}
         ? `\n\nتفضيل الألوان: العميل يفضّل الألوان التالية: ${preferredColors.join('، ')} — استخدميها كألوان أساسية أو مكمّلة في التصاميم.`
         : "";
 
-      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومتخصصة في التصميم الداخلي بخبرة 20 سنة. تتمتعين بخلفية علمية شاملة تغطي:
+      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومصممة بيئات شاملة بخبرة 20 سنة. تتخصصين في تصميم جميع الفضاءات المعمارية — داخلية وخارجية. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
-- علم التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
+- التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
+- تصميم الواجهات الخارجية: الكلادينج، الطلاء الخارجي، الإضاءة الخارجية، المداخل
+- تصميم اللاندسكيب: الحدائق، الممرات، الفناء، المسابح، الجلسات الخارجية، النباتات
+- تصميم الفضاءات التجارية الخارجية: واجهات المحلات، المداخل، الأسطح
 - الجدوى الاقتصادية: التكاليف الدقيقة بالسوق الخليجي، الجداول الزمنية
 - السيناريوهات: التجديد السطحي، التحسين المتوسط، التحول الشامل
 
-🎨 🚫 ABSOLUTE OPENING LAW (قانون الفتحات المطلق — لا استثناء):
-لا تضيفي أي باب أو نافذة أو فتحة جديدة غير موجودة في الصورة الأصلية. الأبواب والنوافذ الموجودة تبقى في نفس مواقعها وأحجامها بالضبط. يمكنكِ تغيير مواد الأبواب والنوافذ (خشب/زجاج/معدن) لكن لا تخترعي فتحات جديدة إطلاقاً.
+🌿 SPACE INTELLIGENCE (ذكاء الفضاء):
+عند تحليل الصورة، حددي نوع الفضاء أولاً:
+- فضاء داخلي: غرفة معيشة، غرفة نوم، مطبخ، حمام، مجلس، مكتب، ممر داخلي، مدخل
+- واجهة خارجية: واجهة منزل، واجهة مبنى، مدخل خارجي، بوابة
+- لاندسكيب: حديقة، فناء، ممر خارجي، مسبح، سطح، شرفة، تراس
+كل نوع فضاء له قواعد تصميم وبنود BOQ مختلفة — طبّقيها بدقة.
+
+🎨 FULL ARCHITECTURAL FREEDOM (صلاحية معمارية كاملة):
+م. سارة لها صلاحية كاملة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والجدران والفتحات. إذا كان تغيير موقع باب أو إضافة نافذة يحسّن التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
 أنتِ حرة تماماً في تغيير كل شيء في الغرفة: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
 لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدأين من صفحة بيضاء.
-الثوابت الوحيدة: ${doorChangeRule}
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
-2. نفس الأبعاد بالضبط — لا تغيير في أبعاد الغرفة أو نسبها
-3. ${doorChangeRule}
+2. نفس أبعاد الفضاء بالضبط — لا تغيير في أبعاد الفضاء أو نسبه
+3. م. سارة لها صلاحية كاملة على كل شيء آخر — الأبواب والنوافذ والجدران والتشطيبات والأثاث
 ردودكِ دائماً بالعربية بصيغة JSON فقط.
 🎨 RADICAL DIVERSITY LAW (قانون التباين الجذري المطلق):
 كل فكرة تصميمية يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -1483,7 +1491,8 @@ ${structuralAnalysisPrompt}
 أعيدي JSON فقط بهذا الهيكل:
 {
   "spaceAnalysis": {
-    "spaceType": "نوع الفضاء (صالة/غرفة/مطبخ...)",
+    "spaceType": "نوع الفضاء (صالة/غرفة/مطبخ/واجهة/حديقة/مسبح/ممر...)",
+    "spaceCategory": "interior | facade | landscape | pool | pathway",
     "estimatedArea": "المساحة التقديرية بالمتر المربع",
     "estimatedLength": 5.5,
     "estimatedWidth": 4.0,
@@ -1639,7 +1648,7 @@ ${structuralAnalysisPrompt}
           .join("; ");
 
         // ===== حساب جدول الكميات الهندسي =====
-        const { calculateBOQ, estimateDimensionsFromAnalysis } = await import("./boqCalculator");
+        const { calculateBOQ, calculateExteriorBOQ, estimateDimensionsFromAnalysis } = await import("./boqCalculator");
         const { calculateRealisticPrice, mapScenario, mapBudgetLevel, mapRoomType } = await import("./pricingEngine");
         const spaceAnalysisData = parsed.spaceAnalysis || {};
         const hasDimensions = roomDimensions?.length && roomDimensions?.width;
@@ -1672,22 +1681,31 @@ ${structuralAnalysisPrompt}
           const palette = (idea.palette as Array<{name: string; hex: string}> || []).map((c) => `${c.name} (${c.hex})`).join(", ");
           const mats = (idea.materials as string[] || []).join(", ");
           
-          // برومبت معماري دقيق يحافظ على كل شيء
-          const doorConstraint = allowDoorChanges
-            ? "STRICT OPENING RULE: Do NOT add any new doors, windows, or openings that do not exist in the original photo. ONLY keep the EXISTING openings in their EXACT original positions and sizes. You may change door/window materials and finishes, but NEVER invent new openings."
-            : "CRITICAL: ALL doors, windows, columns, and openings MUST stay in their EXACT original positions and sizes. Do NOT move, resize, remove, or ADD any opening. This is absolutely non-negotiable.";
-          const structuralNote = keepElements
-            ? `ABSOLUTE CONSTRAINT - DO NOT CHANGE: ${keepElements}. These elements MUST remain in EXACT same positions, sizes, and proportions. ${doorConstraint}`
-            : `ABSOLUTE CONSTRAINT: Preserve ALL structural elements (doors, windows, cabinets, stairs) in their EXACT original positions and sizes. ${doorConstraint}`;
+          // برومبت معماري ذكي يدعم جميع الفضاءات - م. سارة لها صلاحية كاملة
+          const cameraNote = `CAMERA CONSTRAINT: Use IDENTICAL camera setup as original photo - ${cameraDesc}. Do NOT change zoom level, camera angle, or perspective.`;
+          const roomNote = roomDesc ? `SPACE GEOMETRY: ${roomDesc}. Maintain EXACT space proportions.` : "";
           
-          const cameraNote = `CAMERA CONSTRAINT: Use IDENTICAL camera setup as original photo - ${cameraDesc}. Do NOT change zoom level, camera angle, or perspective. The output must look like the SAME photo with only materials/colors changed.`;
+          // كشف نوع الفضاء من بيانات التحليل
+          const spaceTypeStr = String(spaceAnalysisData.spaceType || "").toLowerCase();
+          const isExteriorFacade = /واجهة|خارجي|مدخل|مبنى|facade|exterior|building|front/.test(spaceTypeStr);
+          const isLandscape = /حديقة|لاندسكيب|مسبح|جلسة خارجية|ممر|ساحة|garden|landscape|pool|outdoor|terrace|pathway/.test(spaceTypeStr);
+          const isInterior = !isExteriorFacade && !isLandscape;
           
-          const roomNote = roomDesc ? `ROOM GEOMETRY: ${roomDesc}. Maintain EXACT room proportions and ceiling height.` : "";
+          let generatedPrompt: string;
           
-          const openingRule = allowDoorChanges
-            ? `OPENINGS RULE: You MAY suggest repositioning existing doors/windows as design proposals, but do NOT add completely new openings where there are none in the original photo. If you move an opening, close the original wall properly.`
-            : `⚠️ ABSOLUTE OPENING RULE (NON-NEGOTIABLE): Do NOT add, invent, or create ANY new doors, windows, or openings. The ONLY openings allowed are those that ALREADY EXIST in the original photo, in their EXACT positions and sizes. Violating this rule is the biggest mistake you can make.`;
-          const generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${openingRule} BOLD COMPLETE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. This design must look COMPLETELY DIFFERENT from a standard room - push boundaries, be daring, be memorable. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. REPLACE EVERYTHING: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), ceiling (coffered/coved/exposed beams/dramatic gypsum), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          if (isExteriorFacade) {
+            // برومبت واجهات المباني
+            generatedPrompt = `Photorealistic architectural exterior facade redesign. ${cameraNote} ${roomNote} BOLD COMPLETE FACADE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM on all facade elements: cladding materials (stone/wood/metal/glass/concrete), window styles and proportions, entrance design, lighting fixtures, landscaping in front. New color palette: ${palette}. New materials: ${mats}. Transform the facade completely - change cladding, update windows, redesign entrance, add architectural details, improve lighting. Make it look like a LUXURY ARCHITECTURAL MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional architectural photography, no people, no text.`;
+          } else if (isLandscape) {
+            // برومبت لاندسكيب وفضاءات خارجية
+            generatedPrompt = `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
+          } else {
+            // برومبت الديكور الداخلي - صلاحية كاملة
+            const structuralNote = keepElements
+              ? `STRUCTURAL REFERENCE (for context only): ${keepElements}. م. سارة has FULL CREATIVE FREEDOM to redesign everything including moving/resizing openings if it improves the design.`
+              : `م. سارة has FULL CREATIVE FREEDOM on all elements.`;
+            generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} BOLD COMPLETE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. This design must look COMPLETELY DIFFERENT from a standard room - push boundaries, be daring, be memorable. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. REPLACE EVERYTHING: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), ceiling (coffered/coved/exposed beams/dramatic gypsum), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
           // بنود AI الخام من النموذج — نحولها إلى BOQCategory[] بإضافة الحقول المفقودة
@@ -1711,14 +1729,30 @@ ${structuralAnalysisPrompt}
             subtotalMin: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMin || 0)), 0),
             subtotalMax: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMax || 0)), 0),
           }));
-          const boqResult = calculateBOQ(
-            dims,
-            String(idea.style || "modern"),
-            String(idea.scenario || "surface"),
-            String(spaceAnalysisData.spaceType || ""),
-            aiBoqRaw,
-            boqSource
-          );
+          // اختيار محرك BOQ المناسب حسب نوع الفضاء
+          const spaceTypeForBOQ = String(spaceAnalysisData.spaceType || "").toLowerCase();
+          const isFacadeSpace = /واجهة|خارجي|مدخل|مبنى|facade|exterior|building|front/.test(spaceTypeForBOQ);
+          const isPoolSpace = /مسبح|pool|swimming/.test(spaceTypeForBOQ);
+          const isLandscapeSpace = /حديقة|لاندسكيب|جلسة خارجية|ممر|ساحة|garden|landscape|outdoor|terrace|pathway/.test(spaceTypeForBOQ);
+          
+          let boqResult;
+          if (isFacadeSpace) {
+            boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), "facade", aiBoqRaw, boqSource);
+          } else if (isPoolSpace) {
+            boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), "pool", aiBoqRaw, boqSource);
+          } else if (isLandscapeSpace) {
+            const subCat = /ممر|pathway/.test(spaceTypeForBOQ) ? "pathway" : "landscape";
+            boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), subCat, aiBoqRaw, boqSource);
+          } else {
+            boqResult = calculateBOQ(
+              dims,
+              String(idea.style || "modern"),
+              String(idea.scenario || "surface"),
+              String(spaceAnalysisData.spaceType || ""),
+              aiBoqRaw,
+              boqSource
+            );
+          }
 
           // ===== حساب الأسعار الواقعية من محرك التسعير الخليجي =====
           const pScenario = mapScenario(String(idea.scenario || "mid"));

@@ -1755,7 +1755,7 @@ export default function SmartCapture() {
   const [ideasCount, setIdeasCount] = useState(3);
   const [budgetLevel, setBudgetLevel] = useState<"economy" | "mid" | "luxury" | "premium">("mid");
   const [budgetAmount, setBudgetAmount] = useState<string>("");
-  const [allowDoorChanges, setAllowDoorChanges] = useState<boolean>(false);
+  // م. سارة لها صلاحية كاملة - تبدع بحرية تامة على جميع عناصر الفضاء
   const [showFilters, setShowFilters] = useState(false);
 
   // Preferred style & colors (optional filters)
@@ -1894,11 +1894,10 @@ export default function SmartCapture() {
     const newImages = [...capturedImages, dataUrl];
     setCapturedImages(newImages);
     if (newImages.length === 1) setPrimaryImage(dataUrl);
-
-    // بعد التصوير نعرض شاشة الفلتر أولاً
+    // بعد التصوير ننتقل مباشرة للتحليل — بدون شاشة فلتر
     setShowCamera(false);
-    setStep("filter");
-  };
+    startAnalysis(newImages);
+  };;
 
   const handleVideoCapture = (thumb: string) => {
     setShowVideo(false);
@@ -1953,7 +1952,6 @@ export default function SmartCapture() {
       count: ideasCount,
       budgetMin: customAmount ? Math.round(customAmount * 0.7) : budget.min,
       budgetMax: customAmount ? Math.round(customAmount * 1.3) : budget.max,
-      allowDoorChanges,
       referenceData,
       preferredStyle: preferredStyle || undefined,
       preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
@@ -2211,35 +2209,7 @@ export default function SmartCapture() {
               </div>
             </div>
 
-            {/* تغيير الأبواب */}
-            <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-[#5C3D11]">🚪 تثبيت مواقع الأبواب والنوافذ</p>
-                  <p className="text-[10px] text-[#8B6914]/60 mt-0.5">الإبداع كامل — فقط الأبواب والنوافذ تبقى في مكانها</p>
-                </div>
-                <button
-                  onClick={() => setAllowDoorChanges(!allowDoorChanges)}
-                  className={`w-12 h-6 rounded-full transition-all relative ${
-                    !allowDoorChanges ? "bg-[#C9A84C]" : "bg-gray-200"
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
-                    !allowDoorChanges ? "left-6" : "left-0.5"
-                  }`} />
-                </button>
-              </div>
-              {!allowDoorChanges && (
-                <p className="text-[10px] text-[#8B6914]/50 mt-2 bg-[#f0e8d8] rounded-lg px-2 py-1.5">
-                  ✅ الإبداع كامل — فقط مواقع الأبواب والنوافذ ثابتة
-                </p>
-              )}
-              {allowDoorChanges && (
-                <p className="text-[10px] text-amber-700 mt-2 bg-amber-50 rounded-lg px-2 py-1.5">
-                  🎨 حرية كاملة — م. سارة تصمّم بدون أي قيود
-                </p>
-              )}
-            </div>
+            {/* م. سارة لها صلاحية كاملة على جميع عناصر الفضاء */}
 
             {/* عدد الأفكار */}
             <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
@@ -2286,13 +2256,23 @@ export default function SmartCapture() {
                     {[
                       { key: "modern", label: "عصري", icon: "🏙️" },
                       { key: "gulf", label: "خليجي", icon: "🌙" },
-                      { key: "classical", label: "كلاسيكي", icon: "🏛️" },
+                      { key: "classical", label: "كلاسيكي", icon: "🏙️" },
                       { key: "minimal", label: "مينيمال", icon: "⬜" },
                       { key: "industrial", label: "صناعي", icon: "🔩" },
                       { key: "bohemian", label: "بوهيمي", icon: "🌿" },
                       { key: "scandinavian", label: "سكاندنافي", icon: "❄️" },
                       { key: "luxury", label: "فاخر", icon: "✨" },
                       { key: "moroccan", label: "مغربي", icon: "🕌" },
+                      { key: "mediterranean", label: "متوسطي", icon: "🌊" },
+                      { key: "tropical", label: "استوائي", icon: "🌴" },
+                      { key: "arabic_facade", label: "واجهة عربية", icon: "🏛️" },
+                      { key: "modern_facade", label: "واجهة عصرية", icon: "🏗️" },
+                      { key: "zen_garden", label: "حديقة زن", icon: "🌾" },
+                      { key: "gulf_garden", label: "حديقة خليجية", icon: "🌴" },
+                      { key: "pool_luxury", label: "مسبح فاخر", icon: "🏊" },
+                      { key: "outdoor_lounge", label: "جلسة خارجية", icon: "⛱️" },
+                      { key: "stone_pathway", label: "ممر حجري", icon: "🛶" },
+                      { key: "rooftop_garden", label: "سطح مفتوح", icon: "🏙️" },
                     ].map(({ key, label, icon }) => (
                       <button key={key} onClick={() => setPreferredStyle(key)}
                         className={`py-2.5 rounded-xl text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${

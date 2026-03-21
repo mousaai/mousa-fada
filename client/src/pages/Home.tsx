@@ -214,7 +214,7 @@ export default function Home() {
         </div>
         <div className="text-center">
           <p className="text-lg font-black text-[#5C3D11]">م. سارة</p>
-          <p className="text-xs text-[#8B6914]/70">خبيرة التصميم الداخلي</p>
+          <p className="text-xs text-[#8B6914]/70">خبيرة التصميم المعماري</p>
         </div>
         <button
           onClick={() => navigate("/sarah-chat")}
@@ -229,10 +229,10 @@ export default function Home() {
         {/* Main CTA */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-black text-[#5C3D11] leading-tight">
-            صمّم فضاءك<br />
+            صمّم أي فضاء<br />
             <span className="text-[#C9A84C]">بلمسة واحدة</span>
           </h1>
-          <p className="text-sm text-[#8B6914]/70">ارفع صورة أو تحدث مع م. سارة</p>
+          <p className="text-sm text-[#8B6914]/70">داخلي • واجهات المباني • لاندسكيپ • مسابح</p>
         </div>
 
         {/* BIG Camera Button */}

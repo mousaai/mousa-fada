@@ -595,3 +595,320 @@ export function estimateDimensionsFromAnalysis(
 
   return { length, width, height: CEILING_HEIGHT };
 }
+
+// ===== أسعار الفضاءات الخارجية (درهم إماراتي) =====
+const EXTERIOR_PRICES = {
+  // واجهات
+  cladding_aluminum: { min: 200, max: 500 },    // كلادينج ألومنيوم م²
+  cladding_stone: { min: 150, max: 400 },       // حجر طبيعي/اصطناعي م²
+  cladding_grc: { min: 180, max: 450 },         // GRC م²
+  exterior_paint: { min: 20, max: 50 },         // دهان خارجي م²
+  facade_lighting: { min: 80, max: 300 },       // إضاءة واجهة نقطة
+  entrance_gate: { min: 3000, max: 15000 },     // بوابة مدخل وحدة
+  // لاندسكيب
+  grass_natural: { min: 40, max: 80 },          // عشب طبيعي م²
+  grass_artificial: { min: 60, max: 150 },      // عشب اصطناعي م²
+  paving_concrete: { min: 80, max: 180 },       // رصف خرسانة م²
+  paving_natural_stone: { min: 150, max: 350 }, // رصف حجر طبيعي م²
+  paving_wood_deck: { min: 200, max: 500 },     // ديك خشبي م²
+  tree_large: { min: 500, max: 3000 },          // شجرة كبيرة وحدة
+  tree_medium: { min: 200, max: 800 },          // شجرة متوسطة وحدة
+  shrub: { min: 30, max: 150 },                 // شجيرة وحدة
+  planter_box: { min: 200, max: 1000 },         // حوض زراعة وحدة
+  irrigation_system: { min: 15, max: 40 },      // نظام ري م²
+  outdoor_lighting_pole: { min: 300, max: 1200 }, // عمود إضاءة خارجي
+  outdoor_lighting_spot: { min: 60, max: 200 }, // سبوت أرضي خارجي
+  // مسابح
+  pool_construction: { min: 800, max: 2000 },   // إنشاء مسبح م²
+  pool_tiles: { min: 150, max: 400 },           // بلاط مسبح م²
+  pool_equipment: { min: 5000, max: 20000 },    // معدات تصفية وحدة
+  pool_lighting: { min: 500, max: 2000 },       // إضاءة مسبح وحدة
+  pool_coping: { min: 200, max: 500 },          // حافة مسبح م
+  // جلسات خارجية
+  pergola: { min: 500, max: 2000 },             // برجولة م²
+  outdoor_furniture_set: { min: 2000, max: 15000 }, // طقم أثاث خارجي
+  shade_sail: { min: 300, max: 800 },           // شراع ظل م²
+  bbq_area: { min: 3000, max: 12000 },          // منطقة شواء وحدة
+  // ممرات
+  pathway_concrete: { min: 60, max: 150 },      // ممر خرساني م²
+  pathway_stepping_stones: { min: 100, max: 300 }, // أحجار ممر م²
+  retaining_wall: { min: 300, max: 800 },       // جدار استناد م²
+};
+
+/**
+ * حساب BOQ للفضاءات الخارجية
+ * يُستخدم عند اكتشاف نوع الفضاء = واجهة / لاندسكيب / مسبح / ممر
+ */
+export function calculateExteriorBOQ(
+  dims: RoomDimensions,
+  style: string,
+  spaceCategory: string, // "facade" | "landscape" | "pool" | "pathway" | "outdoor_seating"
+  aiBoqItems?: BOQCategory[],
+  source: "exact" | "estimated" = "estimated"
+): BOQResult {
+  const L = dims.length;
+  const W = dims.width;
+  const area = L * W;
+  const perimeter = 2 * (L + W);
+
+  const categories: BOQCategory[] = [];
+
+  if (spaceCategory === "facade") {
+    // === واجهة مبنى ===
+    const facadeArea = area; // نستخدم المساحة كمساحة الواجهة
+    const facadeItems: BOQItem[] = [];
+
+    // كلادينج أو دهان خارجي
+    if (style === "modern_facade" || style === "modern") {
+      facadeItems.push({
+        name: "كلادينج ألومنيوم مركّب (ACM)",
+        unit: "م²",
+        qty: parseFloat(facadeArea.toFixed(1)),
+        unitPriceMin: EXTERIOR_PRICES.cladding_aluminum.min,
+        unitPriceMax: EXTERIOR_PRICES.cladding_aluminum.max,
+        totalMin: Math.round(facadeArea * EXTERIOR_PRICES.cladding_aluminum.min),
+        totalMax: Math.round(facadeArea * EXTERIOR_PRICES.cladding_aluminum.max),
+        notes: "شامل هيكل التركيب والعزل",
+        basis: `${L}م × ${W}م = ${facadeArea.toFixed(1)}م²`,
+      });
+    } else if (style === "arabic_facade" || style === "classical" || style === "gulf") {
+      facadeItems.push({
+        name: "حجر طبيعي/اصطناعي للواجهة",
+        unit: "م²",
+        qty: parseFloat(facadeArea.toFixed(1)),
+        unitPriceMin: EXTERIOR_PRICES.cladding_stone.min,
+        unitPriceMax: EXTERIOR_PRICES.cladding_stone.max,
+        totalMin: Math.round(facadeArea * EXTERIOR_PRICES.cladding_stone.min),
+        totalMax: Math.round(facadeArea * EXTERIOR_PRICES.cladding_stone.max),
+        notes: "شامل الغراء والمونة والتركيب",
+        basis: `مساحة الواجهة ${facadeArea.toFixed(1)}م²`,
+      });
+    } else {
+      facadeItems.push({
+        name: "دهان خارجي عازل للحرارة",
+        unit: "م²",
+        qty: parseFloat(facadeArea.toFixed(1)),
+        unitPriceMin: EXTERIOR_PRICES.exterior_paint.min,
+        unitPriceMax: EXTERIOR_PRICES.exterior_paint.max,
+        totalMin: Math.round(facadeArea * EXTERIOR_PRICES.exterior_paint.min),
+        totalMax: Math.round(facadeArea * EXTERIOR_PRICES.exterior_paint.max),
+        notes: "طبقتان + بايمر خارجي",
+        basis: `مساحة الواجهة ${facadeArea.toFixed(1)}م²`,
+      });
+    }
+
+    // إضاءة الواجهة
+    const lightingPoints = Math.ceil(facadeArea / 8);
+    facadeItems.push({
+      name: "إضاءة واجهة LED",
+      unit: "نقطة",
+      qty: lightingPoints,
+      unitPriceMin: EXTERIOR_PRICES.facade_lighting.min,
+      unitPriceMax: EXTERIOR_PRICES.facade_lighting.max,
+      totalMin: Math.round(lightingPoints * EXTERIOR_PRICES.facade_lighting.min),
+      totalMax: Math.round(lightingPoints * EXTERIOR_PRICES.facade_lighting.max),
+      notes: "سبوت أو شريط LED مقاوم للماء",
+      basis: `نقطة لكل 8م² من الواجهة`,
+    });
+
+    const subtotalMin = facadeItems.reduce((s, i) => s + i.totalMin, 0);
+    const subtotalMax = facadeItems.reduce((s, i) => s + i.totalMax, 0);
+    categories.push({ category: "أعمال الواجهة", icon: "🏛️", items: facadeItems, subtotalMin, subtotalMax });
+
+  } else if (spaceCategory === "pool") {
+    // === مسبح ===
+    const poolItems: BOQItem[] = [];
+    const poolPerimeter = perimeter;
+
+    poolItems.push({
+      name: "إنشاء هيكل المسبح (خرسانة مسلحة)",
+      unit: "م²",
+      qty: parseFloat(area.toFixed(1)),
+      unitPriceMin: EXTERIOR_PRICES.pool_construction.min,
+      unitPriceMax: EXTERIOR_PRICES.pool_construction.max,
+      totalMin: Math.round(area * EXTERIOR_PRICES.pool_construction.min),
+      totalMax: Math.round(area * EXTERIOR_PRICES.pool_construction.max),
+      notes: "شامل الحفر والردم والعزل المائي",
+      basis: `${L}م × ${W}م = ${area.toFixed(1)}م²`,
+    });
+    poolItems.push({
+      name: "بلاط مسبح (موزاييك/بورسلين مائي)",
+      unit: "م²",
+      qty: parseFloat((area * 1.3).toFixed(1)),
+      unitPriceMin: EXTERIOR_PRICES.pool_tiles.min,
+      unitPriceMax: EXTERIOR_PRICES.pool_tiles.max,
+      totalMin: Math.round(area * 1.3 * EXTERIOR_PRICES.pool_tiles.min),
+      totalMax: Math.round(area * 1.3 * EXTERIOR_PRICES.pool_tiles.max),
+      notes: "قاع + جدران المسبح + 30% هدر",
+      basis: `${area.toFixed(1)}م² × 1.3`,
+    });
+    poolItems.push({
+      name: "منظومة تصفية وضخ المياه",
+      unit: "وحدة",
+      qty: 1,
+      unitPriceMin: EXTERIOR_PRICES.pool_equipment.min,
+      unitPriceMax: EXTERIOR_PRICES.pool_equipment.max,
+      totalMin: EXTERIOR_PRICES.pool_equipment.min,
+      totalMax: EXTERIOR_PRICES.pool_equipment.max,
+      notes: "مضخة + فلتر رملي + كلورنة تلقائية",
+      basis: "وحدة كاملة",
+    });
+    poolItems.push({
+      name: "حافة المسبح (كوبينج)",
+      unit: "م",
+      qty: parseFloat(poolPerimeter.toFixed(1)),
+      unitPriceMin: EXTERIOR_PRICES.pool_coping.min,
+      unitPriceMax: EXTERIOR_PRICES.pool_coping.max,
+      totalMin: Math.round(poolPerimeter * EXTERIOR_PRICES.pool_coping.min),
+      totalMax: Math.round(poolPerimeter * EXTERIOR_PRICES.pool_coping.max),
+      notes: "حجر أو بورسلين مقاوم للانزلاق",
+      basis: `محيط ${poolPerimeter.toFixed(1)}م`,
+    });
+    poolItems.push({
+      name: "إضاءة مسبح LED مقاومة للماء",
+      unit: "وحدة",
+      qty: Math.ceil(area / 10),
+      unitPriceMin: EXTERIOR_PRICES.pool_lighting.min,
+      unitPriceMax: EXTERIOR_PRICES.pool_lighting.max,
+      totalMin: Math.round(Math.ceil(area / 10) * EXTERIOR_PRICES.pool_lighting.min),
+      totalMax: Math.round(Math.ceil(area / 10) * EXTERIOR_PRICES.pool_lighting.max),
+      notes: "وحدة لكل 10م²",
+      basis: `${Math.ceil(area / 10)} وحدة`,
+    });
+
+    const subtotalMin = poolItems.reduce((s, i) => s + i.totalMin, 0);
+    const subtotalMax = poolItems.reduce((s, i) => s + i.totalMax, 0);
+    categories.push({ category: "أعمال المسبح", icon: "🏊", items: poolItems, subtotalMin, subtotalMax });
+
+  } else {
+    // === لاندسكيب / ممرات / جلسات خارجية ===
+    const landscapeItems: BOQItem[] = [];
+
+    // أرضية خارجية
+    const pavingType = style === "modern" || style === "minimal" ? "concrete" :
+                       style === "tropical" || style === "zen_garden" ? "stepping_stones" : "natural_stone";
+
+    if (pavingType === "concrete") {
+      landscapeItems.push({
+        name: "رصف خرساني مطبوع",
+        unit: "م²",
+        qty: parseFloat(area.toFixed(1)),
+        unitPriceMin: EXTERIOR_PRICES.paving_concrete.min,
+        unitPriceMax: EXTERIOR_PRICES.paving_concrete.max,
+        totalMin: Math.round(area * EXTERIOR_PRICES.paving_concrete.min),
+        totalMax: Math.round(area * EXTERIOR_PRICES.paving_concrete.max),
+        notes: "شامل الأساس والطبقة الخرسانية",
+        basis: `${L}م × ${W}م = ${area.toFixed(1)}م²`,
+      });
+    } else {
+      landscapeItems.push({
+        name: "رصف حجر طبيعي",
+        unit: "م²",
+        qty: parseFloat(area.toFixed(1)),
+        unitPriceMin: EXTERIOR_PRICES.paving_natural_stone.min,
+        unitPriceMax: EXTERIOR_PRICES.paving_natural_stone.max,
+        totalMin: Math.round(area * EXTERIOR_PRICES.paving_natural_stone.min),
+        totalMax: Math.round(area * EXTERIOR_PRICES.paving_natural_stone.max),
+        notes: "شامل الفرش والتركيب",
+        basis: `${L}م × ${W}م = ${area.toFixed(1)}م²`,
+      });
+    }
+
+    // عشب
+    const grassArea = area * 0.4; // 40% من المساحة عشب
+    landscapeItems.push({
+      name: style === "modern" || style === "minimal" ? "عشب اصطناعي عالي الجودة" : "عشب طبيعي",
+      unit: "م²",
+      qty: parseFloat(grassArea.toFixed(1)),
+      unitPriceMin: style === "modern" ? EXTERIOR_PRICES.grass_artificial.min : EXTERIOR_PRICES.grass_natural.min,
+      unitPriceMax: style === "modern" ? EXTERIOR_PRICES.grass_artificial.max : EXTERIOR_PRICES.grass_natural.max,
+      totalMin: Math.round(grassArea * (style === "modern" ? EXTERIOR_PRICES.grass_artificial.min : EXTERIOR_PRICES.grass_natural.min)),
+      totalMax: Math.round(grassArea * (style === "modern" ? EXTERIOR_PRICES.grass_artificial.max : EXTERIOR_PRICES.grass_natural.max)),
+      notes: "شامل التركيب والتسوية",
+      basis: `40% من إجمالي المساحة`,
+    });
+
+    // أشجار ونباتات
+    const treesCount = Math.max(2, Math.ceil(area / 20));
+    const shrubsCount = Math.max(5, Math.ceil(area / 8));
+    landscapeItems.push({
+      name: "أشجار (نخيل / ظل / زينة)",
+      unit: "شجرة",
+      qty: treesCount,
+      unitPriceMin: EXTERIOR_PRICES.tree_medium.min,
+      unitPriceMax: EXTERIOR_PRICES.tree_large.max,
+      totalMin: Math.round(treesCount * EXTERIOR_PRICES.tree_medium.min),
+      totalMax: Math.round(treesCount * EXTERIOR_PRICES.tree_large.max),
+      notes: "شامل الزراعة والتسميد الأولي",
+      basis: `شجرة لكل 20م²`,
+    });
+    landscapeItems.push({
+      name: "شجيرات وزهور موسمية",
+      unit: "وحدة",
+      qty: shrubsCount,
+      unitPriceMin: EXTERIOR_PRICES.shrub.min,
+      unitPriceMax: EXTERIOR_PRICES.shrub.max,
+      totalMin: Math.round(shrubsCount * EXTERIOR_PRICES.shrub.min),
+      totalMax: Math.round(shrubsCount * EXTERIOR_PRICES.shrub.max),
+      notes: "شامل التربة والزراعة",
+      basis: `وحدة لكل 8م²`,
+    });
+
+    // نظام ري
+    landscapeItems.push({
+      name: "نظام ري تلقائي (رذاذ + تنقيط)",
+      unit: "م²",
+      qty: parseFloat(area.toFixed(1)),
+      unitPriceMin: EXTERIOR_PRICES.irrigation_system.min,
+      unitPriceMax: EXTERIOR_PRICES.irrigation_system.max,
+      totalMin: Math.round(area * EXTERIOR_PRICES.irrigation_system.min),
+      totalMax: Math.round(area * EXTERIOR_PRICES.irrigation_system.max),
+      notes: "شامل المواسير والرؤوس والتحكم",
+      basis: `${area.toFixed(1)}م² إجمالي`,
+    });
+
+    // إضاءة خارجية
+    const lightingPoles = Math.ceil(perimeter / 6);
+    landscapeItems.push({
+      name: "إضاءة خارجية (أعمدة + سبوتات أرضية)",
+      unit: "وحدة",
+      qty: lightingPoles,
+      unitPriceMin: EXTERIOR_PRICES.outdoor_lighting_spot.min,
+      unitPriceMax: EXTERIOR_PRICES.outdoor_lighting_pole.max,
+      totalMin: Math.round(lightingPoles * EXTERIOR_PRICES.outdoor_lighting_spot.min),
+      totalMax: Math.round(lightingPoles * EXTERIOR_PRICES.outdoor_lighting_pole.max),
+      notes: "LED مقاوم للعوامل الجوية",
+      basis: `وحدة لكل 6م من المحيط`,
+    });
+
+    const subtotalMin = landscapeItems.reduce((s, i) => s + i.totalMin, 0);
+    const subtotalMax = landscapeItems.reduce((s, i) => s + i.totalMax, 0);
+    categories.push({
+      category: spaceCategory === "pathway" ? "أعمال الممرات والمداخل" : "أعمال اللاندسكيب",
+      icon: "🌿",
+      items: landscapeItems,
+      subtotalMin,
+      subtotalMax
+    });
+  }
+
+  // إضافة بنود AI إذا وجدت
+  if (aiBoqItems && aiBoqItems.length > 0) {
+    categories.push(...aiBoqItems);
+  }
+
+  const grandTotalMin = categories.reduce((s, c) => s + c.subtotalMin, 0);
+  const grandTotalMax = categories.reduce((s, c) => s + c.subtotalMax, 0);
+
+  return {
+    categories,
+    grandTotalMin,
+    grandTotalMax,
+    area,
+    perimeter,
+    wallArea: 0,
+    ceilingArea: 0,
+    source,
+    disclaimer: "الأسعار تقديرية وفق متوسطات سوق الإمارات 2024-2025. تختلف الأسعار الفعلية حسب المواصفات والمقاول.",
+  };
+}
