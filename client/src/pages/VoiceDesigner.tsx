@@ -2656,12 +2656,6 @@ export default function VoiceDesigner() {
                     gulf: "Saudi Gulf luxury interior, mashrabiya screens, arabesque patterns, warm beige tones, majlis seating, ornate ceiling details",
                     minimal: "minimalist interior, white walls, natural light, simple furniture, monochrome palette, zen atmosphere"
                   };
-                  const viewKeywords: Record<string, string> = {
-                    perspective: "interior perspective view from eye level, 3-point perspective, standing inside the main room looking toward entrance",
-                    top: "bird's eye floor plan view from directly above, architectural top-down view",
-                    front: "front elevation exterior view, straight-on facade perspective",
-                    aerial: "aerial perspective view from 45 degrees above, isometric-style architectural visualization"
-                  };
                   // Build detailed spatial description from plan
                   const SCALE = 100; // px per meter
                   const roomsDetail = rooms.map(r => {
@@ -2709,6 +2703,29 @@ export default function VoiceDesigner() {
                     return w.x >= mainRoom.x - 20 && w.x <= mainRoom.x + mainRoom.width * SCALE2 + 20 && w.y >= mainRoom.y - 20 && w.y <= mainRoom.y + mainRoom.height * SCALE2 + 20;
                   });
 
+                  // Determine camera direction based on door position in main room
+                  const mainDoorForCamera = mainDoors[0];
+                  let doorWallSide = "south"; // default: door on south wall
+                  if (mainDoorForCamera) {
+                    const SCALE3 = 100;
+                    const relX3 = (mainDoorForCamera.x - mainRoom.x) / SCALE3;
+                    const relY3 = (mainDoorForCamera.y - mainRoom.y) / SCALE3;
+                    if (relY3 < 0.3) doorWallSide = "north";
+                    else if (relY3 > mainRoom.height - 0.3) doorWallSide = "south";
+                    else if (relX3 < 0.3) doorWallSide = "west";
+                    else doorWallSide = "east";
+                  }
+                  // Camera looks FROM opposite wall TOWARD the door wall
+                  const oppositeSide: Record<string, string> = { north: "south", south: "north", east: "west", west: "east" };
+                  const cameraFrom = oppositeSide[doorWallSide];
+                  const perspectiveView = `interior perspective view from eye level (1.6m height), camera positioned against the ${cameraFrom} wall looking directly toward the ${doorWallSide} wall where the entrance door is located. The door MUST be clearly visible in the center-foreground of the image. Windows on side walls must be visible on the left and right sides.`;
+                  const frontView = `interior elevation view looking straight at the ${doorWallSide} wall (the wall with the entrance door). The door must be centered and fully visible. Flat orthographic-style front elevation.`;
+                  const viewKeywords: Record<string, string> = {
+                    perspective: perspectiveView,
+                    top: "bird's eye floor plan view from directly above (90 degrees), architectural top-down view showing exact room layout, furniture arrangement, doors and windows in their correct positions",
+                    front: frontView,
+                    aerial: `aerial perspective view from 45 degrees above, isometric-style. Camera positioned above the ${cameraFrom} corner looking toward the ${doorWallSide} wall. Door clearly visible on the ${doorWallSide} wall.`
+                  };
                   // Build strict structural constraints
                   const structuralConstraints = [
                     `EXACT room dimensions: ${mainRoom.width.toFixed(1)}m wide × ${mainRoom.height.toFixed(1)}m deep × 3m ceiling height`,
