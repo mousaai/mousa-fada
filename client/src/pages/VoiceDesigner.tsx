@@ -2662,12 +2662,75 @@ export default function VoiceDesigner() {
                     front: "front elevation exterior view, straight-on facade perspective",
                     aerial: "aerial perspective view from 45 degrees above, isometric-style architectural visualization"
                   };
-                  const roomsDetail = rooms.map(r => `${r.label} (${r.width}m × ${r.height}m, area ${(r.width*r.height).toFixed(1)}m²)`).join("; ");
-                  const prompt = `Photorealistic architectural interior visualization. Floor plan contains: ${roomsDetail}. ${doors.length} doors, ${windows.length} windows. Ceiling height 3m. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
+                  // Build detailed spatial description from plan
+                  const SCALE = 100; // px per meter
+                  const roomsDetail = rooms.map(r => {
+                    // Find doors/windows near this room
+                    const roomLeft = r.x; const roomRight = r.x + r.width * SCALE;
+                    const roomTop = r.y; const roomBottom = r.y + r.height * SCALE;
+                    const roomDoors = doors.filter(d => {
+                      return d.x >= roomLeft - 20 && d.x <= roomRight + 20 && d.y >= roomTop - 20 && d.y <= roomBottom + 20;
+                    });
+                    const roomWindows = windows.filter(w => {
+                      return w.x >= roomLeft - 20 && w.x <= roomRight + 20 && w.y >= roomTop - 20 && w.y <= roomBottom + 20;
+                    });
+                    // Determine door/window positions relative to room
+                    const doorDescs = roomDoors.map(d => {
+                      const relX = (d.x - r.x) / SCALE; const relY = (d.y - r.y) / SCALE;
+                      let wallSide = "";
+                      if (relY < 0.3) wallSide = "north wall";
+                      else if (relY > r.height - 0.3) wallSide = "south wall";
+                      else if (relX < 0.3) wallSide = "west wall";
+                      else wallSide = "east wall";
+                      const dtype = d.doorType === "double" ? "double door" : d.doorType === "sliding" ? "sliding door" : "single door";
+                      return `${dtype} (${d.width.toFixed(1)}m wide) on ${wallSide}`;
+                    }).join(", ");
+                    const winDescs = roomWindows.map(w => {
+                      const relX = (w.x - r.x) / SCALE; const relY = (w.y - r.y) / SCALE;
+                      let wallSide = "";
+                      if (relY < 0.3) wallSide = "north wall";
+                      else if (relY > r.height - 0.3) wallSide = "south wall";
+                      else if (relX < 0.3) wallSide = "west wall";
+                      else wallSide = "east wall";
+                      const wtype = w.windowType === "panoramic" || w.windowType === "full_panoramic" ? "panoramic window" : w.windowType === "french" ? "french window" : w.windowType === "arch" ? "arched window" : "standard window";
+                      return `${wtype} (${w.width.toFixed(1)}m wide) on ${wallSide}`;
+                    }).join(", ");
+                    return `${r.label}: ${r.width.toFixed(1)}m × ${r.height.toFixed(1)}m room. ${doorDescs ? `Openings: ${doorDescs}` : ""} ${winDescs ? `Windows: ${winDescs}` : ""}`;
+                  }).join(" | ");
+
+                  const totalRooms = rooms.length;
+                  const mainRoom = rooms.reduce((a, b) => (a.width * a.height > b.width * b.height ? a : b), rooms[0] || { label: "room", width: 4, height: 4, x: 0, y: 0 } as RoomShape);
+                  const mainDoors = doors.filter(d => {
+                    const SCALE2 = 100;
+                    return d.x >= mainRoom.x - 20 && d.x <= mainRoom.x + mainRoom.width * SCALE2 + 20 && d.y >= mainRoom.y - 20 && d.y <= mainRoom.y + mainRoom.height * SCALE2 + 20;
+                  });
+                  const mainWindows = windows.filter(w => {
+                    const SCALE2 = 100;
+                    return w.x >= mainRoom.x - 20 && w.x <= mainRoom.x + mainRoom.width * SCALE2 + 20 && w.y >= mainRoom.y - 20 && w.y <= mainRoom.y + mainRoom.height * SCALE2 + 20;
+                  });
+
+                  // Build strict structural constraints
+                  const structuralConstraints = [
+                    `EXACT room dimensions: ${mainRoom.width.toFixed(1)}m wide × ${mainRoom.height.toFixed(1)}m deep × 3m ceiling height`,
+                    mainDoors.length > 0 ? `EXACT door placement: ${mainDoors.map(d => { const relX = (d.x - mainRoom.x) / SCALE; const relY = (d.y - mainRoom.y) / SCALE; let side = relY < 0.3 ? "north" : relY > mainRoom.height - 0.3 ? "south" : relX < 0.3 ? "west" : "east"; return `${d.doorType || "single"} door (${d.width.toFixed(1)}m) on ${side} wall at ${(relX/mainRoom.width*100).toFixed(0)}% from left`; }).join(", ")}` : "",
+                    mainWindows.length > 0 ? `EXACT window placement: ${mainWindows.map(w => { const relX = (w.x - mainRoom.x) / SCALE; const relY = (w.y - mainRoom.y) / SCALE; let side = relY < 0.3 ? "north" : relY > mainRoom.height - 0.3 ? "south" : relX < 0.3 ? "west" : "east"; return `${w.windowType || "standard"} window (${w.width.toFixed(1)}m) on ${side} wall`; }).join(", ")}` : "",
+                  ].filter(Boolean).join(". ");
+
+                  const prompt = `Photorealistic architectural interior visualization. CRITICAL STRUCTURAL REQUIREMENTS - MUST FOLLOW EXACTLY: ${structuralConstraints}. DO NOT add, move, or remove any doors or windows. DO NOT change room proportions. Full floor plan: ${roomsDetail}. Style: ${styleKeywords[renderStyle]}. Camera: ${viewKeywords[renderView]}. The visualization MUST accurately reflect the floor plan geometry. Ultra-realistic rendering, 8K quality, professional architectural photography, cinematic lighting, natural shadows, no people, no text, no watermarks, architectural digest quality.`;
+                  // Capture floor plan canvas as reference image
+                  let planImageBase64: string | undefined;
+                  try {
+                    const canvas = canvasRef.current;
+                    if (canvas) {
+                      planImageBase64 = canvas.toDataURL("image/png", 0.8);
+                    }
+                  } catch {
+                    // Continue without canvas image
+                  }
                   const res = await fetch("/api/trpc/generate3DFromPlan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ json: { prompt } }),
+                    body: JSON.stringify({ json: { prompt, planImageBase64 } }),
                     credentials: "include"
                   });
                   const data = await res.json();

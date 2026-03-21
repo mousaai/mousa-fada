@@ -2765,10 +2765,32 @@ ${structuralAnalysisPrompt}
   generate3DFromPlan: publicProcedure
     .input(z.object({
       prompt: z.string(),
+      planImageBase64: z.string().optional(), // base64 floor plan image as reference
     }))
     .mutation(async ({ input }) => {
       try {
-        const { url } = await generateImage({ prompt: input.prompt });
+        let imageUrl: string | undefined;
+        // If floor plan image provided, upload it first and use as reference
+        if (input.planImageBase64) {
+          try {
+            const { storagePut } = await import('./storage');
+            const base64Data = input.planImageBase64.replace(/^data:image\/\w+;base64,/, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            const key = `plan-refs/plan-${Date.now()}.png`;
+            const { url } = await storagePut(key, buffer, 'image/png');
+            imageUrl = url;
+          } catch (uploadErr) {
+            console.error('[generate3DFromPlan] Plan upload error:', uploadErr);
+            // Continue without reference image
+          }
+        }
+        const enhancedPrompt = imageUrl
+          ? `${input.prompt}\n\nREFERENCE FLOOR PLAN: The attached image shows the exact floor plan layout. Use it as the structural blueprint. MUST match: exact room shape, exact door positions, exact window positions, exact proportions. Only add: interior design style, furniture, materials, lighting, colors.`
+          : input.prompt;
+        const { url } = await generateImage({
+          prompt: enhancedPrompt,
+          ...(imageUrl ? { originalImages: [{ url: imageUrl, mimeType: 'image/png' as const }] } : {})
+        });
         return { url, success: true };
       } catch (err) {
         console.error("[generate3DFromPlan] Error:", err);
