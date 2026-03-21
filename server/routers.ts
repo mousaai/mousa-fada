@@ -1624,6 +1624,7 @@ ${structuralAnalysisPrompt}
 
         // ===== حساب جدول الكميات الهندسي =====
         const { calculateBOQ, estimateDimensionsFromAnalysis } = await import("./boqCalculator");
+        const { calculateRealisticPrice, mapScenario, mapBudgetLevel, mapRoomType } = await import("./pricingEngine");
         const spaceAnalysisData = parsed.spaceAnalysis || {};
         const hasDimensions = roomDimensions?.length && roomDimensions?.width;
         // أولوية: 1) أبعاد مدخلة يدوياً 2) تقدير AI من الصورة 3) تقدير خوارزمي
@@ -1700,7 +1701,36 @@ ${structuralAnalysisPrompt}
             boqSource
           );
 
-          return { ...idea, imagePrompt: generatedPrompt, boq: boqResult };
+          // ===== حساب الأسعار الواقعية من محرك التسعير الخليجي =====
+          const pScenario = mapScenario(String(idea.scenario || "mid"));
+          const pBudget = mapBudgetLevel(
+            String(idea.scenario || ""),
+            String(idea.style || "")
+          );
+          const pRoomType = mapRoomType(String(spaceAnalysisData.spaceType || ""));
+          const pricingResult = calculateRealisticPrice({
+            scenario: pScenario,
+            budgetLevel: pBudget,
+            roomType: pRoomType,
+            dimensions: dims,
+            estimatedArea: spaceAnalysisData.estimatedArea ? parseFloat(String(spaceAnalysisData.estimatedArea)) : undefined,
+            styleKeywords: String(idea.style || ""),
+            styleNameAr: String(idea.styleLabel || ""),
+          });
+
+          // استبدال الأسعار بالقيم المحسوبة واقعياً
+          const realisticCostMin = pricingResult.costMin;
+          const realisticCostMax = pricingResult.costMax;
+          const realisticEstimatedCost = `${realisticCostMin.toLocaleString("ar-AE")} - ${realisticCostMax.toLocaleString("ar-AE")} درهم إماراتي`;
+
+          return {
+            ...idea,
+            imagePrompt: generatedPrompt,
+            boq: boqResult,
+            costMin: realisticCostMin,
+            costMax: realisticCostMax,
+            estimatedCost: realisticEstimatedCost,
+          };;
         });
 
         return {
