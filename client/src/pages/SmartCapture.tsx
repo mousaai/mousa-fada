@@ -52,8 +52,23 @@ interface StructuralSuggestion {
   timeRequired: string;
 }
 
+interface FrameElement {
+  type: "primary" | "secondary" | "context";
+  name: string;
+  description: string;
+  canDesign: boolean;
+  designNote: string;
+}
+
 interface SpaceAnalysis {
   spaceType: string;
+  spaceCategory?: string;
+  designTarget?: string;
+  designTargetReason?: string;
+  frameElements?: FrameElement[];
+  designBoundary?: string;
+  untouchableElements?: string[];
+  urbanContext?: string;
   estimatedArea: string;
   cameraAnalysis?: CameraAnalysis;
   roomShape?: string;
@@ -144,24 +159,100 @@ const SCENARIO_COLORS: Record<string, { bg: string; text: string; border: string
   complete: { bg: "#F3E5F5", text: "#6A1B9A", border: "#CE93D8", label: "تحول شامل" },
 };
 
+// ===== Space Category Icons =====
+const SPACE_CATEGORY_ICONS: Record<string, string> = {
+  interior: "🏠",
+  facade: "🏗️",
+  landscape: "🌿",
+  pool: "🏊",
+  pathway: "🚶",
+  urban: "🏙️",
+  empty_land: "📍",
+};
+
+const SPACE_CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  interior: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+  facade: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+  landscape: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+  pool: { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
+  pathway: { bg: "#FAFAF9", text: "#57534E", border: "#D6D3D1" },
+  urban: { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
+  empty_land: { bg: "#FEFCE8", text: "#A16207", border: "#FEF08A" },
+};
+
 // ===== Structural Analysis Card =====
 function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
   const [expanded, setExpanded] = useState(false);
   const keepElements = analysis.structuralElements?.filter(e => e.keepInDesign) || [];
   const cam = analysis.cameraAnalysis;
+  const cat = analysis.spaceCategory || "interior";
+  const catColors = SPACE_CATEGORY_COLORS[cat] || SPACE_CATEGORY_COLORS.interior;
+  const catIcon = SPACE_CATEGORY_ICONS[cat] || "🏠";
+  const hasFrameData = analysis.designTarget || (analysis.frameElements && analysis.frameElements.length > 0);
 
   return (
     <div className="bg-white rounded-2xl border border-[#e8d9c0] shadow-sm overflow-hidden">
+      {/* Header: Smart Target Detection */}
+      {hasFrameData && (
+        <div style={{ background: catColors.bg, borderBottom: `1px solid ${catColors.border}` }} className="px-4 py-3">
+          <div className="flex items-start gap-2">
+            <span className="text-xl flex-shrink-0">{catIcon}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-sm" style={{ color: catColors.text }}>الهدف: {analysis.designTarget || analysis.spaceType}</span>
+              </div>
+              {analysis.designTargetReason && (
+                <p className="text-[10px] mt-0.5" style={{ color: catColors.text, opacity: 0.8 }}>{analysis.designTargetReason}</p>
+              )}
+              {analysis.designBoundary && (
+                <div className="mt-1.5 flex items-start gap-1">
+                  <span className="text-[9px] font-bold" style={{ color: catColors.text }}>حدود التصميم:</span>
+                  <span className="text-[9px]" style={{ color: catColors.text, opacity: 0.9 }}>{analysis.designBoundary}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Frame Elements Map */}
+          {analysis.frameElements && analysis.frameElements.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {analysis.frameElements.map((el, i) => (
+                <div key={i} className={`flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-medium border ${
+                  el.canDesign
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-gray-50 text-gray-500 border-gray-200"
+                }`}>
+                  <span>{el.canDesign ? "✅" : "🚫"}</span>
+                  <span>{el.name}</span>
+                  {el.designNote && <span className="opacity-60">({el.designNote})</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Untouchable Elements */}
+          {analysis.untouchableElements && analysis.untouchableElements.length > 0 && (
+            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+              <span className="text-[9px] font-bold text-red-600">لا يُمَس:</span>
+              {analysis.untouchableElements.map((el, i) => (
+                <span key={i} className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full border border-red-100">{el}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3"
       >
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-[#C9A84C]" />
-          <span className="font-bold text-[#5C3D11] text-sm">التحليل المعماري</span>
+          <span className="font-bold text-[#5C3D11] text-sm">تحليل الإطار</span>
           <span className="text-[10px] bg-[#C9A84C]/10 text-[#8B6914] px-2 py-0.5 rounded-full border border-[#C9A84C]/20">
             {analysis.spaceType} • {analysis.estimatedArea}
           </span>
+          {analysis.urbanContext && (
+            <span className="text-[9px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100">{analysis.urbanContext}</span>
+          )}
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-[#8B6914]" /> : <ChevronDown className="w-4 h-4 text-[#8B6914]" />}
       </button>
