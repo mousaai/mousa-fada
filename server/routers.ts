@@ -2796,7 +2796,97 @@ ${structuralAnalysisPrompt}
         console.error("[generate3DFromPlan] Error:", err);
         return { url: null, success: false };
       }
-    }),
+     }),
+  // ===== توليد بيانات التصميم الكاملة من مخطط الرسم =====
+  generate3DPlanDesignData: publicProcedure
+    .input(z.object({
+      rooms: z.array(z.object({
+        label: z.string(),
+        width: z.number(),
+        height: z.number(),
+      })),
+      doors: z.array(z.object({ doorType: z.string(), width: z.number() })).optional(),
+      windows: z.array(z.object({ windowType: z.string(), width: z.number() })).optional(),
+      designStyle: z.string().default("gulf"),
+      renderImageUrl: z.string().optional(), // رابط الصورة المولّدة
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { rooms, doors, windows, designStyle, renderImageUrl } = input;
+        const totalArea = rooms.reduce((sum, r) => sum + r.width * r.height, 0);
+        const roomsDesc = rooms.map(r => `${r.label} (${r.width}×${r.height}م = ${(r.width * r.height).toFixed(1)}م²)`).join("، ");
+        const doorsDesc = (doors || []).map(d => `باب ${d.doorType === "double" ? "مزدوج" : d.doorType === "sliding" ? "منزلق" : "واحد"} ${d.width}م`).join("، ");
+        const windowsDesc = (windows || []).map(w => `نافذة ${w.windowType === "panoramic" || w.windowType === "full_panoramic" ? "بانورامية" : w.windowType === "french" ? "فرنسية" : "عادية"} ${w.width}م`).join("، ");
+        const styleMap: Record<string, string> = {
+          modern: "عصري معاصر", gulf: "خليجي فاخر", classic: "كلاسيكي",
+          minimal: "مينيمال", japanese: "ياباني زن", scandinavian: "سكندنافي",
+          moroccan: "مغربي", luxury: "فاخر بريميوم", mediterranean: "متوسطي", industrial: "صناعي"
+        };
+        const styleName = styleMap[designStyle] || designStyle;
+        const systemPrompt = `أنتِ م. سارة، مصممة داخلية خبيرة في السوق الخليجي. أجيبي بـ JSON فقط بدون أي نص إضافي.`;
+        const userPrompt = `بناءً على المسقط التالي:
+- الغرف: ${roomsDesc}
+- المساحة الإجمالية: ${totalArea.toFixed(1)}م²
+- الأبواب: ${doorsDesc || "لا توجد"}
+- النوافذ: ${windowsDesc || "لا توجد"}
+- نمط التصميم المطلوب: ${styleName}
 
+أعطيني بيانات تصميم داخلي شاملة بالصيغة التالية:
+{
+  "title": "عنوان التصميم (4-6 كلمات)",
+  "description": "وصف موجز للتصميم (2-3 جمل)",
+  "palette": [
+    {"name": "اسم اللون", "hex": "#XXXXXX"},
+    {"name": "اسم اللون", "hex": "#XXXXXX"},
+    {"name": "اسم اللون", "hex": "#XXXXXX"},
+    {"name": "اسم اللون", "hex": "#XXXXXX"}
+  ],
+  "materials": ["مادة 1", "مادة 2", "مادة 3", "مادة 4", "مادة 5"],
+  "highlights": ["ميزة 1", "ميزة 2", "ميزة 3", "ميزة 4", "ميزة 5"],
+  "furniture": [
+    {"name": "اسم القطعة", "description": "وصف مختصر", "priceRange": "X,000 - X,000 ر.س"},
+    {"name": "اسم القطعة", "description": "وصف مختصر", "priceRange": "X,000 - X,000 ر.س"},
+    {"name": "اسم القطعة", "description": "وصف مختصر", "priceRange": "X,000 - X,000 ر.س"}
+  ],
+  "estimatedCost": "XX,000 - XX,000 ر.س",
+  "costMin": 0,
+  "costMax": 0,
+  "executionTime": "X-X أسابيع",
+  "boq": [
+    {"category": "الأرضيات", "item": "اسم المادة", "unit": "م²", "qty": 0, "unitPrice": 0, "total": 0},
+    {"category": "الجدران", "item": "اسم المادة", "unit": "م²", "qty": 0, "unitPrice": 0, "total": 0},
+    {"category": "الأسقف", "item": "اسم المادة", "unit": "م²", "qty": 0, "unitPrice": 0, "total": 0},
+    {"category": "الأثاث", "item": "اسم القطعة", "unit": "قطعة", "qty": 0, "unitPrice": 0, "total": 0},
+    {"category": "الإضاءة", "item": "نوع الإضاءة", "unit": "قطعة", "qty": 0, "unitPrice": 0, "total": 0}
+  ],
+  "styleVariants": [
+    {"id": "modern", "label": "عصري", "emoji": "🏙️"},
+    {"id": "gulf", "label": "خليجي", "emoji": "🕌"},
+    {"id": "classic", "label": "كلاسيكي", "emoji": "🏛️"},
+    {"id": "minimal", "label": "مينيمال", "emoji": "⬜"},
+    {"id": "luxury", "label": "فاخر", "emoji": "💎"}
+  ]
+}
+احسب الكميات بدقة بناءً على المساحات الفعلية. الأسعار بالريال السعودي وفق السوق الخليجي.`;
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+        });
+        const raw = response.choices[0]?.message?.content;
+        const text = typeof raw === "string" ? raw : JSON.stringify(raw) || "{}";
+        try {
+          const parsed = JSON.parse(text);
+          return { success: true, data: parsed };
+        } catch {
+          return { success: false, data: null };
+        }
+      } catch (err) {
+        console.error("[generate3DPlanDesignData] Error:", err);
+        return { success: false, data: null };
+      }
+    }),
 });
 export type AppRouter = typeof appRouter;

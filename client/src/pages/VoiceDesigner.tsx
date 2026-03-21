@@ -7,6 +7,8 @@ import {
   MousePointer, Square, DoorOpen, Grid3X3, Zap, Wind,
   ChevronDown, ChevronUp, X, Check, Maximize2
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import PlanRenderResult from "@/components/PlanRenderResult";
 
 // ===== Types =====
 type DrawTool = "select" | "wall" | "door" | "window" | "electrical" | "ac" | "room" | "pan";
@@ -1283,11 +1285,17 @@ export default function VoiceDesigner() {
   // Quick actions floating toolbar
   const [quickActionsPos, setQuickActionsPos] = useState<{ x: number; y: number } | null>(null);
   const [show3DModal, setShow3DModal] = useState(false);
-  const [renderStyle, setRenderStyle] = useState<"modern" | "classic" | "gulf" | "minimal">("modern");
+  const [renderStyle, setRenderStyle] = useState<"modern" | "classic" | "gulf" | "minimal">("gulf");
   const [renderView, setRenderView] = useState<"perspective" | "top" | "front" | "aerial">("perspective");
   const [is3DLoading, setIs3DLoading] = useState(false);
   const [render3DUrl, setRender3DUrl] = useState<string | null>(null);
   const [showBOQ, setShowBOQ] = useState(false);
+  // ===== Plan Render Result =====
+  const [showPlanResult, setShowPlanResult] = useState(false);
+  const [planResultData, setPlanResultData] = useState<Record<string, unknown> | null>(null);
+  const [isLoadingPlanData, setIsLoadingPlanData] = useState(false);
+  const [isRegeneratingRender, setIsRegeneratingRender] = useState(false);
+  const generate3DPlanDataMutation = trpc.generate3DPlanDesignData.useMutation();
 
   // ===== History =====
   const pushHistory = useCallback((newElements: DrawElement[]) => {
@@ -2907,8 +2915,35 @@ export default function VoiceDesigner() {
                   });
                   const data = await res.json();
                   const url = data?.result?.data?.json?.url || data?.result?.data?.url;
-                  if (url) setRender3DUrl(url);
-                  else toast.error("حدث خطأ في الرندر");
+                  if (url) {
+                    setRender3DUrl(url);
+                    // فتح صفحة النتائج الكاملة
+                    setShow3DModal(false);
+                    setShowPlanResult(true);
+                    setPlanResultData(null);
+                    // جلب بيانات التصميم بشكل غير متزامن
+                    setIsLoadingPlanData(true);
+                    const planRooms = elements.filter(e => e.type === "room") as RoomShape[];
+                    const planDoors = elements.filter(e => e.type === "door") as Opening[];
+                    const planWindows = elements.filter(e => e.type === "window") as Opening[];
+                    generate3DPlanDataMutation.mutateAsync({
+                      rooms: planRooms.map(r => ({ label: r.label, width: r.width, height: r.height })),
+                      doors: planDoors.map(d => ({ doorType: d.doorType || "single", width: d.width })),
+                      windows: planWindows.map(w => ({ windowType: w.windowType || "standard", width: w.width })),
+                      designStyle: renderStyle,
+                      renderImageUrl: url,
+                    }).then(result => {
+                      if (result.success && result.data) {
+                        setPlanResultData(result.data as Record<string, unknown>);
+                      }
+                    }).catch(() => {
+                      // Continue without design data
+                    }).finally(() => {
+                      setIsLoadingPlanData(false);
+                    });
+                  } else {
+                    toast.error("حدث خطأ في الرندر");
+                  }
                 } catch {
                   toast.error("حدث خطأ في الرندر");
                 } finally {
@@ -2928,6 +2963,71 @@ export default function VoiceDesigner() {
         </div>
       )}
 
+      {/* ===== Plan Render Result ===== */}
+      {showPlanResult && render3DUrl && (() => {
+        const planRooms = elements.filter(e => e.type === "room") as RoomShape[];
+        const planDoors = elements.filter(e => e.type === "door") as Opening[];
+        const planWindows = elements.filter(e => e.type === "window") as Opening[];
+        const handleRegenerate = async (style: string) => {
+          setIsRegeneratingRender(true);
+          try {
+            // إعادة توليد الرندر بنفس الإعدادات
+            setRenderStyle(style as typeof renderStyle);
+            const styleKeywords: Record<string, string> = {
+              modern: "contemporary modern interior, clean lines, neutral palette, minimalist furniture, warm LED lighting, polished surfaces",
+              classic: "classic luxury interior, ornate moldings, rich wood paneling, chandeliers, marble floors, warm gold accents",
+              gulf: "Saudi Gulf luxury interior, mashrabiya screens, arabesque patterns, warm beige tones, majlis seating, ornate ceiling details",
+              minimal: "minimalist interior, white walls, natural light, simple furniture, monochrome palette, zen atmosphere",
+              luxury: "ultra-luxury interior, marble floors, gold accents, crystal chandeliers, bespoke furniture, premium materials",
+            };
+            const desc = planRooms.map(r => `${r.label} ${r.width}x${r.height}m`).join(", ");
+            const prompt = `Photorealistic architectural interior rendering. ${styleKeywords[style] || styleKeywords.modern}. Room: ${desc}. Ultra-realistic 8K, professional architectural photography, cinematic lighting, no people, no text.`;
+            const res = await fetch("/api/trpc/generate3DFromPlan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ json: { prompt } }),
+              credentials: "include"
+            });
+            const data = await res.json();
+            const url = data?.result?.data?.json?.url || data?.result?.data?.url;
+            if (url) {
+              setRender3DUrl(url);
+              // تحديث بيانات التصميم
+              setIsLoadingPlanData(true);
+              setPlanResultData(null);
+              generate3DPlanDataMutation.mutateAsync({
+                rooms: planRooms.map(r => ({ label: r.label, width: r.width, height: r.height })),
+                doors: planDoors.map(d => ({ doorType: d.doorType || "single", width: d.width })),
+                windows: planWindows.map(w => ({ windowType: w.windowType || "standard", width: w.width })),
+                designStyle: style,
+                renderImageUrl: url,
+              }).then(result => {
+                if (result.success && result.data) setPlanResultData(result.data as Record<string, unknown>);
+              }).catch(() => {}).finally(() => setIsLoadingPlanData(false));
+            } else {
+              toast.error("حدث خطأ في إعادة التوليد");
+            }
+          } catch {
+            toast.error("حدث خطأ في إعادة التوليد");
+          } finally {
+            setIsRegeneratingRender(false);
+          }
+        };
+        return (
+          <PlanRenderResult
+            renderImageUrl={render3DUrl}
+            designData={planResultData as Parameters<typeof PlanRenderResult>[0]["designData"]}
+            isLoadingData={isLoadingPlanData}
+            currentStyle={renderStyle}
+            rooms={planRooms.map(r => ({ label: r.label, width: r.width, height: r.height }))}
+            doors={planDoors.map(d => ({ doorType: d.doorType || "single", width: d.width }))}
+            windows={planWindows.map(w => ({ windowType: w.windowType || "standard", width: w.width }))}
+            onClose={() => setShowPlanResult(false)}
+            onRegenerate={handleRegenerate}
+            isRegenerating={isRegeneratingRender}
+          />
+        );
+      })()}
       {/* ===== Mobile Library FAB ===== */}
       {!showLibrary && (
         <button
