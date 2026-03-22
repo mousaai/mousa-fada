@@ -205,3 +205,73 @@ describe("MOUSA.AI Integration Helper", () => {
     });
   });
 });
+
+// ─── Pricing Webhook Tests ────────────────────────────────────────────────────
+import { notifyMousaPricing } from "./mousa";
+
+describe("notifyMousaPricing (Pricing Webhook)", () => {
+  it("should POST to correct endpoint with all services and correct headers", async () => {
+    process.env.MOUSA_PLATFORM_API_KEY = "USAA";
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        platform: "fada",
+        updated: { minCost: 10, maxCost: 70 },
+        updatedAt: "2026-03-23T12:00:00.000Z",
+      }),
+    });
+
+    const result = await notifyMousaPricing();
+
+    expect(result).toBe(true);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://www.mousa.ai/api/platform/pricing-webhook",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer USAA",
+          "X-Platform-ID": "fada",
+          "Content-Type": "application/json",
+        }),
+      })
+    );
+
+    // التحقق من محتوى الـ body
+    const callArgs = mockFetch.mock.calls[0][1];
+    const body = JSON.parse(callArgs.body);
+    expect(body.services).toBeInstanceOf(Array);
+    expect(body.services.length).toBe(12); // 12 خدمة في CREDIT_COSTS
+    expect(body.minCost).toBe(10);          // generatePDF = 10
+    expect(body.maxCost).toBe(70);          // analyzeAndGenerate = 70
+    expect(body.baseCost).toBe(40);         // analyzePhoto = 40
+    expect(body.description).toContain("fada");
+  });
+
+  it("should return false when API key is missing", async () => {
+    delete process.env.MOUSA_PLATFORM_API_KEY;
+    const result = await notifyMousaPricing();
+    expect(result).toBe(false);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("should return false on non-ok response", async () => {
+    process.env.MOUSA_PLATFORM_API_KEY = "USAA";
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "invalid payload" }),
+    });
+
+    const result = await notifyMousaPricing();
+    expect(result).toBe(false);
+  });
+
+  it("should return false on network error", async () => {
+    process.env.MOUSA_PLATFORM_API_KEY = "USAA";
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+    const result = await notifyMousaPricing();
+    expect(result).toBe(false);
+  });
+});

@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { notifyMousaPricing } from "../mousa";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -120,6 +121,10 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // إبلاغ Mousa.ai بالأسعار الحالية عند كل بدء خادم
+    notifyMousaPricing().catch(err =>
+      console.warn("[mousa] Pricing webhook skipped:", err?.message)
+    );
   });
 }
 

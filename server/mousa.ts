@@ -250,3 +250,67 @@ export type CreditOperation = keyof typeof CREDIT_COSTS;
 
 /** Upgrade URL for insufficient balance */
 export const MOUSA_UPGRADE_URL = "https://www.mousa.ai/pricing?ref=fada";
+
+// ─── Pricing Webhook ──────────────────────────────────────────────────────────
+
+/**
+ * إرسال الأسعار المحدّثة إلى Mousa.ai عبر Pricing Webhook.
+ * يُستدعى عند بدء الخادم وعند أي تغيير في CREDIT_COSTS.
+ *
+ * Endpoint: POST https://www.mousa.ai/api/platform/pricing-webhook
+ * Headers:  Authorization: Bearer <MOUSA_PLATFORM_API_KEY>
+ *           X-Platform-ID: fada
+ */
+export async function notifyMousaPricing(): Promise<boolean> {
+  const apiKey = process.env.MOUSA_PLATFORM_API_KEY;
+  if (!apiKey) {
+    console.warn("[mousa] MOUSA_PLATFORM_API_KEY not set — skipping pricing webhook");
+    return false;
+  }
+
+  const costs = CREDIT_COSTS;
+  const values = Object.values(costs) as number[];
+  const minCost = Math.min(...values);
+  const maxCost = Math.max(...values);
+
+  // بناء قائمة الخدمات من CREDIT_COSTS
+  const services = (Object.entries(costs) as [CreditOperation, number][]).map(
+    ([name, cost]) => ({ name, cost })
+  );
+
+  const payload = {
+    services,
+    minCost,
+    maxCost,
+    baseCost: costs.analyzePhoto, // التكلفة الافتراضية عند عدم تحديد العملية
+    description: `fada platform (م. سارة) — ${services.length} services, range ${minCost}–${maxCost} credits`,
+  };
+
+  try {
+    const response = await fetch(
+      "https://www.mousa.ai/api/platform/pricing-webhook",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "X-Platform-ID": "fada",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.error(`[mousa] Pricing webhook failed (${response.status}):`, err);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log(`[mousa] Pricing webhook sent ✓ updatedAt=${result.updatedAt}`);
+    return true;
+  } catch (error) {
+    console.error("[mousa] Pricing webhook error:", error);
+    return false;
+  }
+}

@@ -706,3 +706,8 @@
 ## الإصدار 49.0 — مضاعفة أسعار الكريدت
 - [x] مضاعفة جميع قيم CREDIT_COSTS في mousa.ts (×2)
 - [x] تحديث اختبار CREDIT_COSTS في mousa.test.ts
+
+## الإصدار 50.0 — Pricing Webhook لـ Mousa.ai
+- [x] إضافة دالة notifyMousaPricing في mousa.ts
+- [x] استدعاء الـ webhook عند بدء الخادم (server startup)
+- [x] كتابة اختبار للـ webhook
