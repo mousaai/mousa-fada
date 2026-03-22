@@ -2922,7 +2922,7 @@ ${structuralAnalysisPrompt}
               await db.update(users)
                 .set({
                   mousaUserId: data.userId,
-                  mousaBalance: data.balance,
+                  mousaBalance: data.creditBalance,
                   mousaLastSync: new Date(),
                 })
                 .where(eq(users.id, ctx.user.id));
@@ -2931,10 +2931,10 @@ ${structuralAnalysisPrompt}
           return {
             success: true,
             mousaUserId: data.userId,
-            userName: data.userName,
-            balance: data.balance,
-            platformCost: data.platformCost,
-            sufficient: data.sufficient,
+            userName: data.name,
+            balance: data.creditBalance,
+            platformCost: null,
+            sufficient: null,
           };
         } catch (err) {
           console.error("[mousa.verifyToken] Error:", err);
@@ -3045,7 +3045,7 @@ ${structuralAnalysisPrompt}
             balance: data.balance,
             requiresMousa: true,
             upgradeUrl: data.upgradeUrl,
-            platformCost: data.platformCost,
+            platformCost: null,
           };
         } catch (err) {
           console.error("[mousa.getBalance] Error:", err);

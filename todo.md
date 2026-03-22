@@ -673,3 +673,9 @@
 - [x] إضافة getMousaUserByOpenId في mousa.ts لجلب userId بالـ openId
 - [x] تحديث oauth.ts لربط mousaUserId تلقائياً في الخلفية عند كل تسجيل دخول
 - [x] 178 اختبار ناجح (15 ملف اختبار)
+## الإصدار 46.0 — تحديث تكامل Mousa.ai وفق API v2.0
+- [x] تحديث mousa.ts وفق API v2.0: verify-token يُعيد userId + creditBalance + name
+- [x] تحديث creditHelper.ts: تحقق صريح من mousaUserId + check-balance قبل العملية + deduct بعد النجاح
+- [x] إصلاح routers.ts لاستخدام الحقول الصحيحة (creditBalance بدلاً من balance في verifyToken)
+- [x] إصلاح الاختبارات لتعكس API v2.0 (MOUSA_UPGRADE_URL في mock)
+- [x] 178 اختبار ناجح (15 ملف اختبار)

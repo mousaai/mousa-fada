@@ -15,7 +15,7 @@ vi.mock("../server/mousa", () => ({
     generateIdeas: 20,
     applyStyle: 15,
     refineDesign: 15,
-    generate3D: 25,
+    generate3D: 30,
     generatePlanDesign: 20,
     generatePDF: 5,
     voiceDesign: 20,

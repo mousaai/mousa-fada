@@ -14,12 +14,13 @@ vi.mock("./mousa", () => ({
   verifyMousaToken: vi.fn(),
   checkMousaBalance: vi.fn(),
   deductMousaCredits: vi.fn(),
+  MOUSA_UPGRADE_URL: "https://www.mousa.ai/pricing?ref=fada",
   CREDIT_COSTS: {
     analyzePhoto: 20,
     generateIdeas: 20,
     applyStyle: 15,
     refineDesign: 15,
-    generate3D: 25,
+    generate3D: 30,
     generatePlanDesign: 20,
     generatePDF: 5,
     voiceDesign: 20,
@@ -100,7 +101,7 @@ describe("CREDIT_COSTS", () => {
     expect(CREDIT_COSTS.generateIdeas).toBe(20);
     expect(CREDIT_COSTS.applyStyle).toBe(15);
     expect(CREDIT_COSTS.refineDesign).toBe(15);
-    expect(CREDIT_COSTS.generate3D).toBe(25);
+    expect(CREDIT_COSTS.generate3D).toBe(30);
     expect(CREDIT_COSTS.generatePlanDesign).toBe(20);
     expect(CREDIT_COSTS.generatePDF).toBe(5);
     expect(CREDIT_COSTS.voiceDesign).toBe(20);

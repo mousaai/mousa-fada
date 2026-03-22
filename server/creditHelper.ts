@@ -2,20 +2,34 @@
  * creditHelper.ts
  * Helper موحّد لخصم الكريدت من Mousa.ai مع دعم تعدد الجلسات اليومية
  *
- * منطق الخصم:
- * - الجلسة الأولى في اليوم: التكلفة الأساسية (1x)
- * - الجلسة الثانية: 1.5x
- * - الجلسة الثالثة فأكثر: 2x
+ * التدفق الصحيح وفق Mousa.ai API v2.0:
+ * 1. checkMousaBalance → جلب الرصيد الحالي
+ * 2. المنصة تقرر إذا كان الرصيد كافياً (balance >= finalCost)
+ * 3. تنفيذ عملية AI
+ * 4. deductMousaCredits → خصم بعد النجاح فقط
+ *
+ * معامل الجلسات اليومية:
+ * - الجلسة الأولى: ×1.0 (التكلفة الأساسية)
+ * - الجلسة الثانية: ×1.5
+ * - الجلسة الثالثة فأكثر: ×2.0
  */
 
 import { TRPCError } from "@trpc/server";
-import { checkMousaBalance, deductMousaCredits, CREDIT_COSTS, type CreditOperation } from "./mousa";
+import {
+  checkMousaBalance,
+  deductMousaCredits,
+  CREDIT_COSTS,
+  MOUSA_UPGRADE_URL,
+  type CreditOperation,
+} from "./mousa";
 import { getDb } from "./db";
 import { aiUsageLogs } from "../drizzle/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 
+// ─── Session Counting ─────────────────────────────────────────────────────────
+
 /**
- * احسب عدد الجلسات اليومية للمستخدم
+ * احسب عدد العمليات الناجحة للمستخدم اليوم (لتحديد معامل الجلسة)
  */
 async function getDailySessionCount(userId: number): Promise<number> {
   try {
@@ -36,20 +50,22 @@ async function getDailySessionCount(userId: number): Promise<number> {
         )
       );
 
-    return Number(result[0]?.count ?? 0) + 1; // +1 للجلسة الحالية
+    return Number(result[0]?.count ?? 0) + 1; // +1 للعملية الحالية
   } catch {
     return 1; // في حالة خطأ، نعتبرها الجلسة الأولى
   }
 }
 
 /**
- * احسب معامل الخصم بناءً على عدد الجلسات
+ * احسب معامل الخصم بناءً على عدد الجلسات اليومية
  */
 function getSessionMultiplier(sessionCount: number): number {
-  if (sessionCount <= 1) return 1.0;
-  if (sessionCount === 2) return 1.5;
-  return 2.0; // الجلسة الثالثة فأكثر
+  if (sessionCount <= 1) return 1.0;  // الجلسة الأولى: بدون زيادة
+  if (sessionCount === 2) return 1.5; // الجلسة الثانية: +50%
+  return 2.0;                         // الجلسة الثالثة فأكثر: ×2
 }
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CreditCheckResult {
   allowed: boolean;
@@ -57,33 +73,59 @@ export interface CreditCheckResult {
   finalCost: number;
   sessionCount: number;
   multiplier: number;
-  currentBalance?: number;
+  newBalance?: number;
   upgradeUrl?: string;
-  insufficientBalance?: boolean;
 }
 
+// ─── Main Function ────────────────────────────────────────────────────────────
+
 /**
- * التحقق من الرصيد وخصم الكريدت قبل تنفيذ عملية AI
- * يُرمى TRPCError إذا كان الرصيد غير كافٍ
+ * التحقق من الرصيد وخصم الكريدت قبل/بعد تنفيذ عملية AI
+ *
+ * يُرمى TRPCError (PAYMENT_REQUIRED) إذا:
+ * - الرصيد غير كافٍ
+ * - فشل الخصم بسبب رصيد غير كافٍ (402 من Mousa.ai)
+ *
+ * @param userId - المعرّف المحلي للمستخدم (لتتبع الجلسات)
+ * @param mousaUserId - معرّف المستخدم في Mousa.ai (للخصم)
+ * @param operation - نوع العملية (لتحديد التكلفة)
+ * @param description - وصف اختياري للعملية
  */
 export async function checkAndDeductCredits(
   userId: number,
-  mousaUserId: number,
+  mousaUserId: number | null | undefined,
   operation: CreditOperation,
   description?: string
 ): Promise<CreditCheckResult> {
+  // ── التحقق من وجود mousaUserId (إلزامي) ─────────────────────────────────
+  if (!mousaUserId) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: JSON.stringify({
+        code: "MOUSA_REQUIRED",
+        message: "يجب الدخول من منصة Mousa.ai لاستخدام هذه الميزة",
+        loginUrl: "https://www.mousa.ai",
+      }),
+    });
+  }
+
   const baseCost = CREDIT_COSTS[operation];
   const sessionCount = await getDailySessionCount(userId);
   const multiplier = getSessionMultiplier(sessionCount);
   const finalCost = Math.ceil(baseCost * multiplier);
 
-  // التحقق من الرصيد
-  let balanceData;
+  // ── الخطوة 1: التحقق من الرصيد (v2.0: المنصة تقرر الكفاية) ──────────────
+  let currentBalance = 0;
+  let upgradeUrl = MOUSA_UPGRADE_URL;
+
   try {
-    balanceData = await checkMousaBalance(mousaUserId);
+    const balanceData = await checkMousaBalance(mousaUserId);
+    currentBalance = balanceData.balance;
+    upgradeUrl = balanceData.upgradeUrl || MOUSA_UPGRADE_URL;
   } catch (err) {
     console.error("[creditHelper] checkMousaBalance failed:", err);
     // في حالة خطأ في API، نسمح بالمتابعة ونسجّل الخطأ
+    // هذا يمنع توقف المنصة إذا كان Mousa.ai غير متاح مؤقتاً
     return {
       allowed: true,
       baseCost,
@@ -93,23 +135,24 @@ export async function checkAndDeductCredits(
     };
   }
 
-  if (balanceData.balance < finalCost) {
+  // ── الخطوة 2: المنصة تقرر إذا كان الرصيد كافياً ──────────────────────────
+  if (currentBalance < finalCost) {
     throw new TRPCError({
       code: "PAYMENT_REQUIRED",
       message: JSON.stringify({
         code: "INSUFFICIENT_CREDITS",
-        message: `رصيدك غير كافٍ. تحتاج ${finalCost} نقطة، رصيدك الحالي ${balanceData.balance} نقطة`,
-        currentBalance: balanceData.balance,
+        message: `رصيدك غير كافٍ. تحتاج ${finalCost} نقطة، رصيدك الحالي ${currentBalance} نقطة`,
+        currentBalance,
         required: finalCost,
         baseCost,
         multiplier,
         sessionCount,
-        upgradeUrl: balanceData.upgradeUrl || "https://www.mousa.ai",
+        upgradeUrl,
       }),
     });
   }
 
-  // خصم الكريدت
+  // ── الخطوة 3: خصم الكريدت بعد النجاح ─────────────────────────────────────
   const operationLabels: Record<CreditOperation, string> = {
     analyzePhoto: "تحليل صورة داخلية",
     generateIdeas: "توليد أفكار تصميم",
@@ -122,15 +165,19 @@ export async function checkAndDeductCredits(
   };
 
   const label = description || operationLabels[operation];
-  const fullDescription = sessionCount > 1
-    ? `${label} (جلسة ${sessionCount} × ${multiplier})`
-    : label;
+  const fullDescription =
+    sessionCount > 1
+      ? `${label} (جلسة ${sessionCount} × ${multiplier})`
+      : label;
 
   let deductSuccess = false;
+  let newBalance = currentBalance - finalCost;
+
   try {
     const result = await deductMousaCredits(mousaUserId, finalCost, fullDescription);
-    deductSuccess = !("error" in result);
+
     if ("error" in result) {
+      // 402 من Mousa.ai — رصيد غير كافٍ (race condition)
       throw new TRPCError({
         code: "PAYMENT_REQUIRED",
         message: JSON.stringify({
@@ -138,18 +185,21 @@ export async function checkAndDeductCredits(
           message: result.error,
           currentBalance: result.currentBalance,
           required: finalCost,
-          upgradeUrl: result.upgradeUrl,
+          upgradeUrl: result.upgradeUrl || upgradeUrl,
         }),
       });
     }
+
+    deductSuccess = true;
+    newBalance = result.newBalance;
   } catch (err) {
     if (err instanceof TRPCError) throw err;
+    // خطأ شبكي أو خطأ غير متوقع — نسجّل ونكمل
     console.error("[creditHelper] deductMousaCredits failed:", err);
-    // في حالة خطأ في API، نسجّل ونكمل
     deductSuccess = false;
   }
 
-  // تسجيل الاستخدام في قاعدة البيانات
+  // ── الخطوة 4: تسجيل الاستخدام في قاعدة البيانات ──────────────────────────
   try {
     const db = await getDb();
     if (db) {
@@ -173,6 +223,7 @@ export async function checkAndDeductCredits(
     finalCost,
     sessionCount,
     multiplier,
-    currentBalance: balanceData.balance - finalCost,
+    newBalance,
+    upgradeUrl,
   };
 }

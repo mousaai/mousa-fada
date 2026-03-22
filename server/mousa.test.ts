@@ -22,7 +22,7 @@ describe("MOUSA.AI Integration Helper", () => {
       expect(CREDIT_COSTS.generateIdeas).toBe(20);
       expect(CREDIT_COSTS.applyStyle).toBe(15);
       expect(CREDIT_COSTS.refineDesign).toBe(15);
-      expect(CREDIT_COSTS.generate3D).toBe(25);
+      expect(CREDIT_COSTS.generate3D).toBe(30);
       expect(CREDIT_COSTS.generatePlanDesign).toBe(20);
       expect(CREDIT_COSTS.generatePDF).toBe(5);
       expect(CREDIT_COSTS.voiceDesign).toBe(20);
