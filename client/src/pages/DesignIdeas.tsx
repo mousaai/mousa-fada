@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { handleMousaErrorStatic } from "@/hooks/useMousaError";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -282,7 +283,6 @@ export default function DesignIdeas() {
 
   const generateIdeasMutation = trpc.generateDesignIdeas.useMutation({
     onSuccess: async (data) => {
-      await deduct("generateIdeas").catch(() => {});
       if (data.ideas && Array.isArray(data.ideas)) {
         setIdeas(data.ideas.map((idea: Omit<DesignIdea, 'id'> & { id?: string }) => ({
           ...idea,
@@ -293,8 +293,9 @@ export default function DesignIdeas() {
       }
       setIsLoading(false);
     },
-    onError: () => {
-      toast.error("فشل توليد الأفكار، حاول مجدداً");
+    onError: (err) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!handleMousaErrorStatic(err as any)) toast.error("فشل توليد الأفكار، حاول مجدداً");
       setIsLoading(false);
     },
   });
@@ -314,9 +315,10 @@ export default function DesignIdeas() {
         ));
       }
     },
-    onError: () => {
+    onError: (err) => {
       setIdeas(prev => prev.map(idea => ({ ...idea, isGeneratingImage: false })));
-      toast.error("فشل توليد الصورة");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!handleMousaErrorStatic(err as any)) toast.error("فشل توليد الصورة");
     },
   });
 

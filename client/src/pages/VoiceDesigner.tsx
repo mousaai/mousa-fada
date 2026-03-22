@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { handleMousaErrorStatic } from "@/hooks/useMousaError";
 import {
   ChevronRight, Trash2, ZoomIn, ZoomOut, Move, Download,
   Box, Layers, RotateCcw, RotateCw, Copy, Minus, Plus,
@@ -2930,7 +2931,6 @@ export default function VoiceDesigner() {
                   const url = data?.result?.data?.json?.url || data?.result?.data?.url;
                   if (url) {
                     // خصم الكريدت بعد نجاح الرندر
-                    await deduct("generate3D").catch(() => {});
                     setRender3DUrl(url);
                     // فتح صفحة النتائج الكاملة
                     setShow3DModal(false);

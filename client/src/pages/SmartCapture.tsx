@@ -15,6 +15,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
+import { handleMousaErrorStatic } from "@/hooks/useMousaError";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
@@ -1058,7 +1059,6 @@ function IdeaCard({
           title: result.newTitle,
           description: result.newDescription,
         });
-        await deductCredit("applyStyle").catch(() => {});
         setShowStyleChanger(false);
         setSelectedNewStyle(null);
         setSelectedNewColors([]);
@@ -1094,7 +1094,6 @@ function IdeaCard({
       });
       if (result.imageUrl && onUpdateIdea) {
         onUpdateIdea(idea.id, { imageUrl: result.imageUrl });
-        await deductCredit("refineDesign").catch(() => {});
         setShowRefine(false);
         setRefineText("");
         setRefineClickX(undefined);
@@ -2479,7 +2478,6 @@ export default function SmartCapture() {
   const analyzeAndGenerateMutation = trpc.analyzeAndGenerateIdeas.useMutation({
     onSuccess: async (data) => {
       // خصم الكريدت بعد نجاح التحليل
-      await deduct("analyzePhoto").catch(() => {});
       if (data.ideas && Array.isArray(data.ideas)) {
         setIdeas(data.ideas.map((idea: Partial<DesignIdea> & { id?: string }) => ({
           id: idea.id || Math.random().toString(36).slice(2),
@@ -2513,12 +2511,14 @@ export default function SmartCapture() {
       }
       setStep("results");
     },
-    onError: () => {
-      toast.error("فشل التحليل، حاول مجدداً");
+    onError: (err) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!handleMousaErrorStatic(err as any)) {
+        toast.error("فشل التحليل، حاول مجدداً");
+      }
       setStep("capture");
     },
   });
-
   const generateVizMutation = trpc.generateVisualization.useMutation({
     onSuccess: (data, variables) => {
       const vars = variables as typeof variables & { ideaId?: string };
@@ -2536,12 +2536,14 @@ export default function SmartCapture() {
         toast.error("فشل توليد الصورة");
       }
     },
-    onError: () => {
+    onError: (err) => {
       setIdeas((prev) => prev.map((idea) => ({ ...idea, isGeneratingImage: false })));
-      toast.error("فشل توليد الصورة");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!handleMousaErrorStatic(err as any)) {
+        toast.error("فشل توليد الصورة");
+      }
     },
   });
-
   const handleModeSelect = (_mode: CaptureMode) => {
     setSelectedMode("single");
     setShowCamera(true);

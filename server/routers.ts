@@ -2,7 +2,8 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, mousaProcedure, router } from "./_core/trpc";
+import { checkAndDeductCredits } from "./creditHelper";
 import { invokeLLM, type Message, type ImageContent, type TextContent } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
 import { storagePut } from "./storage";
@@ -1039,14 +1040,15 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
    }),
 
   // Quick Analysis — تحليل سريع بدون مشروع (يدعم صورة واحدة أو متعددة)
-  quickAnalyze: publicProcedure
+  quickAnalyze: mousaProcedure
     .input(z.object({
       imageUrl: z.string(),
       imageUrls: z.array(z.string()).optional(), // صور متعددة
       captureMode: z.enum(["single", "multi", "panorama", "video"]).optional(),
       designStyle: z.string().default("modern"),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
       const styleMap: Record<string, string> = {
         modern: "عصري حديث", gulf: "خليجي فاخر",
         classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
@@ -1105,7 +1107,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
     }),
 
   // ===== توليد صورة تصورية للفضاء (مع الحفاظ على البنية الأصلية) =====
-  generateVisualization: publicProcedure
+  generateVisualization: mousaProcedure
     .input(z.object({
       imageUrl: z.string(),
       designStyle: z.string().default("modern"),
@@ -1115,7 +1117,8 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       imagePrompt: z.string().optional(), // برومبت مخصص من analyzeAndGenerateIdeas
       structuralElements: z.array(z.object({ element: z.string(), position: z.string() })).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generateIdeas");
       const styleMap: Record<string, string> = {
         modern: "modern contemporary", gulf: "Arabian Gulf luxury",
         classic: "classic elegant", minimal: "minimalist Japandi",
@@ -1173,7 +1176,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
     }),
 
   // ===== إعادة تحليل مع تعديلات المستخدم =====
-  reAnalyzeWithChanges: publicProcedure
+  reAnalyzeWithChanges: mousaProcedure
     .input(z.object({
       imageUrl: z.string(),
       designStyle: z.string().default("modern"),
@@ -1181,7 +1184,8 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       budgetRange: z.object({ min: z.number(), max: z.number() }).optional(),
       customRequirements: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
       const styleMap: Record<string, string> = {
         modern: "عصري حديث", gulf: "خليجي فاخر",
         classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
@@ -1228,7 +1232,7 @@ ${extraReqs}
     }),
 
   // ===== توليد أفكار تصميمية متعددة =====
-  generateDesignIdeas: publicProcedure
+  generateDesignIdeas: mousaProcedure
     .input(z.object({
       styles: z.array(z.string()).min(1).max(10),
       budgetMin: z.number().min(0),
@@ -1237,7 +1241,8 @@ ${extraReqs}
       count: z.number().min(2).max(6).default(3),
       referenceImageUrl: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generateIdeas");
       const styleNames: Record<string, string> = {
         modern: "عصري حديث", gulf: "خليجي فاخر",
         classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
@@ -1309,7 +1314,7 @@ ${colorText}
     }),
 
   // ===== analyzeAndGenerateIdeas: تحليل + أفكار في طلب واحد =====
-  analyzeAndGenerateIdeas: publicProcedure
+  analyzeAndGenerateIdeas: mousaProcedure
     .input(z.object({
       imageUrl: z.string(),
       imageUrls: z.array(z.string()).optional(),
@@ -1344,7 +1349,8 @@ ${colorText}
         allowPlatformFreedom: z.boolean().default(false), // منح م. سارة حرية النظر المعماري
       }).optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
       const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, referenceData, preferredStyle, preferredColors, roomDimensions, lockStructuralElements } = input;
 
       const modeDesc: Record<string, string> = {
@@ -1884,7 +1890,7 @@ ${structuralAnalysisPrompt}
     }),
 
   // ===== Voice Design Command =====
-  voiceDesignCommand: publicProcedure
+  voiceDesignCommand: mousaProcedure
     .input(z.object({
       audioBase64: z.string(),
       textCommand: z.string().optional(),
@@ -1896,7 +1902,8 @@ ${structuralAnalysisPrompt}
         northAngle: z.number(),
       }),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "voiceDesign");
       let userCommand = input.textCommand || "";
       let transcription = "";
 
@@ -2616,7 +2623,7 @@ ${structuralAnalysisPrompt}
   }),
 
   // ===== Generate Floor Plan 3D =====
-  generateFloorPlan3D: publicProcedure
+  generateFloorPlan3D: mousaProcedure
     .input(z.object({
       plan: z.object({
         rooms: z.array(z.any()),
@@ -2626,7 +2633,8 @@ ${structuralAnalysisPrompt}
         northAngle: z.number(),
       }),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generate3D");
       const { plan } = input;
 
       // Build textual description of the floor plan
@@ -2653,7 +2661,7 @@ ${structuralAnalysisPrompt}
     }),
 
   // ===== refineDesign: تحسين ذكي للتصميم بعد توليد الصورة =====
-  refineDesign: publicProcedure
+  refineDesign: mousaProcedure
     .input(z.object({
       originalImageUrl: z.string(),
       generatedImageUrl: z.string(),
@@ -2662,7 +2670,8 @@ ${structuralAnalysisPrompt}
       clickY: z.number().optional(),
       originalPrompt: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "refineDesign");
       const { originalImageUrl, generatedImageUrl, refinementRequest, clickX, clickY, originalPrompt } = input;
 
       const locationHint = (clickX !== undefined && clickY !== undefined)
@@ -2706,7 +2715,7 @@ ${structuralAnalysisPrompt}
       }
     }),
 
-  applyStyleToIdea: publicProcedure
+  applyStyleToIdea: mousaProcedure
     .input(z.object({
       currentImageUrl: z.string(),
       currentTitle: z.string(),
@@ -2715,7 +2724,8 @@ ${structuralAnalysisPrompt}
       newColors: z.array(z.string()).optional(),
       spaceType: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "applyStyle");
       const { currentImageUrl, currentTitle, currentDescription, newStyle, newColors, spaceType } = input;
 
       const styleInfo = GLOBAL_STYLES[newStyle] || { name: newStyle, description: newStyle, keywords: newStyle };
@@ -2766,12 +2776,13 @@ ${structuralAnalysisPrompt}
     }),
 
   // ===== توليد رندر 3D من مخطط الرسم =====
-  generate3DFromPlan: publicProcedure
+  generate3DFromPlan: mousaProcedure
     .input(z.object({
       prompt: z.string(),
       planImageBase64: z.string().optional(), // base64 floor plan image as reference
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generate3D");
       try {
         let imageUrl: string | undefined;
         // If floor plan image provided, upload it first and use as reference
@@ -2802,7 +2813,7 @@ ${structuralAnalysisPrompt}
       }
      }),
   // ===== توليد بيانات التصميم الكاملة من مخطط الرسم =====
-  generate3DPlanDesignData: publicProcedure
+  generate3DPlanDesignData: mousaProcedure
     .input(z.object({
       rooms: z.array(z.object({
         label: z.string(),
@@ -2814,7 +2825,8 @@ ${structuralAnalysisPrompt}
       designStyle: z.string().default("gulf"),
       renderImageUrl: z.string().optional(), // رابط الصورة المولّدة
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generatePlanDesign");
       try {
         const { rooms, doors, windows, designStyle, renderImageUrl } = input;
         const totalArea = rooms.reduce((sum, r) => sum + r.width * r.height, 0);

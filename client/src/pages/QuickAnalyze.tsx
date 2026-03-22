@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { handleMousaErrorStatic } from "@/hooks/useMousaError";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type DesignStyle = "modern" | "gulf" | "classic" | "minimal" | "japanese" | "scandinavian" | "moroccan" | "luxury";

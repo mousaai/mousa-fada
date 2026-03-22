@@ -43,6 +43,13 @@
       "when": 1774127405772,
       "tag": "0005_secret_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1774197274645,
+      "tag": "0006_purple_meltdown",
+      "breakpoints": true
     }
   ]
 }

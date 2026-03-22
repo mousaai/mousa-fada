@@ -234,3 +234,18 @@ export const designReferences = mysqlTable("designReferences", {
 
 export type DesignReference = typeof designReferences.$inferSelect;
 export type InsertDesignReference = typeof designReferences.$inferInsert;
+
+// ===== جدول سجلات استخدام AI (لحساب تعدد الجلسات والخصم التلقائي) =====
+export const aiUsageLogs = mysqlTable("aiUsageLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  mousaUserId: int("mousaUserId").notNull(),
+  operation: varchar("operation", { length: 50 }).notNull(),
+  creditsDeducted: int("creditsDeducted").notNull(),
+  sessionMultiplier: float("sessionMultiplier").default(1).notNull(),
+  dailySessionCount: int("dailySessionCount").default(1).notNull(),
+  success: boolean("success").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
+export type InsertAiUsageLog = typeof aiUsageLogs.$inferInsert;
