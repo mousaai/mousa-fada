@@ -13,6 +13,7 @@ import {
   Lamp, Package, RefreshCw, SlidersHorizontal, X, Check,
   Palette, Layers, Ruler, Building2, TreePine, Sparkles
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ===== بناء رابط المورد الأصلي =====
 function buildStoreUrl(product: BonyanProduct): string | null {
@@ -369,6 +370,7 @@ function ProductCard({ product, onViewDetails }: { product: BonyanProduct; onVie
 
 // ===== مكون تفاصيل المنتج =====
 function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: () => void }) {
+  const { dir } = useLanguage();
   const price = parseFloat(product.price);
   const priceFormatted = price.toLocaleString("ar-AE", { minimumFractionDigits: 0 });
   const bonyanUrl = `https://bonyanpltf-gegfwhcg.manus.space/products/${product.slug || product.id}`;
@@ -397,7 +399,7 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
             <SourceLogo sourceName={product.sourceName || product.brand || ""} size="md" />
           </div>
         </div>
-        <div className="p-5" dir="rtl">
+        <div className="p-5" dir={dir}>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold text-gray-800 flex-1">{product.nameAr || product.nameEn}</h2>
           </div>
@@ -494,12 +496,13 @@ function AdvancedFilterPanel({
   onApply: () => void;
   onReset: () => void;
 }) {
+  const { dir } = useLanguage();
   return (
     <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose}>
       <div
         className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
-        dir="rtl"
+        dir={dir}
       >
         {/* رأس اللوحة */}
         <div className="sticky top-0 bg-white border-b border-amber-100 px-5 py-4 flex items-center justify-between rounded-t-3xl">
@@ -749,6 +752,7 @@ const DEFAULT_FILTERS: AdvancedFilters = {
 };
 
 export default function FurnitureStore() {
+  const { t, dir } = useLanguage();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
@@ -896,7 +900,7 @@ export default function FurnitureStore() {
   const totalPages = data ? Math.ceil(data.total / (data.pageSize || 20)) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50" dir={dir}>
       {/* رأس الصفحة - محسّن للموبايل */}
       <div className="bg-gradient-to-r from-amber-800 to-amber-600 text-white">
         <div className="max-w-7xl mx-auto px-3 py-4">

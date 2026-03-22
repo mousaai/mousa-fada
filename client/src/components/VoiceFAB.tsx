@@ -2,6 +2,7 @@ import { Mic, MicOff, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useVoiceCommands, VoiceCommand } from "@/hooks/useVoiceCommands";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const COMMAND_LABELS: Record<VoiceCommand, string> = {
   analyze: "فتح التحليل...",
@@ -25,6 +26,7 @@ const COMMAND_HINTS = [
 
 export function VoiceFAB() {
   const [, navigate] = useLocation();
+  const { dir } = useLanguage();
   const [showHints, setShowHints] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export function VoiceFAB() {
         >
           <div
             className="bg-white rounded-3xl p-5 mx-4 w-full max-w-sm shadow-2xl"
-            dir="rtl"
+            dir={dir}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

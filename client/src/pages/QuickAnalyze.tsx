@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type DesignStyle = "modern" | "gulf" | "classic" | "minimal" | "japanese" | "scandinavian" | "moroccan" | "luxury";
 type CaptureMode = "single" | "multi" | "panorama" | "video";
@@ -112,6 +113,7 @@ function ColorSwatch({
 
 // ===== Camera Component =====
 function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) => void; onClose: () => void }) {
+  const { dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -160,7 +162,7 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
           className="p-2 rounded-full bg-white/20 text-white">
@@ -219,6 +221,7 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
 
 // ===== Video Capture Component =====
 function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, videoUrl: string) => void; onClose: () => void }) {
+  const { dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -293,7 +296,7 @@ function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, vid
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir="rtl">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col" dir={dir}>
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); onClose(); }}
           className="p-2 rounded-full bg-white/20 text-white">
@@ -342,6 +345,7 @@ function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, vid
 }
 
 export default function QuickAnalyze() {
+  const { t, dir } = useLanguage();
   const [, navigate] = useLocation();
 
   // Capture mode
@@ -564,7 +568,7 @@ export default function QuickAnalyze() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
       {/* Camera overlays */}
       {showCamera && (
         <CameraCapture

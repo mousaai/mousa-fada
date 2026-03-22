@@ -16,6 +16,7 @@ import { Link, useRoute } from "wouter";
 import Room3DViewer from "@/components/Room3DViewer";
 import { generatePDFReport } from "@/lib/pdfReport";
 import { generateBOQExcel } from "@/lib/excelBOQ";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ELEMENT_TYPES: Record<string, { label: string; color: string }> = {
   flooring: { label: "الأرضيات", color: "bg-amber-100 text-amber-700" },
@@ -86,6 +87,7 @@ interface ProjectData {
 }
 
 export default function ProjectDetail() {
+  const { t, dir } = useLanguage();
   const [, params] = useRoute("/projects/:id");
   const projectId = params?.id ? Number(params.id) : null;
   const { isAuthenticated } = useAuth();
@@ -223,7 +225,7 @@ export default function ProjectDetail() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <Card className="p-8 text-center">
           <p className="text-muted-foreground mb-4">يرجى تسجيل الدخول</p>
           <Link href="/"><Button className="btn-gold">الرئيسية</Button></Link>
@@ -234,7 +236,7 @@ export default function ProjectDetail() {
 
   if (!typedProject) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">جاري تحميل المشروع...</p>
@@ -244,7 +246,7 @@ export default function ProjectDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background" dir={dir}>
       {/* Header */}
       <div className="bg-gradient-to-r from-[#8B6914] to-[#C9A84C] text-white py-6 px-4">
         <div className="max-w-6xl mx-auto">

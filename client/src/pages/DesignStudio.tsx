@@ -17,6 +17,7 @@ import {
   Info, AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ===== أنماط التصميم =====
 const DESIGN_STYLES = [
@@ -99,6 +100,7 @@ interface DesignElementItem {
 
 export default function DesignStudio() {
   const { isAuthenticated } = useAuth();
+  const { t, dir } = useLanguage();
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -232,7 +234,7 @@ export default function DesignStudio() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <Card className="p-8 text-center max-w-md">
           <Sparkles className="w-12 h-12 text-gold mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-foreground mb-2">استوديو التصميم</h2>
@@ -244,7 +246,7 @@ export default function DesignStudio() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background" dir={dir}>
       {/* Header */}
       <div className="bg-gradient-to-r from-[#8B6914] to-[#C9A84C] text-white py-5 px-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-3">
@@ -584,7 +586,7 @@ export default function DesignStudio() {
 
         {/* ===== Modal التصميم ===== */}
         <Dialog open={showDesignModal} onOpenChange={setShowDesignModal}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" dir={dir}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-gold" />
@@ -819,8 +821,9 @@ function DesignStepContent({
 
 // ===== مكوّن عرض نتيجة التصميم =====
 function DesignResultView({ design }: { design: DesignResult }) {
+  const { dir } = useLanguage();
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={dir}>
       {/* مفهوم التصميم */}
       <div className="bg-gold/10 rounded-xl p-4 border border-gold/20">
         <h3 className="font-bold text-gold mb-1 text-sm">مفهوم التصميم</h3>

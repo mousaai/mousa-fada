@@ -13,6 +13,8 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 // ===== Types =====
 interface DesignIdea {
@@ -256,6 +258,7 @@ function IdeaCard({
 // ===== Main Page =====
 export default function DesignIdeas() {
   const [, navigate] = useLocation();
+  const { t, dir } = useLanguage();
   const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
   // حالة الفلاتر
@@ -387,16 +390,16 @@ export default function DesignIdeas() {
   }, [selectedBudget, selectedColorTheme]);
 
   return (
-    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
       {/* Header */}
       <header className="flex items-center gap-3 px-5 pt-safe pt-4 pb-3 bg-white/90 backdrop-blur border-b border-[#e8d9c0] sticky top-0 z-40">
         <button onClick={() => navigate(-1 as unknown as string)} className="p-2 rounded-full hover:bg-[#f0e8d8] transition-colors">
           <ChevronRight className="w-6 h-6 text-[#8B6914]" />
         </button>
         <div className="flex-1">
-          <p className="font-bold text-[#5C3D11]">أفكار تصميمية</p>
+          <p className="font-bold text-[#5C3D11]">{t("ideas.title")}</p>
           <p className="text-xs text-[#8B6914]/70">
-            {ideas.length > 0 ? `${ideas.length} أفكار • غير الفلاتر لتحديثها` : "اضبط الفلاتر وولّد أفكارك"}
+            {ideas.length > 0 ? `${ideas.length} ${t("ideas.results")}` : t("ideas.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -583,12 +586,12 @@ export default function DesignIdeas() {
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  م. سارة تولّد الأفكار...
+                  {t("ideas.generating")}
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <Sparkles className="w-5 h-5" />
-                  {ideas.length > 0 ? "تحديث الأفكار" : `توليد ${ideasCount} أفكار تصميمية`}
+                  {ideas.length > 0 ? t("smart.regenerate") : `${t("ideas.generate")} (${ideasCount})`}
                 </span>
               )}
             </button>
@@ -602,8 +605,8 @@ export default function DesignIdeas() {
               <Wand2 className="w-10 h-10 text-white animate-pulse" />
             </div>
             <div className="text-center">
-              <p className="font-black text-[#5C3D11] text-lg">م. سارة تصمم لك...</p>
-              <p className="text-sm text-[#8B6914]/70 mt-1">جاري توليد {ideasCount} أفكار تصميمية فريدة</p>
+              <p className="font-black text-[#5C3D11] text-lg">{t("ideas.generating")}</p>
+              <p className="text-sm text-[#8B6914]/70 mt-1">{ideasCount} {t("ideas.results")}</p>
             </div>
             <div className="w-full max-w-xs space-y-2">
               {["تحليل الفضاء والمتطلبات", "توليد أفكار متنوعة", "اقتراح الأثاث والمواد", "حساب التكاليف"].map((s, i) => (
@@ -686,10 +689,9 @@ export default function DesignIdeas() {
               <Wand2 className="w-12 h-12 text-[#C9A84C]" />
             </div>
             <div className="text-center">
-              <h3 className="font-black text-[#5C3D11] text-xl mb-2">جاهزة لتصميم أفكارك</h3>
+              <h3 className="font-black text-[#5C3D11] text-xl mb-2">{t("ideas.subtitle")}</h3>
               <p className="text-sm text-[#8B6914]/70 leading-relaxed">
-                اختر الأنماط والميزانية المناسبة<br />
-                واضغط "توليد أفكار تصميمية"
+                {t("ideas.generate")}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-3 w-full max-w-xs">

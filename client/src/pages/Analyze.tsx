@@ -12,6 +12,7 @@ import {
   DollarSign, Clock, Wrench, Sofa, Lightbulb, Star
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DESIGN_STYLES = [
   { id: "modern", label: "عصري", icon: "🏙️", desc: "خطوط نظيفة وتصميم معاصر" },
@@ -52,6 +53,7 @@ function formatCurrency(num: number) {
 export default function AnalyzePage() {
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
+  const { t, dir } = useLanguage();
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir="rtl">
+    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir={dir}>
       {/* شريط التنقل */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // ===== Types =====
 interface PaletteColor { name: string; hex: string; }
@@ -232,6 +233,7 @@ export default function PlanRenderResult({
   onRegenerate,
   isRegenerating,
 }: PlanRenderResultProps) {
+  const { t, dir } = useLanguage();
   const [localImageUrl, setLocalImageUrl] = useState(renderImageUrl);
   const [localDesignData, setLocalDesignData] = useState<DesignData | null>(designData);
   const [activeStyle, setActiveStyle] = useState(currentStyle);
@@ -398,7 +400,7 @@ export default function PlanRenderResult({
   return (
     <>
       {/* ===== Main Modal ===== */}
-      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center" dir="rtl">
+      <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center" dir={dir}>
         <div className="bg-[#faf6f0] w-full sm:max-w-md sm:rounded-3xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
 
           {/* Header */}
@@ -761,7 +763,7 @@ export default function PlanRenderResult({
 
       {/* ===== شاشة تحسين التصميم (القلم) — full-screen ===== */}
       {showRefine && localImageUrl && (
-        <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+        <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir={dir}>
           <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
             <button onClick={() => { setShowRefine(false); setRefineClickX(undefined); setRefineClickY(undefined); setRefineText(""); }}
               className="w-9 h-9 rounded-full bg-[#f0e8d8] flex items-center justify-center text-[#5C3D11]">
@@ -803,7 +805,7 @@ export default function PlanRenderResult({
                 onChange={e => setRefineText(e.target.value)}
                 placeholder="صف التغيير المطلوب... مثل: غيّر لون الجدار إلى أخضر زيتوني"
                 className="w-full text-sm border-2 border-[#e8d9c0] rounded-2xl px-4 py-3 bg-white text-[#5C3D11] placeholder-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] transition-colors"
-                rows={3} dir="rtl" autoFocus
+                rows={3} dir={dir} autoFocus
               />
             </div>
           </div>
@@ -825,7 +827,7 @@ export default function PlanRenderResult({
 
       {/* ===== شاشة تغيير النمط — full-screen ===== */}
       {showStyleChanger && localImageUrl && (
-        <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+        <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir={dir}>
           <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
             <button onClick={() => { setShowStyleChanger(false); setSelectedNewStyle(null); setSelectedNewColors([]); }}
               className="w-9 h-9 rounded-full bg-[#f0e8d8] flex items-center justify-center text-[#5C3D11]">

@@ -10,6 +10,7 @@ import {
   FolderOpen, Home, Plus, Trash2, Eye, Sparkles, Loader2,
   Calendar, Layers, Ruler, ChevronLeft, X, CheckCircle2
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const STYLE_LABELS: Record<string, string> = {
   modern: "عصري",
@@ -72,6 +73,7 @@ function formatCurrency(num: number) {
 export default function ProjectsPage() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const { t, dir } = useLanguage();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -112,7 +114,7 @@ export default function ProjectsPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-4" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-4" dir={dir}>
         <div className="w-20 h-20 rounded-2xl gold-gradient flex items-center justify-center shadow-lg mb-2">
           <FolderOpen className="w-10 h-10 text-white" />
         </div>
@@ -129,7 +131,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir="rtl">
+    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir={dir}>
       {/* شريط التنقل */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -416,7 +418,7 @@ export default function ProjectsPage() {
 
       {/* مودال إنشاء مشروع */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" dir="rtl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" dir={dir}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-stone-800 text-lg">إنشاء مشروع جديد</h2>

@@ -8,6 +8,7 @@ import {
   Calculator, Home, Sparkles, Loader2, ChevronDown,
   TrendingUp, Clock, Lightbulb, DollarSign, ArrowRight
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const DESIGN_STYLES = [
   { id: "modern", label: "عصري", icon: "🏙️" },
@@ -40,6 +41,7 @@ function formatCurrency(num: number) {
 }
 
 export default function CostsPage() {
+  const { t, dir } = useLanguage();
   const [, navigate] = useLocation();
   const [area, setArea] = useState(50);
   const [designStyle, setDesignStyle] = useState("gulf");
@@ -66,7 +68,7 @@ export default function CostsPage() {
   const maxCategory = result?.breakdown?.reduce((max, item) => item.max > max ? item.max : max, 0) || 1;
 
   return (
-    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir="rtl">
+    <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir={dir}>
       {/* شريط التنقل */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">

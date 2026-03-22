@@ -15,6 +15,8 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 // ===== Types =====
 type CaptureMode = "single";
@@ -999,6 +1001,7 @@ function IdeaCard({
   originalImageUrl?: string;
   onUpdateIdea?: (id: string, updates: Partial<DesignIdea>) => void;
 }) {
+  const { t, dir } = useLanguage();
   const [showReplacement, setShowReplacement] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [lightbox, setLightbox] = useState(false);
@@ -1117,7 +1120,7 @@ function IdeaCard({
           <div className="relative cursor-pointer" onClick={() => setLightbox(true)}>
             <img src={idea.imageUrl} className="w-full h-52 object-cover" alt={idea.title} />
             <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-              <ZoomIn className="w-3 h-3" /> تكبير
+              <ZoomIn className="w-3 h-3" /> {t("smart.zoom")}
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); handleExportPDF(); }}
@@ -1136,7 +1139,7 @@ function IdeaCard({
             <div className="w-14 h-14 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
               <Wand2 className="w-7 h-7 text-[#C9A84C] animate-pulse" />
             </div>
-            <p className="text-sm text-[#8B6914] font-medium">م. سارة تولّد الصورة...</p>
+            <p className="text-sm text-[#8B6914] font-medium">{t("smart.generating")}</p>
             <p className="text-[10px] text-[#8B6914]/60">تحافظ على موقع الأبواب والسلالم</p>
             <div className="flex gap-1">
               {[0, 1, 2].map(i => (
@@ -1156,7 +1159,7 @@ function IdeaCard({
             <div className="w-14 h-14 rounded-full bg-white/60 backdrop-blur flex items-center justify-center shadow-lg">
               <Wand2 className="w-7 h-7 text-[#8B6914]" />
             </div>
-            <p className="text-sm font-bold text-[#5C3D11]">اضغط لتوليد الصورة</p>
+            <p className="text-sm font-bold text-[#5C3D11]">{t("smart.generateIdeas")}</p>
             <p className="text-[10px] text-[#8B6914]/70">مع الحفاظ على البنية الأصلية</p>
             <div className="flex gap-1.5">
               {idea.palette.slice(0, 4).map((c, i) => (
@@ -1194,7 +1197,7 @@ function IdeaCard({
             <button
               onClick={() => onGenerateImage(idea.id)}
               className="w-8 h-8 rounded-full bg-white/90 text-[#8B6914] flex items-center justify-center shadow-sm"
-              title="إعادة توليد"
+              title={t("smart.regenerate")}
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
@@ -1205,7 +1208,7 @@ function IdeaCard({
               className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
                 showRefine ? "bg-[#C9A84C] text-white" : "bg-white/90 text-[#8B6914]"
               }`}
-              title="تحسين التصميم"
+              title={t("smart.refine")}
             >
               <span className="text-sm">✏️</span>
             </button>
@@ -1216,7 +1219,7 @@ function IdeaCard({
               className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all ${
                 showStyleChanger ? "bg-[#C9A84C] text-white" : "bg-white/90 text-[#8B6914]"
               }`}
-              title="غيّر النمط"
+              title={t("smart.changeStyle")}
             >
               <Palette className="w-3.5 h-3.5" />
             </button>
@@ -1264,7 +1267,7 @@ function IdeaCard({
           onClick={() => setShowReplacement(!showReplacement)}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-white/70 mb-0.5">التكلفة التقديرية</p>
+              <p className="text-[10px] text-white/70 mb-0.5">{t("smart.cost")}</p>
               <p className="text-base font-black text-white">{idea.estimatedCost}</p>
             </div>
             <div className="flex flex-col items-center gap-0.5">
@@ -1298,7 +1301,7 @@ function IdeaCard({
           className="w-full flex items-center justify-between py-2 border-t border-[#f0e8d8]">
           <div className="flex items-center gap-1.5">
             <Star className="w-3.5 h-3.5 text-[#C9A84C]" />
-            <span className="text-xs font-bold text-[#5C3D11]">مزايا التصميم ({idea.highlights.length})</span>
+            <span className="text-xs font-bold text-[#5C3D11]">{t("smart.advantages")} ({idea.highlights.length})</span>
           </div>
           {showDetails ? <ChevronUp className="w-3.5 h-3.5 text-[#8B6914]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#8B6914]" />}
         </button>
@@ -1334,7 +1337,7 @@ function IdeaCard({
               {isExportingPDF ? (
                 <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> جاري إعداد دفتر التصميم...</>
               ) : (
-                <><FileDown className="w-4 h-4" /> تصدير دفتر التصميم (PDF)</>
+                <><FileDown className="w-4 h-4" /> {t("smart.exportPdf")}</>
               )}
             </button>
             <button
@@ -1343,7 +1346,7 @@ function IdeaCard({
             >
               <div className="flex items-center gap-2">
                 <span className="text-base">📋</span>
-                <span>جدول الكميات (BOQ)</span>
+                <span>{t("smart.boq")}</span>
                 {idea.boq.source === "estimated" && (
                   <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full">تقديري</span>
                 )}
@@ -1500,7 +1503,7 @@ function IdeaCard({
 
         {/* واجهة التحسين الذكي — inline full-screen */}
         {showRefine && idea.imageUrl && originalImageUrl && (
-          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir={dir}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
               <button onClick={() => { setShowRefine(false); setRefineClickX(undefined); setRefineClickY(undefined); setRefineText(""); }}
@@ -1566,7 +1569,7 @@ function IdeaCard({
                   placeholder="صف التغيير المطلوب... مثل: غيّر لون الجدار إلى أخضر زيتوني"
                   className="w-full text-sm border-2 border-[#e8d9c0] rounded-2xl px-4 py-3 bg-white text-[#5C3D11] placeholder-[#8B6914]/40 resize-none focus:outline-none focus:border-[#C9A84C] transition-colors"
                   rows={3}
-                  dir="rtl"
+                  dir={dir}
                   autoFocus
                 />
               </div>
@@ -1597,7 +1600,7 @@ function IdeaCard({
 
         {/* شاشة تغيير النمط — full-screen */}
         {showStyleChanger && idea.imageUrl && (
-          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir="rtl">
+          <div className="fixed inset-0 z-[200] bg-[#faf6f0] flex flex-col" dir={dir}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#e8d9c0] shadow-sm">
               <button onClick={() => { setShowStyleChanger(false); setSelectedNewStyle(null); setSelectedNewColors([]); }}
@@ -1605,7 +1608,7 @@ function IdeaCard({
                 <X className="w-4 h-4" />
               </button>
               <div className="text-center">
-                <p className="text-sm font-black text-[#5C3D11]">🎨 غيّر النمط</p>
+               <h2 className="text-xl font-black text-[#5C3D11]">{t("smart.changeStyle")}</h2>
                 <p className="text-[10px] text-[#8B6914]/60">{idea.title}</p>
               </div>
               <div className="w-9" />
@@ -1781,6 +1784,7 @@ function LiveCamera({
   onCapture: (dataUrl: string) => void;
   onClose: () => void;
 }) {
+  const { dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1894,7 +1898,7 @@ function LiveCamera({
     <div
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex flex-col"
-      dir="rtl"
+      dir={dir}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -2008,6 +2012,7 @@ function PanoramaCapture({
   onCapture: (images: string[]) => void;
   onClose: () => void;
 }) {
+  const { dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -2105,7 +2110,7 @@ function PanoramaCapture({
   return (
     <div
       className="fixed inset-0 z-50 bg-black flex flex-col"
-      dir="rtl"
+      dir={dir}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -2194,6 +2199,7 @@ function VideoRecorder({
   onCapture: (thumb: string) => void;
   onClose: () => void;
 }) {
+  const { dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -2305,7 +2311,7 @@ function VideoRecorder({
   return (
     <div
       className="fixed inset-0 z-50 bg-black flex flex-col"
-      dir="rtl"
+      dir={dir}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -2379,6 +2385,7 @@ function VideoRecorder({
 // ===== Main Page =====
 export default function SmartCapture() {
   const [, navigate] = useLocation();
+  const { t, dir } = useLanguage();
   const { data: currentUser } = trpc.auth.me.useQuery();
   const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
@@ -2729,7 +2736,7 @@ export default function SmartCapture() {
   const budget = BUDGET_MAP[budgetLevel];
 
   return (
-    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
       {/* Camera overlays */}
       {showCamera && selectedMode && (
         <LiveCamera
@@ -2755,10 +2762,10 @@ export default function SmartCapture() {
         </button>
         <div className="flex-1">
           <p className="font-bold text-[#5C3D11]">
-            {step === "select" ? "كيف تريد التصوير؟" :
-             step === "capture" ? "التقط الفضاء" :
-             step === "filter" ? "خصّص تصميمك" :
-             step === "analyzing" ? "م. سارة تحلل..." : "أفكار م. سارة"}
+            {step === "select" ? t("smart.title") :
+             step === "capture" ? t("smart.upload") :
+             step === "filter" ? t("smart.styleType") :
+             step === "analyzing" ? t("smart.analyzing") : t("smart.results")}
           </p>
           {step === "results" && (
             <p className="text-xs text-[#8B6914]/70">{ideas.length} أفكار • {budget.label} • اضغط لتوليد الصور</p>
@@ -2789,8 +2796,8 @@ export default function SmartCapture() {
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center mx-auto mb-3">
                 <Camera className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-black text-[#5C3D11]">صمّم فضاءك</h2>
-              <p className="text-sm text-[#8B6914]/70 mt-1">اختر طريقة التصوير وسأقدم لك أفكاراً فورية</p>
+              <h2 className="text-2xl font-black text-[#5C3D11]">{t("smart.title")}</h2>
+              <p className="text-sm text-[#8B6914]/70 mt-1">{t("smart.subtitle")}</p>
             </div>
 
             {/* زر التصوير الوحيد */}
@@ -2802,7 +2809,7 @@ export default function SmartCapture() {
                 <Camera className="w-10 h-10" />
               </div>
               <div className="text-center">
-                <p className="font-black text-[#5C3D11] text-lg">صوّر فضاءك</p>
+                <p className="font-black text-[#5C3D11] text-lg">{t("home.hero.cta")}</p>
                 <p className="text-xs text-[#8B6914]/60 mt-1">غرفة • واجهة مبنى • حديقة • مسبح</p>
               </div>
             </button>
@@ -2817,7 +2824,7 @@ export default function SmartCapture() {
             <button onClick={() => fileRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-[#C9A84C]/40 bg-[#C9A84C]/5 text-[#8B6914] font-bold text-sm active:scale-95 transition-transform">
               <ImageIcon className="w-5 h-5" />
-              رفع صورة من المعرض
+              {t("smart.upload")}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
@@ -2846,7 +2853,7 @@ export default function SmartCapture() {
             )}
 
             <div className="text-center">
-              <h2 className="text-xl font-black text-[#5C3D11]">خصّص تصميمك</h2>
+              <h2 className="text-2xl font-black text-[#5C3D11]">{t("smart.title")}</h2>
               <p className="text-xs text-[#8B6914]/70 mt-1">حدد تفضيلاتك قبل التحليل</p>
             </div>
 

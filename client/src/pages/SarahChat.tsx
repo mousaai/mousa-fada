@@ -16,6 +16,7 @@ import { Link } from "wouter";
 import { Streamdown } from "streamdown";
 import { getLoginUrl } from "@/const";
 import Live360Scanner, { type CapturedPhoto, SCAN_STEPS } from "@/components/Live360Scanner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChatMessage {
   role: string;
@@ -41,6 +42,7 @@ const QUICK_PROMPTS = [
 
 export default function SarahChat() {
   const { isAuthenticated } = useAuth();
+  const { dir } = useLanguage();
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [sessionType, setSessionType] = useState("general");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -193,7 +195,7 @@ export default function SarahChat() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-background" dir={dir}>
         <Card className="p-8 text-center max-w-md">
           <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8 text-gold" />
@@ -209,7 +211,7 @@ export default function SarahChat() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-background flex flex-col" dir={dir}>
       {/* Live360Scanner Overlay */}
       {showLiveScanner && (
         <Live360Scanner

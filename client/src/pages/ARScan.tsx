@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SCAN_STEPS = [
   { icon: "📱", title: "حمّل أداة م. سارة Measure", desc: "تطبيق iOS مستقل يستخدم LiDAR لمسح الفضاء بدقة ±1 سم" },
@@ -25,6 +26,7 @@ const SCAN_STEPS = [
 
 export default function ARScan() {
   const { user, isAuthenticated } = useAuth();
+  const { dir } = useLanguage();
   const [activeTab, setActiveTab] = useState<"receive" | "manual" | "history">("receive");
   const [scanId, setScanId] = useState("");
   const [manualData, setManualData] = useState({
@@ -69,7 +71,7 @@ export default function ARScan() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
+      <div className="min-h-screen flex items-center justify-center bg-background" dir={dir}>
         <Card className="p-8 text-center max-w-sm">
           <Smartphone className="w-12 h-12 mx-auto text-gold mb-4" />
           <h2 className="text-xl font-bold mb-2">مسح AR</h2>
@@ -83,7 +85,7 @@ export default function ARScan() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen bg-background" dir={dir}>
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1a1208] to-[#2d1f0a] border-b border-gold/20 py-6 px-4">
         <div className="max-w-5xl mx-auto">

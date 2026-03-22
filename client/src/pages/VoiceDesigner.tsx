@@ -10,6 +10,8 @@ import {
 import { trpc } from "@/lib/trpc";
 import PlanRenderResult from "@/components/PlanRenderResult";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 // ===== Types =====
 type DrawTool = "select" | "wall" | "door" | "window" | "electrical" | "ac" | "room" | "pan";
@@ -1237,6 +1239,7 @@ function hitTest(el: DrawElement, px: number, py: number, sc: number, offset: Po
 // ===== Main Component =====
 export default function VoiceDesigner() {
   const [, navigate] = useLocation();
+  const { t, dir } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
 
@@ -1856,7 +1859,7 @@ export default function VoiceDesigner() {
   const libCategories = Array.from(new Set(ROOM_LIBRARY.map(r => r.cat)));
 
   return (
-    <div className="fixed inset-0 bg-[#faf6f0] flex flex-col" dir="rtl">
+    <div className="fixed inset-0 bg-[#faf6f0] flex flex-col" dir={dir}>
       {/* ===== Header ===== */}
       <header className="flex items-center gap-2 px-3 pt-safe pt-2 pb-2 bg-white/95 backdrop-blur border-b border-[#e8d9c0] z-20 shadow-sm">
         <button onClick={() => navigate("/")} className="p-2 rounded-full hover:bg-[#f0e8d8]">
@@ -1866,11 +1869,11 @@ export default function VoiceDesigner() {
           <Layers className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black text-[#5C3D11] text-sm truncate">لوحة الرسم المعماري</p>
+          <p className="font-black text-[#5C3D11] text-sm truncate">{t("voice.title")}</p>
           <p className="text-[9px] text-[#8B6914]/60">
             {elements.length > 0
               ? `${elements.filter(e => e.type === "room").length} غرفة • ${elements.filter(e => e.type === "wall").length} جدار • ${elements.filter(e => e.type === "door").length} باب • ${elements.filter(e => e.type === "window").length} نافذة`
-              : "ابدأ الرسم أو اختر من المكتبة"}
+              : t("voice.startDrawing")}
           </p>
         </div>
         <div className="flex gap-1">
@@ -2592,7 +2595,7 @@ export default function VoiceDesigner() {
       {/* ===== 3D Render Modal ===== */}
       {show3DModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShow3DModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()} dir="rtl">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()} dir={dir}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-[#5C3D11] text-base">تصدير 3D Perspective</h3>
               <button onClick={() => setShow3DModal(false)} className="p-1.5 rounded-xl hover:bg-[#f5f0e8]"><X className="w-4 h-4 text-[#8B6914]" /></button>
@@ -3064,7 +3067,7 @@ export default function VoiceDesigner() {
         const totalWallLen = walls.reduce((s, w) => s + dist({ x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }), 0);
         return (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShowBOQ(false)}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir="rtl">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir={dir}>
               <div className="sticky top-0 bg-white/95 backdrop-blur rounded-t-3xl px-5 pt-5 pb-3 border-b border-[#e8d9c0] flex items-center justify-between">
                 <h3 className="font-black text-[#5C3D11] text-base">جدول الكميات BOQ</h3>
                 <button onClick={() => setShowBOQ(false)} className="p-1.5 rounded-xl hover:bg-[#f5f0e8]"><X className="w-4 h-4 text-[#8B6914]" /></button>
