@@ -17,15 +17,22 @@ beforeEach(() => {
 
 describe("MOUSA.AI Integration Helper", () => {
   describe("CREDIT_COSTS", () => {
-    it("should have correct credit costs for all operations", () => {
+    it("should have correct credit costs for all operations (v48.0 updated pricing)", () => {
+      // لا تغيير
       expect(CREDIT_COSTS.analyzePhoto).toBe(20);
       expect(CREDIT_COSTS.generateIdeas).toBe(20);
-      expect(CREDIT_COSTS.applyStyle).toBe(15);
-      expect(CREDIT_COSTS.refineDesign).toBe(15);
       expect(CREDIT_COSTS.generate3D).toBe(30);
-      expect(CREDIT_COSTS.generatePlanDesign).toBe(20);
       expect(CREDIT_COSTS.generatePDF).toBe(5);
-      expect(CREDIT_COSTS.voiceDesign).toBe(20);
+      // زيادة مبررة
+      expect(CREDIT_COSTS.analyzeAndGenerate).toBe(35);    // أثقل خدمة: LLM + multi-image + 3-6 أفكار + BOQ
+      expect(CREDIT_COSTS.generateVisualization).toBe(25); // inpainting + auto fallback
+      expect(CREDIT_COSTS.applyStyle).toBe(20);            // generateImage + LLM للعنوان
+      expect(CREDIT_COSTS.refineDesign).toBe(20);          // generateImage ×2 (attempt + fallback)
+      expect(CREDIT_COSTS.generateFloorPlan3D).toBe(25);   // generateImage نصي فقط
+      expect(CREDIT_COSTS.generatePlanDesign).toBe(25);    // LLM ضخم (BOQ + أثاث + variants)
+      // تخفيض مبرر
+      expect(CREDIT_COSTS.reAnalyze).toBe(15);             // أخف من analyzePhoto
+      expect(CREDIT_COSTS.voiceDesign).toBe(15);           // transcribe + LLM فقط (بدون صورة)
     });
   });
 

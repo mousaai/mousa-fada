@@ -1118,7 +1118,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       structuralElements: z.array(z.object({ element: z.string(), position: z.string() })).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generateIdeas");
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generateVisualization");
       const styleMap: Record<string, string> = {
         modern: "modern contemporary", gulf: "Arabian Gulf luxury",
         classic: "classic elegant", minimal: "minimalist Japandi",
@@ -1185,7 +1185,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       customRequirements: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "reAnalyze");
       const styleMap: Record<string, string> = {
         modern: "عصري حديث", gulf: "خليجي فاخر",
         classic: "كلاسيكي أنيق", minimal: "مينيمال بسيط",
@@ -1350,7 +1350,7 @@ ${colorText}
       }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzeAndGenerate");
       const { imageUrl, imageUrls, captureMode, count, budgetMin, budgetMax, referenceData, preferredStyle, preferredColors, roomDimensions, lockStructuralElements } = input;
 
       const modeDesc: Record<string, string> = {
@@ -2634,7 +2634,7 @@ ${structuralAnalysisPrompt}
       }),
     }))
     .mutation(async ({ input, ctx }) => {
-      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generate3D");
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "generateFloorPlan3D");
       const { plan } = input;
 
       // Build textual description of the floor plan
@@ -2945,7 +2945,7 @@ ${structuralAnalysisPrompt}
     // التحقق من الرصيد قبل تنفيذ عملية AI
     checkBalance: protectedProcedure
       .input(z.object({
-        operation: z.enum(["analyzePhoto", "generateIdeas", "applyStyle", "refineDesign", "generate3D", "generatePlanDesign", "generatePDF", "voiceDesign"]),
+        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
       }))
       .query(async ({ input, ctx }) => {
         try {
@@ -2973,7 +2973,7 @@ ${structuralAnalysisPrompt}
     // خصم الكريدت بعد نجاح عملية AI
     deductCredits: protectedProcedure
       .input(z.object({
-        operation: z.enum(["analyzePhoto", "generateIdeas", "applyStyle", "refineDesign", "generate3D", "generatePlanDesign", "generatePDF", "voiceDesign"]),
+        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
         description: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -2984,14 +2984,18 @@ ${structuralAnalysisPrompt}
           }
           const cost = CREDIT_COSTS[input.operation];
           const operationLabels: Record<CreditOperation, string> = {
-            analyzePhoto: "تحليل صورة داخلية",
-            generateIdeas: "توليد أفكار تصميم",
-            applyStyle: "تغيير نمط التصميم",
-            refineDesign: "تحسين التصميم",
-            generate3D: "توليد رندر 3D",
-            generatePlanDesign: "تحليل مخطط المسقط",
-            generatePDF: "تصدير دفتر التصميم PDF",
-            voiceDesign: "تصميم صوتي بالذكاء الاصطناعي",
+            analyzePhoto: "تحليل صورة داخلية (20 كريدت)",
+            analyzeAndGenerate: "تحليل + توليد أفكار كاملة (35 كريدت)",
+            generateVisualization: "توليد صورة تصورية (25 كريدت)",
+            generateIdeas: "توليد أفكار تصميم (20 كريدت)",
+            reAnalyze: "إعادة تحليل مع تعديلات (15 كريدت)",
+            applyStyle: "تغيير نمط التصميم (20 كريدت)",
+            refineDesign: "تحسين التصميم بالقلم (20 كريدت)",
+            voiceDesign: "تصميم صوتي (15 كريدت)",
+            generateFloorPlan3D: "رندر 3D من مسقط صوتي (25 كريدت)",
+            generate3D: "رندر 3D من مسقط محمّل (30 كريدت)",
+            generatePlanDesign: "بيانات تصميم كاملة من المسقط (25 كريدت)",
+            generatePDF: "تصدير دفتر التصميم PDF (5 كريدت)",
           };
           const description = input.description || operationLabels[input.operation];
           const result = await deductMousaCredits(mousaUserId, cost, description);

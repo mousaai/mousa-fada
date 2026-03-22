@@ -216,18 +216,34 @@ export async function getMousaUserByOpenId(
 
 /**
  * Credit costs per operation in م. سارة (fada platform)
- * Range: 15-40 credits per operation (per /api/platform/pricing for fada)
- * Platform sets its own prices within this range.
+ * Updated v48.0 — based on actual workload analysis per service:
+ *
+ * analyzePhoto         20  — LLM + single image (high detail)
+ * analyzeAndGenerate   35  — LLM (500+ line prompt) + multi-image + 3-6 ideas with BOQ (heaviest service)
+ * generateVisualization 25 — generateImage with originalImages (inpainting) + auto fallback
+ * generateIdeas        20  — LLM JSON schema, no image generation
+ * reAnalyze            15  — LLM re-analysis with existing data, simpler prompt
+ * applyStyle           20  — generateImage + LLM for title (two parallel calls)
+ * refineDesign         20  — generateImage with originalImages × 2 (attempt + fallback)
+ * voiceDesign          15  — transcribeAudio + LLM JSON (no image, lighter than analyzePhoto)
+ * generateFloorPlan3D  25  — generateImage text-only prompt (no reference image)
+ * generate3D           30  — generateImage with originalImages (floor plan as reference)
+ * generatePlanDesign   25  — LLM with large JSON schema (BOQ + furniture + variants)
+ * generatePDF           5  — frontend html2canvas only, no AI call
  */
 export const CREDIT_COSTS = {
-  analyzePhoto: 20,        // تحليل صورة داخلية
-  generateIdeas: 20,       // توليد أفكار تصميم
-  applyStyle: 15,          // تغيير النمط/الستايل
-  refineDesign: 15,        // تحسين التصميم بالقلم
-  generate3D: 30,          // توليد رندر 3D من المسقط
-  generatePlanDesign: 20,  // توليد بيانات تصميم من المسقط
-  generatePDF: 5,          // تصدير PDF
-  voiceDesign: 20,         // تصميم صوتي بالذكاء الاصطناعي
+  analyzePhoto: 20,              // تحليل صورة داخلية — LLM + صورة واحدة
+  analyzeAndGenerate: 35,        // تحليل + توليد 3-6 أفكار كاملة — الخدمة الأثقل
+  generateVisualization: 25,     // توليد صورة تصورية مع الحفاظ على البنية
+  generateIdeas: 20,             // توليد أفكار تصميمية بدون صورة مرجعية
+  reAnalyze: 15,                 // إعادة تحليل مع تعديلات المستخدم
+  applyStyle: 20,                // تغيير النمط — generateImage + LLM
+  refineDesign: 20,              // تحسين بالقلم الرقمي — generateImage × 2
+  voiceDesign: 15,               // تصميم صوتي — transcribe + LLM فقط
+  generateFloorPlan3D: 25,       // رندر 3D من مسقط صوتي — generateImage نصي
+  generate3D: 30,                // رندر 3D من مسقط محمّل — generateImage + originalImages
+  generatePlanDesign: 25,        // بيانات تصميم كاملة من المسقط — LLM ضخم
+  generatePDF: 5,                // تصدير PDF — معالجة frontend فقط
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;

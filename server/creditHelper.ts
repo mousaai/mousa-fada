@@ -155,13 +155,17 @@ export async function checkAndDeductCredits(
   // ── الخطوة 3: خصم الكريدت بعد النجاح ─────────────────────────────────────
   const operationLabels: Record<CreditOperation, string> = {
     analyzePhoto: "تحليل صورة داخلية",
+    analyzeAndGenerate: "تحليل + توليد أفكار كاملة",
+    generateVisualization: "توليد صورة تصورية",
     generateIdeas: "توليد أفكار تصميم",
+    reAnalyze: "إعادة تحليل مع تعديلات",
     applyStyle: "تغيير نمط التصميم",
-    refineDesign: "تحسين التصميم",
+    refineDesign: "تحسين التصميم بالقلم",
+    voiceDesign: "تصميم صوتي",
+    generateFloorPlan3D: "رندر 3D من مسقط صوتي",
     generate3D: "توليد رندر 3D",
-    generatePlanDesign: "تحليل مخطط المسقط",
+    generatePlanDesign: "بيانات تصميم كاملة من المسقط",
     generatePDF: "تصدير دفتر التصميم PDF",
-    voiceDesign: "تصميم صوتي بالذكاء الاصطناعي",
   };
 
   const label = description || operationLabels[operation];

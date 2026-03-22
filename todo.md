@@ -697,3 +697,8 @@
 - [x] تطبيق Fail-Closed security: رفض العمليات عند فشل الاتصال بـ Mousa.ai API (checkMousaBalance + deductMousaCredits)
 - [x] تحديث oauth.ts: إزالة محاولة استدعاء endpoint غير موجود، توجيه المستخدمين لـ mousa.ai/dashboard للربط اليدوي
 - [x] التحقق من نجاح 178 اختبار بعد التعديلات
+
+## الإصدار 48.0 — تحديث أسعار الكريدت بناءً على حجم العمل الفعلي
+- [x] تحديث CREDIT_COSTS في mousa.ts بالأسعار الجديدة
+- [x] تحديث operation names في routers.ts للخدمات الجديدة (analyzeAndGenerateIdeas، generateVisualization، إلخ)
+- [x] التحقق من نجاح الاختبارات بعد التحديث
