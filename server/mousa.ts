@@ -232,18 +232,18 @@ export async function getMousaUserByOpenId(
  * generatePDF           5  — frontend html2canvas only, no AI call
  */
 export const CREDIT_COSTS = {
-  analyzePhoto: 20,              // تحليل صورة داخلية — LLM + صورة واحدة
-  analyzeAndGenerate: 35,        // تحليل + توليد 3-6 أفكار كاملة — الخدمة الأثقل
-  generateVisualization: 25,     // توليد صورة تصورية مع الحفاظ على البنية
-  generateIdeas: 20,             // توليد أفكار تصميمية بدون صورة مرجعية
-  reAnalyze: 15,                 // إعادة تحليل مع تعديلات المستخدم
-  applyStyle: 20,                // تغيير النمط — generateImage + LLM
-  refineDesign: 20,              // تحسين بالقلم الرقمي — generateImage × 2
-  voiceDesign: 15,               // تصميم صوتي — transcribe + LLM فقط
-  generateFloorPlan3D: 25,       // رندر 3D من مسقط صوتي — generateImage نصي
-  generate3D: 30,                // رندر 3D من مسقط محمّل — generateImage + originalImages
-  generatePlanDesign: 25,        // بيانات تصميم كاملة من المسقط — LLM ضخم
-  generatePDF: 5,                // تصدير PDF — معالجة frontend فقط
+  analyzePhoto: 40,              // تحليل صورة داخلية — LLM + صورة واحدة
+  analyzeAndGenerate: 70,        // تحليل + توليد 3-6 أفكار كاملة — الخدمة الأثقل
+  generateVisualization: 50,     // توليد صورة تصورية مع الحفاظ على البنية
+  generateIdeas: 40,             // توليد أفكار تصميمية بدون صورة مرجعية
+  reAnalyze: 30,                 // إعادة تحليل مع تعديلات المستخدم
+  applyStyle: 40,                // تغيير النمط — generateImage + LLM
+  refineDesign: 40,              // تحسين بالقلم الرقمي — generateImage × 2
+  voiceDesign: 30,               // تصميم صوتي — transcribe + LLM فقط
+  generateFloorPlan3D: 50,       // رندر 3D من مسقط صوتي — generateImage نصي
+  generate3D: 60,                // رندر 3D من مسقط محمّل — generateImage + originalImages
+  generatePlanDesign: 50,        // بيانات تصميم كاملة من المسقط — LLM ضخم
+  generatePDF: 10,               // تصدير PDF — معالجة frontend فقط
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;

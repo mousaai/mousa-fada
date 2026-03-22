@@ -702,3 +702,7 @@
 - [x] تحديث CREDIT_COSTS في mousa.ts بالأسعار الجديدة
 - [x] تحديث operation names في routers.ts للخدمات الجديدة (analyzeAndGenerateIdeas، generateVisualization، إلخ)
 - [x] التحقق من نجاح الاختبارات بعد التحديث
+
+## الإصدار 49.0 — مضاعفة أسعار الكريدت
+- [x] مضاعفة جميع قيم CREDIT_COSTS في mousa.ts (×2)
+- [x] تحديث اختبار CREDIT_COSTS في mousa.test.ts
