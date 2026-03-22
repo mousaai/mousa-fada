@@ -123,6 +123,30 @@ export async function deductMousaCredits(
 }
 
 /**
+ * Get Mousa.ai userId by Manus openId
+ * Called automatically during OAuth login to link accounts silently
+ */
+export async function getMousaUserByOpenId(
+  openId: string
+): Promise<{ userId: number; balance: number } | null> {
+  try {
+    const res = await fetch(
+      `${MOUSA_BASE_URL}/api/platform/user-by-openid?openId=${encodeURIComponent(openId)}`,
+      { headers: getHeaders() }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.userId) {
+      return { userId: data.userId, balance: data.balance ?? 0 };
+    }
+    return null;
+  } catch {
+    // Non-critical: if lookup fails, user can still link manually via platform card
+    return null;
+  }
+}
+
+/**
  * Credit costs per operation in م. سارة
  * Based on MOUSA.AI platform cost for fada (20 credits base)
  */

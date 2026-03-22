@@ -1,6 +1,10 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
+import { eq } from "drizzle-orm";
+import { users } from "../../drizzle/schema";
 import * as db from "../db";
+import { getDb } from "../db";
+import { getMousaUserByOpenId } from "../mousa";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -28,6 +32,7 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
+      // 1. Upsert user in local DB
       await db.upsertUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
@@ -35,6 +40,36 @@ export function registerOAuthRoutes(app: Express) {
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
       });
+
+      // 2. Auto-link Mousa.ai account (non-blocking, best-effort)
+      // Runs in background so it never delays the login redirect
+      const openIdSnapshot = userInfo.openId;
+      getMousaUserByOpenId(openIdSnapshot)
+        .then(async (mousaData) => {
+          if (!mousaData?.userId) return;
+          const localUser = await db.getUserByOpenId(openIdSnapshot);
+          if (!localUser || localUser.mousaUserId) return; // already linked
+          const dbInstance = await getDb();
+          if (!dbInstance) return;
+          await dbInstance
+            .update(users)
+            .set({
+              mousaUserId: mousaData.userId,
+              mousaBalance: mousaData.balance,
+              mousaLastSync: new Date(),
+            })
+            .where(eq(users.openId, openIdSnapshot));
+          console.log(
+            `[OAuth] Auto-linked Mousa.ai userId=${mousaData.userId} for openId=${openIdSnapshot}`
+          );
+        })
+        .catch((err) => {
+          // Non-critical: log but don't fail login
+          console.warn(
+            "[OAuth] Failed to auto-link Mousa.ai account:",
+            err?.message ?? err
+          );
+        });
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
