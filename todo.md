@@ -711,3 +711,7 @@
 - [x] إضافة دالة notifyMousaPricing في mousa.ts
 - [x] استدعاء الـ webhook عند بدء الخادم (server startup)
 - [x] كتابة اختبار للـ webhook
+
+## الإصدار 51.0 — إصلاح الصفحة الفارغة عند الدخول المباشر
+- [x] إصلاح سبب الصفحة الفارغة: setStep("capture") لا يوجد له JSX → تغييره إلى setStep("select")
+- [x] البانر التحذيري (toast) يظهر بشكل صحيح عند خطأ Mousa.ai

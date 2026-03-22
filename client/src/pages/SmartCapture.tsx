@@ -2516,7 +2516,8 @@ export default function SmartCapture() {
       if (!handleMousaErrorStatic(err as any)) {
         toast.error("فشل التحليل، حاول مجدداً");
       }
-      setStep("capture");
+      // إعادة إلى select وليس capture (لأن capture لا يوجد له JSX فيترك الصفحة فارغة)
+      setStep("select");
     },
   });
   const generateVizMutation = trpc.generateVisualization.useMutation({
