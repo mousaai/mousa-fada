@@ -123,16 +123,16 @@ export async function checkAndDeductCredits(
     currentBalance = balanceData.balance;
     upgradeUrl = balanceData.upgradeUrl || MOUSA_UPGRADE_URL;
   } catch (err) {
-    console.error("[creditHelper] checkMousaBalance failed:", err);
-    // في حالة خطأ في API، نسمح بالمتابعة ونسجّل الخطأ
-    // هذا يمنع توقف المنصة إذا كان Mousa.ai غير متاح مؤقتاً
-    return {
-      allowed: true,
-      baseCost,
-      finalCost,
-      sessionCount,
-      multiplier,
-    };
+    console.error("[creditHelper] checkMousaBalance failed (Fail-Closed):", err);
+    // Fail-Closed: عند فشل الاتصال بـ Mousa.ai، نرفض الطلب (بناءً على توجيه Mousa.ai)
+    throw new TRPCError({
+      code: "SERVICE_UNAVAILABLE",
+      message: JSON.stringify({
+        code: "MOUSA_UNAVAILABLE",
+        message: "خدمة الكريدت غير متاحة مؤقتاً، يرجى المحاولة لاحقاً",
+        upgradeUrl: MOUSA_UPGRADE_URL,
+      }),
+    });
   }
 
   // ── الخطوة 2: المنصة تقرر إذا كان الرصيد كافياً ──────────────────────────
@@ -194,9 +194,16 @@ export async function checkAndDeductCredits(
     newBalance = result.newBalance;
   } catch (err) {
     if (err instanceof TRPCError) throw err;
-    // خطأ شبكي أو خطأ غير متوقع — نسجّل ونكمل
-    console.error("[creditHelper] deductMousaCredits failed:", err);
-    deductSuccess = false;
+    // Fail-Closed: خطأ شبكي أو غير متوقع — نرفض العملية (بناءً على توجيه Mousa.ai)
+    console.error("[creditHelper] deductMousaCredits failed (Fail-Closed):", err);
+    throw new TRPCError({
+      code: "SERVICE_UNAVAILABLE",
+      message: JSON.stringify({
+        code: "MOUSA_UNAVAILABLE",
+        message: "خدمة الكريدت غير متاحة مؤقتاً، يرجى المحاولة لاحقاً",
+        upgradeUrl: MOUSA_UPGRADE_URL,
+      }),
+    });
   }
 
   // ── الخطوة 4: تسجيل الاستخدام في قاعدة البيانات ──────────────────────────

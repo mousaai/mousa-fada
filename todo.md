@@ -679,3 +679,21 @@
 - [x] إصلاح routers.ts لاستخدام الحقول الصحيحة (creditBalance بدلاً من balance في verifyToken)
 - [x] إصلاح الاختبارات لتعكس API v2.0 (MOUSA_UPGRADE_URL في mock)
 - [x] 178 اختبار ناجح (15 ملف اختبار)
+
+## الإصدار 47.0 — تعديلات نهائية بناءً على رد Mousa.ai
+- [x] تأكيد: URL parameter ?token= صحيح ومدعوم بالفعل
+- [x] تأكيد: userId يُحفظ مباشرةً من verify-token response في mousa.verifyToken procedure
+- [x] تأكيد: newBalance يُستخدم من deduct-credits response (سطر 194 في creditHelper.ts)
+- [x] إعداد وثيقة الرد الرسمي النهائي PDF لمطور Mousa.ai
+- [x] إضافة صفحة /credits-doc داخل المنصة لمشاركتها مع المطور
+
+## الإصدار 48.0 — تطبيق ملاحظات Mousa.ai النهائية
+- [ ] تحويل Graceful Degradation إلى Fail-Closed في creditHelper.ts
+- [ ] توجيه المستخدم لـ mousa.ai/dashboard عند الدخول المباشر بدون token
+- [ ] إزالة getMousaUserByOpenId من oauth.ts (لا endpoint منفصل)
+- [ ] تحديث رسالة الخطأ لتكون واضحة: "خدمة الكريدت غير متاحة مؤقتاً، يرجى المحاولة لاحقاً"
+
+## الإصدار 47.0 — التعديلات النهائية لـ Mousa.ai (Fail-Closed + Auto-link)
+- [x] تطبيق Fail-Closed security: رفض العمليات عند فشل الاتصال بـ Mousa.ai API (checkMousaBalance + deductMousaCredits)
+- [x] تحديث oauth.ts: إزالة محاولة استدعاء endpoint غير موجود، توجيه المستخدمين لـ mousa.ai/dashboard للربط اليدوي
+- [x] التحقق من نجاح 178 اختبار بعد التعديلات
