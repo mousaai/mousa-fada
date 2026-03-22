@@ -12,7 +12,7 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
 };
 
 export const LANGUAGE_FLAGS: Record<Language, string> = {
-  ar: "🇸🇦",
+  ar: "🇦🇪",
   en: "🇬🇧",
   ur: "🇵🇰",
   fr: "🇫🇷",
