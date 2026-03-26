@@ -724,3 +724,9 @@
 
 ## الإصدار 53.0 — تحسين useMousaAuth.ts
 - [x] استبدال setTimeout المباشر بدالة redirectToMousa() منفصلة
+
+## الإصدار 54.0 — ربط useAuth() بالواجهة وتوحيد خصم الكريدت
+- [x] تحديث CreditBadge ليقرأ الرصيد من AuthGate مباشرة (بدلاً من tRPC)
+- [x] عرض اسم المستخدم ورصيده في البوبوفر من Mousa.ai
+- [x] توحيد useMousaCredit ليستخدم deductCredits من AuthGate
+- [x] 182 اختبار ناجح

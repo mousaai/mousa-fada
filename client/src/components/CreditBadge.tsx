@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
+import { useAuth as useMousaAuth } from "@/components/AuthGate";
 import { Coins, AlertCircle, ExternalLink, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -22,21 +20,22 @@ interface CreditBadgeProps {
 }
 
 export function CreditBadge({ className = "", showLabel = false }: CreditBadgeProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, refreshBalance } = useMousaAuth();
   const [open, setOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data: balanceData, refetch, isLoading } = trpc.mousa.getBalance.useQuery(undefined, {
-    enabled: isAuthenticated,
-    staleTime: 60_000, // تحديث كل دقيقة
-    refetchOnWindowFocus: false,
-  });
-
-  if (!isAuthenticated) return null;
-  if (!balanceData?.requiresMousa) return null;
-
-  const balance = balanceData.balance ?? 0;
+  const balance = user?.creditBalance ?? 0;
   const isLow = balance < 50;
   const isCritical = balance < 20;
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshBalance();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -53,11 +52,7 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
             dir="rtl"
           >
             <Coins className="w-4 h-4" />
-            {isLoading ? (
-              <span className="w-8 h-3 bg-current opacity-20 rounded animate-pulse" />
-            ) : (
-              <span>{balance.toLocaleString("ar")}</span>
-            )}
+            <span>{balance.toLocaleString("ar")}</span>
             {showLabel && <span className="text-xs opacity-70">كريدت</span>}
           </button>
         </PopoverTrigger>
@@ -78,12 +73,20 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
               <span className="font-bold text-lg">{balance.toLocaleString("ar")} كريدت</span>
             </div>
             <button
-              onClick={() => refetch()}
-              className="p-1 rounded-full hover:bg-white/20 transition-colors"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-1 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             </button>
           </div>
+
+          {/* اسم المستخدم */}
+          {user?.name && (
+            <div className="px-4 pt-3 pb-1 text-sm text-gray-500 text-right">
+              مرحباً، <span className="font-semibold text-gray-700">{user.name}</span>
+            </div>
+          )}
 
           {/* Content */}
           <div className="p-4 space-y-3 bg-white">
@@ -116,18 +119,16 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
             </div>
 
             {/* زر شراء كريدت */}
-            {balanceData.upgradeUrl && (
-              <a
-                href={balanceData.upgradeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-medium text-sm hover:from-amber-600 hover:to-amber-700 transition-all"
-              >
-                <Coins className="w-4 h-4" />
-                شراء كريدت إضافي
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
+            <a
+              href="https://www.mousa.ai/pricing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-medium text-sm hover:from-amber-600 hover:to-amber-700 transition-all"
+            >
+              <Coins className="w-4 h-4" />
+              شراء كريدت إضافي
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
 
             <p className="text-xs text-center text-gray-400">
               الرصيد من منصة{" "}
@@ -148,52 +149,58 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
 }
 
 /**
- * Hook لاستخدام نظام الكريدت في أي مكوّن
+ * Hook لاستخدام نظام الكريدت في أي مكوّن — يقرأ من AuthGate مباشرة
  */
 export function useMousaCredit() {
-  const { isAuthenticated } = useAuth();
-  const utils = trpc.useUtils();
-
-  const { data: balanceData } = trpc.mousa.getBalance.useQuery(undefined, {
-    enabled: isAuthenticated,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
-
-  const deductMutation = trpc.mousa.deductCredits.useMutation({
-    onSuccess: () => {
-      utils.mousa.getBalance.invalidate();
-    },
-  });
+  const { user, deductCredits } = useMousaAuth();
 
   const deduct = async (
-    operation: "analyzePhoto" | "generateIdeas" | "applyStyle" | "refineDesign" | "generate3D" | "generatePlanDesign" | "generatePDF" | "voiceDesign",
+    operation: string,
     description?: string
   ) => {
-    if (!isAuthenticated) return { success: true };
-    if (!balanceData?.requiresMousa) return { success: true };
-    return deductMutation.mutateAsync({ operation, description });
+    const costs: Record<string, number> = {
+      analyzePhoto: 40,
+      analyzeAndGenerate: 70,
+      generateVisualization: 50,
+      generateIdeas: 40,
+      reAnalyze: 30,
+      applyStyle: 40,
+      refineDesign: 40,
+      voiceDesign: 30,
+      generateFloorPlan3D: 50,
+      generate3D: 60,
+      generatePlanDesign: 50,
+      generatePDF: 10,
+    };
+    const amount = costs[operation] ?? 40;
+    return deductCredits(amount, description);
   };
 
-  const canAfford = (
-    operation: "analyzePhoto" | "generateIdeas" | "applyStyle" | "refineDesign" | "generate3D" | "generatePlanDesign" | "generatePDF" | "voiceDesign"
-  ) => {
-    if (!balanceData?.requiresMousa) return true;
-    const balance = balanceData.balance ?? 0;
+  const canAfford = (operation: string) => {
+    const balance = user?.creditBalance ?? 0;
     const costs: Record<string, number> = {
-      analyzePhoto: 20, generateIdeas: 20, applyStyle: 15,
-      refineDesign: 15, generate3D: 25, generatePlanDesign: 20,
-      generatePDF: 5, voiceDesign: 20,
+      analyzePhoto: 40,
+      analyzeAndGenerate: 70,
+      generateVisualization: 50,
+      generateIdeas: 40,
+      reAnalyze: 30,
+      applyStyle: 40,
+      refineDesign: 40,
+      voiceDesign: 30,
+      generateFloorPlan3D: 50,
+      generate3D: 60,
+      generatePlanDesign: 50,
+      generatePDF: 10,
     };
     return balance >= (costs[operation] ?? 0);
   };
 
   return {
-    balance: balanceData?.balance ?? null,
-    requiresMousa: balanceData?.requiresMousa ?? false,
-    upgradeUrl: balanceData?.upgradeUrl ?? null,
+    balance: user?.creditBalance ?? null,
+    requiresMousa: !!user,
+    upgradeUrl: "https://www.mousa.ai/pricing",
     deduct,
     canAfford,
-    isDeducting: deductMutation.isPending,
+    isDeducting: false,
   };
 }
