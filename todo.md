@@ -730,3 +730,9 @@
 - [x] عرض اسم المستخدم ورصيده في البوبوفر من Mousa.ai
 - [x] توحيد useMousaCredit ليستخدم deductCredits من AuthGate
 - [x] 182 اختبار ناجح
+
+## الإصدار 55.0 — إزالة Manus OAuth من App.tsx وmain.tsx
+- [x] App.tsx نظيف تماماً — AuthGate يلف كامل التطبيق بالفعل
+- [x] إزالة getLoginUrl وredirectToLoginIfUnauthorized من main.tsx
+- [x] إزالة import UNAUTHED_ERR_MSG وكل منطق Manus OAuth من main.tsx
+- [x] 182 اختبار ناجح
