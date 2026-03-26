@@ -721,3 +721,6 @@
 - [x] إنشاء client/src/components/AuthGate.tsx
 - [x] تعديل App.tsx لتلف التطبيق بـ AuthGate
 - [x] التحقق من نجاح 182 اختبار
+
+## الإصدار 53.0 — تحسين useMousaAuth.ts
+- [x] استبدال setTimeout المباشر بدالة redirectToMousa() منفصلة

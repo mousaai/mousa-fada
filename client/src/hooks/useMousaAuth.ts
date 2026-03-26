@@ -48,7 +48,7 @@ export function useMousaAuth() {
 
       if (!token) {
         setState({ user: null, loading: false, error: "يجب الدخول عبر mousa.ai", token: null });
-        setTimeout(() => { window.location.href = "https://www.mousa.ai"; }, 2000);
+        redirectToMousa();
         return;
       }
 
@@ -63,7 +63,7 @@ export function useMousaAuth() {
       const errorMsg = (err as Error).message;
       if (errorMsg.includes("TOKEN_EXPIRED")) {
         clearSession();
-        setTimeout(() => { window.location.href = "https://www.mousa.ai"; }, 2000);
+        redirectToMousa();
         return;
       }
       setState({ user: null, loading: false, error: errorMsg || "خطأ في المصادقة", token: null });
@@ -197,4 +197,8 @@ function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(STORAGE_KEY);
   } catch {}
+}
+
+function redirectToMousa() {
+  setTimeout(() => { window.location.href = "https://www.mousa.ai"; }, 1500);
 }
