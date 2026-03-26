@@ -736,3 +736,21 @@
 - [x] إزالة getLoginUrl وredirectToLoginIfUnauthorized من main.tsx
 - [x] إزالة import UNAUTHED_ERR_MSG وكل منطق Manus OAuth من main.tsx
 - [x] 182 اختبار ناجح
+
+## الإصدار 56.0 — إزالة كل Manus OAuth من الصفحات
+- [ ] حصر وإزالة getLoginUrl وuseAuth من Manus من جميع الصفحات
+- [ ] استبدال أزرار "تسجيل الدخول" بتوجيه لـ mousa.ai/dashboard
+
+## الإصدار 57.0 — نظام إدارة المنصات المركزي (Platform Orchestration System)
+- [ ] تصميم جداول قاعدة البيانات: platforms, platformServices, platformStats, platformAlerts
+- [ ] بناء Platform Registry في server/routers/platforms.ts
+- [ ] بناء Admin Dashboard في client/src/pages/AdminPlatforms.tsx
+- [ ] بناء Auto-Sync Engine: Webhook ثنائي الاتجاه وإشعارات تلقائية
+- [ ] بناء Health Monitor: مراقبة API وتنبيهات فشل تلقائية
+- [ ] تشغيل الاختبارات وحفظ نقطة التفتيش
+
+## الإصدار 58.0 — FIX_FADA_NOW (استبدال كامل لـ useMousaAuth + AuthGate)
+- [x] useMousaAuth.ts مطابق لـ PDF — redirectToMousa() منفصلة، جلسة 23 ساعة
+- [x] AuthGate.tsx معاد كتابته بالتصميم الكامل من PDF (IBM Plex Arabic + ألوان Mousa.ai)
+- [x] App.tsx خالي تماماً من Manus OAuth — AuthGate يلف كامل التطبيق
+- [x] 182 اختبار ناجح

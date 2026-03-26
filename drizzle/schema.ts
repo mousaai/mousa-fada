@@ -249,3 +249,111 @@ export const aiUsageLogs = mysqlTable("aiUsageLogs", {
 });
 export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
 export type InsertAiUsageLog = typeof aiUsageLogs.$inferInsert;
+
+// ============================================================
+// ===== PLATFORM ORCHESTRATION SYSTEM (POS) ==================
+// نظام إدارة المنصات المركزي — قابل للتوسع لـ 21 منصة فرعية
+// ============================================================
+
+// ===== جدول المنصات المسجّلة =====
+export const platforms = mysqlTable("platforms", {
+  id: int("id").autoincrement().primaryKey(),
+  platformId: varchar("platformId", { length: 50 }).notNull().unique(), // e.g. "fada", "bonyan"
+  name: varchar("name", { length: 100 }).notNull(),                     // "م. سارة | فضاء"
+  domain: varchar("domain", { length: 255 }).notNull(),                 // "fada.mousa.ai"
+  apiKey: varchar("apiKey", { length: 255 }),                           // مفتاح API الخاص بالمنصة
+  webhookSecret: varchar("webhookSecret", { length: 255 }),             // سر التحقق من Webhook
+  status: mysqlEnum("status", ["active", "inactive", "maintenance"]).default("active").notNull(),
+  category: varchar("category", { length: 100 }),                       // "interior_design", "architecture"
+  description: text("description"),
+  logoUrl: text("logoUrl"),
+  pricingWebhookSentAt: timestamp("pricingWebhookSentAt"),
+  lastHealthCheckAt: timestamp("lastHealthCheckAt"),
+  healthStatus: mysqlEnum("healthStatus", ["healthy", "degraded", "down", "unknown"]).default("unknown").notNull(),
+  totalUsers: int("totalUsers").default(0).notNull(),
+  totalCreditsConsumed: int("totalCreditsConsumed").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Platform = typeof platforms.$inferSelect;
+export type InsertPlatform = typeof platforms.$inferInsert;
+
+// ===== جدول خدمات كل منصة وأسعارها =====
+export const platformServices = mysqlTable("platformServices", {
+  id: int("id").autoincrement().primaryKey(),
+  platformId: varchar("platformId", { length: 50 }).notNull(),          // FK → platforms.platformId
+  serviceKey: varchar("serviceKey", { length: 100 }).notNull(),         // "analyzePhoto"
+  serviceName: varchar("serviceName", { length: 255 }).notNull(),       // "تحليل صورة"
+  creditCost: int("creditCost").notNull(),                              // 40
+  category: varchar("category", { length: 100 }),                       // "analysis", "generation"
+  description: text("description"),
+  isActive: boolean("isActive").default(true).notNull(),
+  usageCount: int("usageCount").default(0).notNull(),                   // عدد الاستخدامات الكلي
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PlatformService = typeof platformServices.$inferSelect;
+export type InsertPlatformService = typeof platformServices.$inferInsert;
+
+// ===== جدول إحصائيات المنصات اليومية =====
+export const platformDailyStats = mysqlTable("platformDailyStats", {
+  id: int("id").autoincrement().primaryKey(),
+  platformId: varchar("platformId", { length: 50 }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),                      // "2026-03-26"
+  activeUsers: int("activeUsers").default(0).notNull(),
+  newUsers: int("newUsers").default(0).notNull(),
+  totalRequests: int("totalRequests").default(0).notNull(),
+  successfulRequests: int("successfulRequests").default(0).notNull(),
+  failedRequests: int("failedRequests").default(0).notNull(),
+  creditsConsumed: int("creditsConsumed").default(0).notNull(),
+  revenue: float("revenue").default(0).notNull(),                       // بالريال/دولار
+  avgResponseMs: int("avgResponseMs").default(0).notNull(),             // متوسط وقت الاستجابة
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PlatformDailyStat = typeof platformDailyStats.$inferSelect;
+export type InsertPlatformDailyStat = typeof platformDailyStats.$inferInsert;
+
+// ===== جدول تنبيهات المنصات =====
+export const platformAlerts = mysqlTable("platformAlerts", {
+  id: int("id").autoincrement().primaryKey(),
+  platformId: varchar("platformId", { length: 50 }).notNull(),
+  alertType: mysqlEnum("alertType", [
+    "api_failure",       // فشل API
+    "low_balance",       // رصيد منخفض
+    "high_error_rate",   // نسبة خطأ عالية
+    "pricing_updated",   // تحديث أسعار
+    "new_user_spike",    // ارتفاع مفاجئ في المستخدمين
+    "webhook_failed",    // فشل Webhook
+    "health_degraded",   // تدهور صحة المنصة
+    "manual"             // تنبيه يدوي
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  metadata: json("metadata"),                                           // بيانات إضافية
+  isRead: boolean("isRead").default(false).notNull(),
+  isResolved: boolean("isResolved").default(false).notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PlatformAlert = typeof platformAlerts.$inferSelect;
+export type InsertPlatformAlert = typeof platformAlerts.$inferInsert;
+
+// ===== جدول سجل Webhooks =====
+export const webhookLogs = mysqlTable("webhookLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  platformId: varchar("platformId", { length: 50 }).notNull(),
+  direction: mysqlEnum("direction", ["outbound", "inbound"]).notNull(), // أرسلنا أو استقبلنا
+  eventType: varchar("eventType", { length: 100 }).notNull(),           // "pricing_update", "health_check"
+  url: text("url"),
+  statusCode: int("statusCode"),
+  requestBody: json("requestBody"),
+  responseBody: json("responseBody"),
+  success: boolean("success").default(false).notNull(),
+  durationMs: int("durationMs"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WebhookLog = typeof webhookLogs.$inferSelect;
+export type InsertWebhookLog = typeof webhookLogs.$inferInsert;
