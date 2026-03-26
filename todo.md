@@ -715,3 +715,9 @@
 ## الإصدار 51.0 — إصلاح الصفحة الفارغة عند الدخول المباشر
 - [x] إصلاح سبب الصفحة الفارغة: setStep("capture") لا يوجد له JSX → تغييره إلى setStep("select")
 - [x] البانر التحذيري (toast) يظهر بشكل صحيح عند خطأ Mousa.ai
+
+## الإصدار 52.0 — نظام مصادقة Mousa.ai (AuthGate)
+- [x] إنشاء client/src/hooks/useMousaAuth.ts
+- [x] إنشاء client/src/components/AuthGate.tsx
+- [x] تعديل App.tsx لتلف التطبيق بـ AuthGate
+- [x] التحقق من نجاح 182 اختبار

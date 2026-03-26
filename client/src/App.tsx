@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import AuthGate from "./components/AuthGate";
 import Home from "./pages/Home";
 import { VoiceFAB } from "./components/VoiceFAB";
 import Analyze from "./pages/Analyze";
@@ -57,9 +58,11 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster richColors position="top-center" />
-          <Router />
-          <VoiceFAB />
+          <AuthGate>
+            <Toaster richColors position="top-center" />
+            <Router />
+            <VoiceFAB />
+          </AuthGate>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
