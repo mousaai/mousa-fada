@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import {
   Wifi, QrCode, Info
 } from "lucide-react";
 import { Link } from "wouter";
-import { getLoginUrl } from "@/const";
+
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const SCAN_STEPS = [
@@ -25,7 +25,8 @@ const SCAN_STEPS = [
 ];
 
 export default function ARScan() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const isAuthenticated = true;
   const { dir } = useLanguage();
   const [activeTab, setActiveTab] = useState<"receive" | "manual" | "history">("receive");
   const [scanId, setScanId] = useState("");
@@ -76,7 +77,7 @@ export default function ARScan() {
           <Smartphone className="w-12 h-12 mx-auto text-gold mb-4" />
           <h2 className="text-xl font-bold mb-2">مسح AR</h2>
           <p className="text-muted-foreground mb-4">يرجى تسجيل الدخول للوصول لهذه الميزة</p>
-          <a href={getLoginUrl()}>
+          <a href="https://www.mousa.ai">
             <Button className="btn-gold w-full">تسجيل الدخول</Button>
           </a>
         </Card>

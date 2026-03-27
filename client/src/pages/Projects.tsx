@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { useAuth } from "@/components/AuthGate";
+
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,7 +71,9 @@ function formatCurrency(num: number) {
 }
 
 export default function ProjectsPage() {
-  const { isAuthenticated, loading } = useAuth();
+  const { } = useAuth();
+  const isAuthenticated = true;
+  const loading = false;
   const [, navigate] = useLocation();
   const { t, dir } = useLanguage();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -121,7 +123,7 @@ export default function ProjectsPage() {
         <h2 className="text-2xl font-black text-stone-800">مشاريعي</h2>
         <p className="text-stone-500 text-center max-w-sm">يجب تسجيل الدخول للوصول إلى مشاريعك المحفوظة</p>
         <Button
-          onClick={() => window.location.href = getLoginUrl()}
+          onClick={() => window.location.href = "https://www.mousa.ai"}
           className="gold-gradient text-white px-8 py-3 rounded-xl font-bold shadow-lg"
         >
           تسجيل الدخول

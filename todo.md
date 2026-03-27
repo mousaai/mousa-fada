@@ -754,3 +754,7 @@
 - [x] AuthGate.tsx معاد كتابته بالتصميم الكامل من PDF (IBM Plex Arabic + ألوان Mousa.ai)
 - [x] App.tsx خالي تماماً من Manus OAuth — AuthGate يلف كامل التطبيق
 - [x] 182 اختبار ناجح
+
+## الإصدار 59.0 — إصلاح useAuth الشامل
+- [ ] استبدال useAuth من Manus بـ useAuth من AuthGate في جميع الصفحات
+- [ ] إزالة getLoginUrl من جميع الصفحات

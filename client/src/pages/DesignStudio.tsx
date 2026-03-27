@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/components/AuthGate";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,7 +99,8 @@ interface DesignElementItem {
 }
 
 export default function DesignStudio() {
-  const { isAuthenticated } = useAuth();
+  const { } = useAuth();
+  const isAuthenticated = true;
   const { t, dir } = useLanguage();
 
   // Wizard state

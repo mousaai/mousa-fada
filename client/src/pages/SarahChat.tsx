@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/components/AuthGate";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { Streamdown } from "streamdown";
-import { getLoginUrl } from "@/const";
+
 import Live360Scanner, { type CapturedPhoto, SCAN_STEPS } from "@/components/Live360Scanner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -41,7 +41,8 @@ const QUICK_PROMPTS = [
 ];
 
 export default function SarahChat() {
-  const { isAuthenticated } = useAuth();
+  const { } = useAuth();
+  const isAuthenticated = true;
   const { dir } = useLanguage();
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [sessionType, setSessionType] = useState("general");
@@ -202,7 +203,7 @@ export default function SarahChat() {
           </div>
           <h2 className="text-2xl font-bold mb-2">م. سارة</h2>
           <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للتحدث مع م. سارة</p>
-          <a href={getLoginUrl()}>
+          <a href="https://www.mousa.ai">
             <Button className="btn-gold w-full">تسجيل الدخول</Button>
           </a>
         </Card>

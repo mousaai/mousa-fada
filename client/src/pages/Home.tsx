@@ -1,5 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { useAuth } from "@/components/AuthGate";
 import { useLocation } from "wouter";
 import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, ShoppingBag } from "lucide-react";
 import { CreditBadge } from "@/components/CreditBadge";
@@ -161,7 +160,9 @@ function QuickAnalysisCard({ onClose }: { onClose: () => void }) {
 
 // ===== Main Home =====
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const loading = false;
+  const isAuthenticated = true;
   const [, navigate] = useLocation();
   const { t, dir, isRtl } = useLanguage();
   const [showQuickAnalysis, setShowQuickAnalysis] = useState(false);
@@ -195,7 +196,7 @@ export default function Home() {
             </div>
           ) : (
             <button
-              onClick={() => window.location.href = getLoginUrl()}
+              onClick={() => window.location.href = "https://www.mousa.ai"}
               className="px-4 py-2 rounded-full bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold active:scale-95 transition-transform"
             >
               {t("home.login")}
@@ -231,7 +232,7 @@ export default function Home() {
         <button
           onClick={() => {
             if (!isAuthenticated) {
-              window.location.href = getLoginUrl();
+              window.location.href = "https://www.mousa.ai";
               return;
             }
             navigate("/smart-capture");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/components/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Sparkles, Palette, Download, Share2, RefreshCw, ArrowRight, Loader2, Image as ImageIcon } from "lucide-react";
 import { Link } from "wouter";
-import { getLoginUrl } from "@/const";
+
 
 const DESIGN_STYLES = [
   { value: "gulf", label: "خليجي عربي أصيل", emoji: "🕌" },
@@ -63,7 +63,8 @@ interface MoodBoardItem {
 }
 
 export default function MoodBoard() {
-  const { isAuthenticated } = useAuth();
+  const { } = useAuth();
+  const isAuthenticated = true;
   const [selectedStyle, setSelectedStyle] = useState("gulf");
   const [selectedSpace, setSelectedSpace] = useState("living_room");
   const [customNotes, setCustomNotes] = useState("");
@@ -89,7 +90,7 @@ export default function MoodBoard() {
 
   const handleGenerate = () => {
     if (!isAuthenticated) {
-      window.location.href = getLoginUrl();
+      window.location.href = "https://www.mousa.ai";
       return;
     }
     setIsGenerating(true);

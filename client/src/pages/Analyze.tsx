@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { useAuth } from "@/components/AuthGate";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +50,8 @@ function formatCurrency(num: number) {
 }
 
 export default function AnalyzePage() {
-  const { isAuthenticated } = useAuth();
+  useAuth();
+  const isAuthenticated = true;
   const [, navigate] = useLocation();
   const { t, dir } = useLanguage();
 
@@ -96,7 +96,7 @@ export default function AnalyzePage() {
 
   const handleAnalyze = async () => {
     if (!isAuthenticated) {
-      window.location.href = getLoginUrl();
+      window.location.href = "https://www.mousa.ai";
       return;
     }
     if (!imageFile || !imagePreview) {
@@ -330,7 +330,7 @@ export default function AnalyzePage() {
                   <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800">
                     يجب تسجيل الدخول لحفظ نتائج التحليل ومشاريعك.{" "}
-                    <button onClick={() => window.location.href = getLoginUrl()} className="font-bold underline">
+                    <button onClick={() => window.location.href = "https://www.mousa.ai"} className="font-bold underline">
                       سجّل الدخول الآن
                     </button>
                   </p>
