@@ -28,35 +28,20 @@ const requireUser = t.middleware(async opts => {
 export const protectedProcedure = t.procedure.use(requireUser);
 
 /**
- * mousaProcedure: تتطلب تسجيل الدخول + ربط حساب Mousa.ai
- * تُستخدم لجميع عمليات AI التي تخصم كريدت
+ * mousaProcedure: ⚠️ وضع مؤقت — مفتوحة للجميع بدون فحص Mousa.ai
+ * سيتم إعادة تفعيل الفحص عند الأمر.
  */
 export const mousaProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    // 1. يجب تسجيل الدخول
-    if (!ctx.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-    }
-
-    // 2. يجب الربط بمنصة Mousa.ai
-    if (!ctx.user.mousaUserId) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: JSON.stringify({
-          code: "MOUSA_REQUIRED",
-          message: "يجب الدخول من منصة Mousa.ai لاستخدام هذه الميزة",
-          upgradeUrl: "https://www.mousa.ai",
-        }),
-      });
-    }
-
+    // ⚠️ مؤقت: تجاوز فحص تسجيل الدخول وفحص Mousa.ai
+    // نُمرر ctx.user كـ null-safe مع mousaUserId افتراضي
     return next({
       ctx: {
         ...ctx,
-        user: ctx.user,
-        mousaUserId: ctx.user.mousaUserId as number,
+        user: ctx.user ?? { id: 0, openId: "guest", name: "زائر", email: "", role: "user" as const, mousaUserId: null, createdAt: new Date() },
+        mousaUserId: ctx.user?.mousaUserId ?? null,
       },
     });
   }),

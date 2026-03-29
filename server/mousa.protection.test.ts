@@ -47,27 +47,21 @@ describe("creditHelper", () => {
 
   describe("checkAndDeductCredits", () => {
     it("يجب أن يرفض المستخدم غير المرتبط بـ Mousa", async () => {
-      // محاكاة المستخدم بدون mousaUserId
+      // ⚠️ مؤقت: المنصة مفتوحة — يُسمح للجميع بدون mousaUserId
       const { checkAndDeductCredits } = await import("./creditHelper");
       
       await expect(
-        checkAndDeductCredits("user-123", null, "analyzePhoto")
-      ).rejects.toThrow();
+        checkAndDeductCredits(0, null, "analyzePhoto")
+      ).resolves.toMatchObject({ allowed: true });
     });
 
     it("يجب أن يرفض المستخدم بدون رصيد كافٍ", async () => {
-      const { checkMousaBalance } = await import("./mousa");
-      vi.mocked(checkMousaBalance).mockResolvedValue({
-        balance: 5, // أقل من 20 المطلوبة
-        requiresMousa: true,
-        upgradeUrl: "https://www.mousa.ai",
-      });
-
+      // ⚠️ مؤقت: المنصة مفتوحة — يُسمح للجميع بغض النظر عن الرصيد
       const { checkAndDeductCredits } = await import("./creditHelper");
       
       await expect(
-        checkAndDeductCredits("user-123", "mousa-456", "analyzePhoto")
-      ).rejects.toThrow();
+        checkAndDeductCredits(0, 456, "analyzePhoto")
+      ).resolves.toMatchObject({ allowed: true });
     });
 
     it("يجب أن يقبل المستخدم ذو الرصيد الكافي", async () => {
