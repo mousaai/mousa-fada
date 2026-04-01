@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Upload, MapPin, Sparkles, Loader2, CheckCircle, Building2, Trees, Car, Users, RefreshCw } from "lucide-react";
+import { ChevronLeft, Upload, MapPin, Sparkles, Loader2, CheckCircle, Building2, Trees, Car, Users, RefreshCw, ImageIcon, Camera } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -52,7 +52,9 @@ interface ZoneDesign {
 export default function UrbanDesign() {
   const [, navigate] = useLocation();
   const { dir } = useLanguage();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null); // للتوافق مع handleDrop
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<"upload" | "config" | "analyzing" | "results">("upload");
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -271,32 +273,57 @@ export default function UrbanDesign() {
             <div
               onDrop={handleDrop}
               onDragOver={e => e.preventDefault()}
-              onClick={() => fileRef.current?.click()}
-              className="relative flex flex-col items-center justify-center gap-5 rounded-3xl border-2 border-dashed border-[#2C5F2E]/40 bg-white p-10 cursor-pointer active:scale-95 transition-transform"
-              style={{ minHeight: 260 }}
+              className="relative flex flex-col items-center justify-center gap-5 rounded-3xl border-2 border-dashed border-[#2C5F2E]/40 bg-white p-8"
+              style={{ minHeight: 200 }}
             >
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2C5F2E] to-[#1a3d1b] flex items-center justify-center shadow-lg">
-                <Upload className="w-10 h-10 text-white" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2C5F2E] to-[#1a3d1b] flex items-center justify-center shadow-lg">
+                <Upload className="w-8 h-8 text-white" />
               </div>
               <div className="text-center">
-                <p className="text-xl font-bold text-[#1a3d1b]">ارفع صورة المنطقة</p>
+                <p className="text-lg font-bold text-[#1a3d1b]">ارفع صورة المنطقة</p>
                 <p className="text-sm text-[#2C5F2E]/70 mt-1">صورة جوية، مخطط عام، أو صورة ميدانية</p>
               </div>
-              <div className="flex gap-3 flex-wrap justify-center">
-                {["صورة جوية", "Google Maps", "مخطط عام", "صورة ميدانية"].map(fmt => (
-                  <span key={fmt} className="px-3 py-1 rounded-full bg-[#2C5F2E]/10 text-xs font-bold text-[#2C5F2E]">{fmt}</span>
-                ))}
+              {/* خيارات الرفع المنفصلة */}
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => galleryRef.current?.click()}
+                  className="flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl bg-[#2C5F2E]/10 border border-[#2C5F2E]/20 active:scale-95 transition-transform"
+                >
+                  <ImageIcon className="w-6 h-6 text-[#2C5F2E]" />
+                  <span className="text-xs font-bold text-[#2C5F2E]">من المعرض</span>
+                </button>
+                <button
+                  onClick={() => cameraRef.current?.click()}
+                  className="flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl bg-[#2C5F2E]/10 border border-[#2C5F2E]/20 active:scale-95 transition-transform"
+                >
+                  <Camera className="w-6 h-6 text-[#2C5F2E]" />
+                  <span className="text-xs font-bold text-[#2C5F2E]">التقاط صورة</span>
+                </button>
               </div>
+              {/* زر تخطي — بدون صورة */}
+              <button
+                onClick={() => setStep("config")}
+                className="text-sm text-[#2C5F2E]/60 underline underline-offset-2 active:opacity-70"
+              >
+                تخطي — تصميم بدون صورة
+              </button>
+              {/* inputs مخفية */}
               <input
-                ref={fileRef}
+                ref={galleryRef}
                 type="file"
                 accept="image/*,.pdf"
                 className="hidden"
                 onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               />
-            </div>
-
-            {/* Capabilities */}
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+              />
+            </div>       {/* Capabilities */}
             <div className="grid grid-cols-2 gap-3">
               {[
                 { icon: "🏙️", title: "تحليل الكثافة", desc: "السكانية والعمرانية" },
