@@ -1584,7 +1584,15 @@ ${structuralAnalysisPrompt}
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
 قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة. ${doorChangeRule}
 
-🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات (المادة + اللون + النقش)، الجدران (دهان + ورق جدران + حجر + خشب + جبس + بلاط)، السقف (جبس + إضاءة مخفية + عوارض + ثريات + ألوان)، الإضاءة، الأثاث، التشطيبات، الألوان، والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (مواقع الأبواب، النوافذ، الدرجات، الأعمدة، الفتحات) فيجب الحفاظ على مواقعها تماماً ما لم يطلب المستخدم صراحةً تغييرها. ⚠️ قانون إصلاح التلف الإلزامي (ينطبق على جميع مستويات الميزانية بلا استثناء):
+🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات (المادة + اللون + النقش)، الجدران (دهان + ورق جدران + حجر + خشب + جبس + بلاط)، السقف (جبس + إضاءة مخفية + عوارض + ثريات + ألوان)، الإضاءة، الأثاث، التشطيبات، الألوان، والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (مواقع الأبواب، النوافذ، الدرجات، الأعمدة، الفتحات) فيجب الحفاظ على مواقعها تماماً ما لم يطلب المستخدم صراحةً تغييرها.
+
+🚨 قانون تشطيب الجدران الإلزامي (بلا استثناء):
+كل جدار مرئي في الصورة يجب أن يحصل على تشطيب جديد في التصور — لا يُترك أي جدار بمظهره الأصلي حتى لو كان نظيفاً.
+✅ الجدار الأبيض السادة: غيّريه بدهان ملون أو ورق جدران أو كلادينج يناسب النمط
+✅ الجدار المتلف/المتمزق: أصلحيه وغيّريه بتشطيب جديد إلزامياً
+✅ الجدار بورق جدران قديم: استبدليه بدهان أو كلادينج أو حجر أو خشب حسب النمط — لا تتركيه بنفس ورق الجدران القديم أبداً
+✅ الجدار ببلاط قديم/متهالك: استبدليه بتشطيب جديد يناسب النمط
+❌ ممنوع منعاً مطلقاً: ترك أي جدار بمظهره الأصلي في التصور — كل جدار يجب أن يتحوّل في التصور ⚠️ قانون إصلاح التلف الإلزامي (ينطبق على جميع مستويات الميزانية بلا استثناء):
 إذا لاحظتِ أي تلف أو تهالك في الصورة — تآكل جدران، ظهور حديد، رطوبة، ورق جدران متمزق أو متهالك، تشققات، دهان متشقق، بلاط مكسور — يجب إصلاحها واستبدالها بتشطيب جديد في التصور بغض النظر عن مستوى الميزانية.
 ✅ الخيار الاقتصادي: استبدلي التلف بدهان بسيط أو ورق جدران اقتصادي — لكن لا تتركي التلف ظاهراً أبداً.
 ✅ الخيار المتوسط: استبدلي بدهان جديد + تصميم محسّن.
@@ -1965,11 +1973,16 @@ CREATIVE TRANSFORMATION — Apply ${styleName} style targeting the most desired 
 
 FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
 
-(1) WALLS — MANDATORY TRANSFORMATION: Choose the most impactful wall treatment for this style:
-    - Paint: rich, saturated color OR sophisticated neutral that defines the mood
-    - OR: stone cladding (marble/travertine/limestone), wood panels (oak/walnut/teak), decorative plaster (venetian/microcement/tadelakt), patterned tiles, textured wallpaper, fabric panels, or bold murals
+(1) WALLS — MANDATORY TRANSFORMATION (ZERO EXCEPTIONS — EVERY VISIBLE WALL MUST CHANGE):
+    RULE: NO wall may keep its original appearance in the render. Every wall visible in the photo MUST receive a new finish.
+    - Plain/white wall: MUST be changed to colored paint, wallpaper, cladding, or textured finish
+    - Damaged/torn wall: MUST be repaired AND given a new finish — NEVER leave damage visible
+    - Old wallpaper: MUST be replaced with paint, cladding, stone, or wood — NEVER keep old wallpaper
+    - Old/deteriorated tiles: MUST be replaced with new finish matching the style
+    - Choose the most impactful wall treatment: Paint (rich saturated color OR sophisticated neutral), stone cladding (marble/travertine/limestone), wood panels (oak/walnut/teak), decorative plaster (venetian/microcement/tadelakt), patterned tiles, textured wallpaper, fabric panels, or bold murals
     - Feature/accent wall: create a DRAMATIC focal point on the main wall
     - Decorative moldings, wainscoting, or architectural details if style calls for it
+    ❌ FORBIDDEN: Leaving ANY wall with its original appearance in the render
 
 (2) FLOOR — MANDATORY TRANSFORMATION: Replace with the most aspirational flooring for this style:
     - Marble: large-format slabs (120x60 or 60x60), book-matched, veined patterns
