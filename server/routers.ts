@@ -3435,25 +3435,42 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
             } as ImageContent,
             {
               type: "text" as const,
-              text: `حلّلي هذا المخطط المعماري بدقة واستخرجي كل المعلومات.
+              text: `أنتِ مهندسة معمارية متخصصة. حلّلي هذا المخطط المعماري بدقة عالية.
 نوع المشروع: ${input.projectType}
 نمط التصميم المطلوب: ${input.designStyle}
 
-استخرجي كل الغرف والمساحات الموجودة في المخطط (غرف نوم، صالات، مطابخ، حمامات، ممرات، مداخل، مخازن، إلخ).
-إذا لم تتمكني من قراءة المخطط بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.
+تعليمات مهمة:
+1. استخرجي كل الفضاءات الموجودة في المخطط بدقة: غرف نوم، صالات، مطابخ، حمامات، ممرات، مداخل، شرفات، غرف ملابس، مصاعد، قاعات، مناطق جلوس خارجية، إلخ.
+2. لكل غرفة حدّدي: الاسم بالعربية، النوع بالإنجليزية، المساحة بالمتر المربع، والأبعاد.
+3. استخدمي هذه الأنواع فقط لحقل "type": bedroom, living, kitchen, bathroom, dining, office, corridor, entrance, storage, balcony, majlis, prayer, elevator, staircase, laundry, garage, outdoor, hall, closet, room
+4. إذا كانت المساحة غير مكتوبة بوضوح، قدّريها بناءاً على حجم الغرفة في المخطط.
+5. لا تتركي أي حقل null — إذا لم تعرفي القيمة ضعي تقديراً منطقياً.
+6. المصعد والدرج هما عناصر معمارية وليسا غرفاً — أدرجيهما بنوع elevator و staircase.
 
 أعيدي JSON بهذا الشكل بالضبط (لا تضيفي أي نص خارج JSON):
 {
   "projectType": "سكني",
-  "totalArea": 150,
-  "floors": 1,
+  "totalArea": 761,
+  "floors": 2,
   "summary": "وصف موجز للمخطط",
   "rooms": [
     {
       "name": "غرفة النوم الرئيسية",
       "type": "bedroom",
-      "area": 20,
-      "dimensions": "4×5 م"
+      "area": 25,
+      "dimensions": "5×5 م"
+    },
+    {
+      "name": "مصعد بانورامي",
+      "type": "elevator",
+      "area": 5,
+      "dimensions": "2×2.5 م"
+    },
+    {
+      "name": "شرفة",
+      "type": "balcony",
+      "area": 12,
+      "dimensions": "3×4 م"
     }
   ],
   "recommendations": [
@@ -3537,6 +3554,9 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         bathroom: "حمام", dining: "غرفة طعام", office: "مكتب",
         corridor: "ممر", entrance: "مدخل", storage: "مخزن",
         balcony: "شرفة", majlis: "مجلس", prayer: "غرفة صلاة",
+        elevator: "مصعد", staircase: "درج", laundry: "غرفة غسيل",
+        garage: "كراج", outdoor: "منطقة خارجية", hall: "قاعة",
+        closet: "غرفة ملابس", room: "غرفة",
       };
       const roomTypeAr = roomTypeMap[input.roomType] || input.roomType;
 
@@ -3546,16 +3566,106 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       };
       const styleAr = styleMap[input.designStyle] || input.designStyle;
 
-      const prompt = `Interior design visualization for ${roomTypeAr} (${input.roomDimensions}, ${input.roomArea}m²).
-Style: ${styleAr}. Project type: ${input.projectType}.
-Create a photorealistic interior design image showing:
-- Complete floor transformation (marble/herringbone parquet/porcelain tiles)
-- Ceiling design with gypsum levels and hidden LED lighting
-- All walls with new finishes (paint/cladding/wallpaper/stone)
-- Appropriate furniture and decor for ${roomTypeAr}
-- 3-layer lighting: ambient + accent + decorative
-Do NOT add walls or spaces not visible in the original plan.
-High quality, photorealistic, professional interior photography style.`;
+      // بناء prompt مخصص لكل نوع غرفة
+      const roomSpecificPrompts: Record<string, string> = {
+        elevator: `Luxury panoramic elevator interior design, ${input.roomDimensions || "2x2.5m"} elevator cabin.
+Style: ${styleAr}. Features:
+- Floor-to-ceiling panoramic glass walls showing building interior
+- Premium marble or stone flooring
+- Elegant handrails with gold/chrome finish
+- Integrated LED lighting strips on ceiling and floor
+- Mirror panels or decorative wall panels
+- ${styleAr === "خليجي فاخر" ? "Arabic geometric patterns on panels" : "Minimalist clean lines"}
+Photorealistic, luxury hotel elevator aesthetic.`,
+
+        balcony: `Luxury outdoor balcony/terrace design, ${input.roomDimensions || "3x4m"} space.
+Style: ${styleAr}. Features:
+- Premium outdoor porcelain tiles or wooden decking
+- Comfortable outdoor seating (lounge chairs, small table)
+- Decorative planters with greenery
+- Pergola or shade structure if space allows
+- Ambient outdoor lighting
+- Glass or metal railings with city/garden view
+Photorealistic, luxury residential balcony, daytime.`,
+
+        staircase: `Luxury staircase design, ${input.roomDimensions || "3x4m"} stairwell.
+Style: ${styleAr}. Features:
+- Floating marble or wood treads
+- Glass or metal balustrade with decorative handrail
+- Feature wall with stone cladding or artistic finish
+- Integrated LED step lighting
+- Skylight or large window for natural light
+- ${styleAr === "خليجي فاخر" ? "Ornate carved details" : "Clean geometric design"}
+Photorealistic, luxury residential staircase.`,
+
+        corridor: `Luxury corridor/hallway design, ${input.roomDimensions || "1.5x6m"} narrow space.
+Style: ${styleAr}. Features:
+- Continuous marble or herringbone parquet flooring
+- Feature wall with wallpaper, stone, or wood paneling
+- Recessed ceiling with LED cove lighting
+- Artwork or decorative mirrors along walls
+- Console table with decorative items at end
+Photorealistic, luxury residential corridor, well-lit.`,
+
+        entrance: `Luxury main entrance/foyer design, ${input.roomDimensions || "4x5m"} space.
+Style: ${styleAr}. Features:
+- Grand entrance with statement chandelier
+- Premium marble flooring with inlay pattern
+- Feature wall with stone cladding or decorative panels
+- Console table with mirror and decorative items
+- Coat storage or built-in cabinetry
+- ${styleAr === "خليجي فاخر" ? "Arabic calligraphy artwork" : "Modern sculptural art"}
+Photorealistic, luxury residential entrance foyer.`,
+
+        outdoor: `Luxury outdoor sitting area design, ${input.roomDimensions || "5x6m"} space.
+Style: ${styleAr}. Features:
+- Premium outdoor furniture (sectional sofa, coffee table)
+- Pergola with climbing plants or shade sail
+- Outdoor kitchen or BBQ area if space allows
+- Decorative lighting (string lights, lanterns)
+- Landscaping with plants and water feature
+Photorealistic, luxury residential outdoor area, evening ambiance.`,
+
+        closet: `Luxury walk-in closet/dressing room design, ${input.roomDimensions || "3x4m"} space.
+Style: ${styleAr}. Features:
+- Floor-to-ceiling custom cabinetry with glass doors
+- Central island with drawers and display surface
+- Full-length mirror with LED frame
+- Integrated lighting inside cabinets
+- Velvet or upholstered seating ottoman
+Photorealistic, luxury dressing room.`,
+
+        laundry: `Luxury laundry room design, ${input.roomDimensions || "2x3m"} space.
+Style: ${styleAr}. Features:
+- Built-in washer and dryer with custom cabinetry above
+- Marble or porcelain countertop for folding
+- Decorative backsplash tiles
+- Organized storage cabinets
+- Clean, bright lighting
+Photorealistic, luxury utility room.`,
+
+        garage: `Luxury residential garage design, ${input.roomDimensions || "6x6m"} space.
+Style: ${styleAr}. Features:
+- Epoxy or polished concrete flooring
+- Built-in storage cabinets along walls
+- Overhead LED lighting
+- Smart garage door
+- Clean, organized aesthetic
+Photorealistic, luxury residential garage.`,
+      };
+
+      // استخدم prompt مخصص إذا وجد، وإلا استخدم العام
+      const specificPrompt = roomSpecificPrompts[input.roomType];
+      const prompt = specificPrompt || `Luxury ${roomTypeAr} interior design, ${input.roomDimensions || "غير محدد"} (${input.roomArea || 0}m²).
+Style: ${styleAr}. Project: ${input.projectType}.
+Create a photorealistic interior design showing:
+- Premium flooring (marble/herringbone parquet/porcelain tiles based on room type)
+- Layered ceiling with gypsum molding and hidden LED cove lighting
+- Walls with luxury finishes (paint/stone cladding/wallpaper/wood panels)
+- Appropriate high-end furniture and decor for ${roomTypeAr}
+- 3-layer lighting: ambient + accent + decorative chandeliers/pendants
+- ${styleAr === "خليجي فاخر" ? "Gulf Arabic design elements: mashrabiya patterns, geometric tiles, gold accents" : ""}
+High quality, photorealistic, professional interior photography, no text overlays.`;
 
       const imageResult = await generateImage({ prompt });
 
