@@ -1488,15 +1488,42 @@ ${colorText}
 🌟 BOLDNESS LAW (قانون الجرأة والأصالة):
 كل فكرة يجب أن تكون جريئة ومميزة وتستحق أن تُنشر في مجلة ديكور عالمية. لا تصاميم عادية أو متوقعة.
 
-🏆 TRENDING STYLES LAW (قانون الأنماط الأكثر رغبةً عالمياً):
-دائماً اختاري الأنماط الأكثر إقبالاً وطلباً في العالم حالياً كتوصية افتراضية:
-1. Japandi (ياباندي) — الأكثر بحثاً في Pinterest/Instagram 2024-2025: بساطة يابانية + دفء سكاندنافي
-2. Biophilic Design (التصميم الحيوي) — الأسرع نمواً: طبيعة داخل المنزل، خشب طبيعي، نباتات، ضوء طبيعي
-3. Quiet Luxury (الفخامة الهادئة) — الأكثر رغبةً لدى الثروات: مواد فاخرة بألوان محايدة بدون صراخ
-4. Wabi-Sabi (وابي-سابي) — الأكثر نضجاً: جمال الكمال غير المكتمل، طين، كتان، خشب خشن
-5. Maximalist Eclectic (التلفيقي الجريء) — الأكثر مشاركةً: ألوان جريئة + أنماط متعددة + طبقات
+🏆 TRENDING STYLES LAW (قانون الأنماط الأكثر رغبةً عالمياً وخليجياً):
+دائماً اختاري الأنماط الأكثر إقبالاً وطلباً حالياً كتوصية افتراضية:
 
-استخدمي هذه الأنماط كأولوية عند عدم تحديد المستخدم لنمط معين. اقترحيها دائماً في الأفكار الثلاثة.
+🌍 الأكثر طلباً عالمياً (2024-2025):
+1. Japandi — بساطة يابانية + دفء سكاندنافي، خشب طبيعي، ألوان محايدة دافئة
+2. Quiet Luxury — فخامة هادئة، مواد راقية بألوان محايدة، بدون صراخ بصري
+3. Biophilic — طبيعة داخل المنزل، خشب، نباتات، ضوء طبيعي، حجر طبيعي
+4. Wabi-Sabi — جمال النقص، طين، كتان، خشب خشن، أصالة المواد
+5. Maximalist Eclectic — جريء، ألوان غنية، طبقات، فن، شخصية قوية
+
+🌙 الأكثر طلباً خليجياً وعربياً:
+1. خليجي عصري (Modern Gulf) — خليجي أصيل بلمسة معاصرة: مشربيات، هندسة إسلامية، ذهبي + بيج + أبيض
+2. فاخر هادئ (Quiet Gulf Luxury) — رخام إيطالي، ذهب مات، أقمشة مخمل، ألوان كريمية
+3. نيوكلاسيكي خليجي — أعمدة، جبس منحوت، ثريات كريستال، ألوان ملكية
+4. معاصر دافئ (Warm Contemporary) — خشب جوز، بيج دافئ، إضاءة مخفية، بسيط لكن راقٍ
+5. مغربي فاخر — زليج ملون، قناطر، نحاس، فسيفساء، ألوان غنية
+
+🎯 قاعدة الجمهور المستهدف (TARGET AUDIENCE RULE):
+حددي الجمهور المستهدف من نوع الفضاء وطبّقي الأنماط الأنسب لهم:
+
+• غرفة نوم رئيسية (Master Bedroom) → الأكثر طلباً: Quiet Luxury + Japandi + خليجي فاخر
+• غرفة نوم أطفال → الأكثر طلباً: ألوان زاهية + مرح + وظيفي + آمن
+• غرفة نوم شباب/مراهقين → الأكثر طلباً: عصري جريء + صناعي + ألوان داكنة
+• غرفة نوم بنات/سيدات → الأكثر طلباً: رومانسي ناعم + بوهيمي + ألوان وردية/بيج/لافندر
+• صالة معيشة عائلية → الأكثر طلباً: خليجي عصري + Quiet Luxury + دافئ ومريح
+• مجلس رجالي → الأكثر طلباً: خليجي أصيل + كلاسيكي فاخر + ألوان داكنة راقية
+• مجلس نسائي → الأكثر طلباً: فاخر ناعم + ألوان فاتحة + تفاصيل ذهبية
+• مطبخ → الأكثر طلباً: عصري وظيفي + أبيض مات + خشب + رخام
+• حمام → الأكثر طلباً: سبا فاخر + أبيض + رخام + إضاءة مخفية
+• مكتب منزلي → الأكثر طلباً: Japandi + صناعي + Biophilic
+• مطعم/كافيه → الأكثر طلباً: صناعي دافئ + بوهيمي + متوسطي
+• فندق/لوبي → الأكثر طلباً: Quiet Luxury + نيوكلاسيكي + خليجي فاخر
+• مسجد → الأكثر طلباً: إسلامي أصيل + هندسة عربية + هادئ روحاني
+• مكتب تجاري → الأكثر طلباً: عصري احترافي + Biophilic + ألوان محايدة
+
+استخدمي هذا النظام كأولوية عند عدم تحديد المستخدم لنمط معين. الفكرة الأولى = الأكثر طلباً عالمياً، الثانية = الأكثر طلباً خليجياً/محلياً، الثالثة = الأكثر إبداعاً وجرأةً.
 💰 PRICING LAW (قانون الأسعار الواقعية):
 سطحي: 3,000-15,000 درهم | متوسط: 15,000-50,000 درهم | شامل: 50,000-150,000 درهم
 الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}}`
@@ -1834,7 +1861,14 @@ ${structuralAnalysisPrompt}
                 null, // السقف حر للإبداع — فقط الفتحات ثابتة
                 userConstraints.steps ? `ALL level changes and steps MUST be preserved` : null,
               ].filter(Boolean).join('. ');
-              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL door/window/opening positions exactly as in original photo'}. CREATIVE FREEDOM applies to EVERYTHING ELSE: wall finishes (paint/wallpaper/stone/wood/plaster), flooring (material/color/pattern), ceiling design (gypsum/cove lighting/beams/color), furniture, lighting fixtures, decor, curtains, accessories.`;
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS — ZERO TOLERANCE VIOLATIONS:
+1. ZERO WALL INVENTION: Do NOT add any wall, partition, or divider that does not exist in the original photo.
+2. ZERO OPENING CLOSURE: Do NOT close, block, or reduce any existing door, window, or opening — every opening MUST remain open and visible.
+3. ZERO NEW OPENINGS: Do NOT create any new door, window, archway, or opening in any wall that does not already have one — strictly forbidden.
+4. DOOR/WINDOW REDESIGN ALLOWED: You MAY redesign existing doors and windows AT THE SAME POSITION — change material (wood/aluminium/glass/PVC/steel), style (panel/flush/glass/louvered/arched/sliding), color, and frame. The opening SIZE and LOCATION must remain IDENTICAL.
+5. SPATIAL BOUNDARY: Only design surfaces VISIBLE in the photo — walls outside camera frame are UNKNOWN SOLID walls. Do NOT add openings or light from unseen walls.
+${structuralConstraints ? `EXACT POSITIONS TO PRESERVE: ${structuralConstraints}.` : 'Preserve ALL door/window/opening positions exactly as in original photo.'}
+CREATIVE FREEDOM applies to EVERYTHING ELSE: wall finishes, flooring, ceiling design, furniture, lighting, decor.`;
             }
 
             // تحديد نوع الفضاء التجاري للبرومبت
@@ -1884,7 +1918,14 @@ ${structuralAnalysisPrompt}
                 userConstraints.steps ? `ALL level changes and steps MUST be preserved at their exact original positions` : null,
               ].filter(Boolean).join('. ');
 
-              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve EXACT positions of all doors, windows, columns, steps, and structural openings'}. Do NOT add, move, remove, or resize any door, window, column, step, or structural opening. FULL CREATIVE FREEDOM on: wall finishes (paint/wallpaper/stone cladding/wood panels/textured plaster/tiles), flooring (change material/color/pattern freely - marble/parquet/concrete/tiles), ceiling design (add gypsum drops/cove lighting/beams/chandeliers/paint freely), furniture, lighting fixtures, colors, decor, curtains, rugs, accessories.`;
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS — ZERO TOLERANCE VIOLATIONS:
+1. ZERO WALL INVENTION: Do NOT add any wall, partition, or divider that does not exist in the original photo.
+2. ZERO OPENING CLOSURE: Do NOT close, block, cover, or reduce any existing door, window, or opening — every opening visible in the original MUST remain open and visible.
+3. ZERO NEW OPENINGS: Do NOT create any new door, window, archway, or opening in any wall that does not already have one — strictly forbidden without explicit user request.
+4. DOOR/WINDOW REDESIGN ALLOWED: You MAY redesign existing doors and windows AT THE SAME POSITION — change material (wood/aluminium/glass/PVC/steel/wrought iron), style (panel/flush/glass/louvered/arched/sliding/pivot), color, frame profile, and hardware. The opening SIZE and LOCATION must remain IDENTICAL to the original.
+5. SPATIAL BOUNDARY RESPECT: Walls outside the camera frame are UNKNOWN — treat them as solid closed walls. Do NOT add windows or light sources from unseen walls.
+${structuralConstraints ? `EXACT POSITIONS TO PRESERVE: ${structuralConstraints}.` : 'Preserve EXACT positions of all doors, windows, columns, steps, and structural openings.'}
+FULL CREATIVE FREEDOM on: wall finishes (paint/wallpaper/stone/wood/textured plaster/tiles/murals), flooring (marble/parquet/herringbone/concrete/terrazzo — choose freely), ceiling (gypsum drops/cove lighting/beams/chandeliers/color — be bold), furniture, lighting fixtures, colors, decor, curtains, rugs, accessories.`;
             }
 
             // استخراج معلومات الأرضية الأصلية من التحليل
@@ -1903,7 +1944,59 @@ ${structuralAnalysisPrompt}
           // قيد الجدران المجهولة
           const wallConstraint = `WALL BOUNDARY RULE: Only design surfaces VISIBLE in the photo. Walls outside the camera frame are UNKNOWN - do NOT add windows, openings, or natural light from unseen walls. If a wall appears solid/plain in the photo = it IS solid - do NOT transform it into a window or opening. Artificial/interior lighting only - no invented natural light sources.`;
 
-          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. TRANSFORM FREELY AND BOLDLY: (1) WALLS - change paint color, add wallpaper/stone cladding/wood panels/textured plaster/tiles/murals, (2) FLOOR - change to any material freely: marble/parquet/concrete/patterned tiles/herringbone/terrazzo - choose what best fits the style, (3) CEILING - add gypsum drops/cove lighting/beams/chandeliers/paint/texture - be creative, (4) FURNITURE - choose ICONIC pieces that define the style, (5) LIGHTING - statement chandeliers/hidden coves/industrial pendants/wall sconces, (6) DECOR - art/plants/rugs/cushions/accessories. New color palette: ${palette}. New materials: ${mats}. Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint}
+
+CREATIVE TRANSFORMATION — Apply ${styleName} style targeting the most desired design for this space type. This must look like the #1 most-wanted interior design for this specific room.
+
+FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
+
+(1) WALLS — MANDATORY TRANSFORMATION: Choose the most impactful wall treatment for this style:
+    - Paint: rich, saturated color OR sophisticated neutral that defines the mood
+    - OR: stone cladding (marble/travertine/limestone), wood panels (oak/walnut/teak), decorative plaster (venetian/microcement/tadelakt), patterned tiles, textured wallpaper, fabric panels, or bold murals
+    - Feature/accent wall: create a DRAMATIC focal point on the main wall
+    - Decorative moldings, wainscoting, or architectural details if style calls for it
+
+(2) FLOOR — MANDATORY TRANSFORMATION: Replace with the most aspirational flooring for this style:
+    - Marble: large-format slabs (120x60 or 60x60), book-matched, veined patterns
+    - OR: wide-plank hardwood (oak/walnut/teak), herringbone parquet, chevron pattern
+    - OR: patterned encaustic tiles, polished concrete, terrazzo, large-format porcelain
+    - Choose material AND color AND pattern that best elevates the design
+    - Add area rugs with texture and pattern that complement the style
+
+(3) CEILING — MANDATORY TRANSFORMATION: Create a stunning ceiling design:
+    - Gypsum: multi-level drops, cove lighting channels, coffered grid, tray ceiling
+    - OR: exposed wooden beams, metal grid (industrial), stretched fabric, acoustic panels
+    - Integrated LED cove lighting: warm 2700K for luxury/gulf, cool 4000K for modern/minimal
+    - Statement chandelier OR cluster of pendants OR sculptural ceiling light as focal point
+    - Paint ceiling in contrasting or complementary color to walls
+
+(4) LIGHTING — LAYERED LIGHTING DESIGN (3 layers minimum):
+    - Ambient: cove LED strips, recessed spotlights, ceiling fixtures
+    - Accent: wall sconces, picture lights, cabinet lighting, floor lamps
+    - Decorative: STATEMENT chandelier/pendant that defines the style personality
+    - Warm golden light (2700-3000K) for luxury/gulf/classic, cool white for modern/minimal
+
+(5) FURNITURE — ICONIC STATEMENT PIECES:
+    - Choose furniture that DEFINES the style — not generic pieces
+    - Scale furniture correctly to the room proportions
+    - Mix textures: velvet + metal + wood + marble OR linen + rattan + ceramic
+    - Arrange for conversation flow and visual balance
+
+(6) DECOR — CURATED FINISHING TOUCHES:
+    - Large-scale art OR decorative mirror as focal point
+    - Layered textiles: throw pillows, blankets, curtains in complementary fabrics
+    - Plants: sculptural (fiddle leaf fig/palm) OR trailing (pothos/ivy) based on style
+    - Books, vases, sculptural objects arranged in odd numbers
+    - Floor-to-ceiling curtains in fabric that matches the style mood
+
+New color palette: ${palette}. New materials: ${mats}.
+
+QUALITY MANDATE: This image must look like it was shot for Architectural Digest, Dezeen, or AD Middle East. Photorealistic rendering with:
+- Cinematic lighting with realistic shadows, reflections, and caustics
+- Ultra-realistic material textures (marble veining, wood grain, fabric weave)
+- Depth of field with sharp foreground and soft background
+- 8K resolution quality, professional interior photography composition
+- No people, no text, no watermarks, no AI artifacts`;
           }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
