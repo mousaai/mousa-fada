@@ -85,10 +85,10 @@ export default function PlanDesign() {
   const generateNextRoom = useCallback((room: RoomResult, style: string, pType: string) => {
     setDesigningRoom(room.name);
     utils.client.generatePlanRoomDesign.mutate({
-      roomName: room.name,
-      roomType: room.type,
-      roomArea: room.area,
-      roomDimensions: room.dimensions,
+      roomName: room.name || "غرفة",
+      roomType: room.type || "room",
+      roomArea: room.area || 0,
+      roomDimensions: room.dimensions || "غير محدد",
       designStyle: style,
       projectType: pType,
     }).then((data: RoomDesignResult) => {
@@ -173,10 +173,10 @@ export default function PlanDesign() {
     queueRef.current = [room];
     setDesigningRoom(room.name);
     utils.client.generatePlanRoomDesign.mutate({
-      roomName: room.name,
-      roomType: room.type,
-      roomArea: room.area,
-      roomDimensions: room.dimensions,
+      roomName: room.name || "غرفة",
+      roomType: room.type || "room",
+      roomArea: room.area || 0,
+      roomDimensions: room.dimensions || "غير محدد",
       designStyle,
       projectType,
     }).then((data: RoomDesignResult) => {
@@ -474,7 +474,7 @@ export default function PlanDesign() {
                         </button>
                         <div>
                           <p className="text-sm font-bold text-[#5C3D11]">{room.name}</p>
-                          <p className="text-xs text-[#8B6914]/70">{room.dimensions} — {room.area} م²</p>
+                          <p className="text-xs text-[#8B6914]/70">{room.dimensions || "غير محدد"} — {room.area || "—"} م²</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -549,7 +549,7 @@ export default function PlanDesign() {
                       <div className="flex items-center justify-between px-4 py-3 border-b border-[#e8d9c0]">
                         <div>
                           <p className="text-sm font-bold text-[#5C3D11]">{room.name}</p>
-                          <p className="text-xs text-[#8B6914]/70">{room.dimensions} — {room.area} م²</p>
+                          <p className="text-xs text-[#8B6914]/70">{room.dimensions || "غير محدد"} — {room.area || "—"} م²</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {design && (

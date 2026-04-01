@@ -3498,12 +3498,22 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         };
       }
 
+      // تنظيف بيانات الغرف لتجنب null في الحقول
+      const cleanRooms = Array.isArray(parsed.rooms)
+        ? parsed.rooms.map((r: { name?: string; type?: string; area?: number | null; dimensions?: string | null }) => ({
+            name: r.name || "غرفة",
+            type: r.type || "room",
+            area: typeof r.area === "number" ? r.area : 0,
+            dimensions: r.dimensions || "غير محدد",
+          }))
+        : [];
+
       return {
         projectType: parsed.projectType || input.projectType,
         totalArea: parsed.totalArea || 0,
         floors: parsed.floors || 1,
         summary: parsed.summary || "تم تحليل المخطط بنجاح",
-        rooms: Array.isArray(parsed.rooms) ? parsed.rooms : [],
+        rooms: cleanRooms,
         recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
       };
     }),
@@ -3513,8 +3523,8 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
     .input(z.object({
       roomName: z.string(),
       roomType: z.string(),
-      roomArea: z.number(),
-      roomDimensions: z.string(),
+      roomArea: z.number().nullable().optional().transform(v => v ?? 0),
+      roomDimensions: z.string().nullable().optional().transform(v => v ?? "غير محدد"),
       designStyle: z.string(),
       projectType: z.string(),
       planImageUrl: z.string().optional(),
