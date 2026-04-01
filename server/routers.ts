@@ -3509,7 +3509,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
     }),
 
   // ===== توليد تصاميم لغرف المخطط =====
-  generatePlanRoomDesign: protectedProcedure
+  generatePlanRoomDesign: mousaProcedure
     .input(z.object({
       roomName: z.string(),
       roomType: z.string(),
@@ -3519,18 +3519,8 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       projectType: z.string(),
       planImageUrl: z.string().optional(),
     }))
-    .mutation(async ({ ctx, input }) => {
-      // خصم النقاط
-      const mousaUser = ctx.user as { id?: number; mousaId?: number };
-      const mousaUserId = mousaUser.id || mousaUser.mousaId;
-      if (mousaUserId) {
-        const cost = CREDIT_COSTS["generatePlanDesign"];
-        const balanceData = await checkMousaBalance(mousaUserId);
-        if (balanceData.balance < cost) {
-          throw new Error(`رصيد غير كافٍ — تحتاج ${cost} نقطة، رصيدك الحالي ${balanceData.balance} نقطة`);
-        }
-        await deductMousaCredits(mousaUserId, cost, `تصميم ${input.roomName} من المخطط`);
-      }
+    .mutation(async ({ input }) => {
+      // ⚠️ مؤقت: تجاوز فحص الرصيد — المنصة مفتوحة للجميع
 
       const roomTypeMap: Record<string, string> = {
         bedroom: "غرفة نوم", living: "غرفة معيشة", kitchen: "مطبخ",

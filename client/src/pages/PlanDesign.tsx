@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { ChevronLeft, Upload, FileText, Sparkles, CheckCircle, AlertCircle, Loader2, Building2, Home, Briefcase, Coins, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -53,7 +53,7 @@ export default function PlanDesign() {
   const { dir } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<"upload" | "config" | "analyzing" | "results" | "designing" | "done">("upload");
+  const [step, setStep] = useState<"upload" | "config" | "analyzing" | "results" | "designing">("upload");
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [projectType, setProjectType] = useState("residential");
@@ -62,7 +62,12 @@ export default function PlanDesign() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [roomDesigns, setRoomDesigns] = useState<Record<string, RoomDesignResult>>({});
   const [designingRoom, setDesigningRoom] = useState<string | null>(null);
-  const [designQueue, setDesignQueue] = useState<RoomResult[]>([]);
+  const [isAllDone, setIsAllDone] = useState(false);
+
+  // استخدام ref للطابور لتجنب مشاكل stale closure
+  const queueRef = useRef<RoomResult[]>([]);
+
+  const utils = trpc.useUtils();
 
   const analyzePlanMutation = trpc.analyzePlan.useMutation({
     onSuccess: (data: { projectType: string; totalArea: number; rooms: RoomResult[]; floors: number; summary: string; recommendations: string[] }) => {
@@ -76,38 +81,34 @@ export default function PlanDesign() {
     },
   });
 
-  const generateRoomDesignMutation = trpc.generatePlanRoomDesign.useMutation({
-    onSuccess: (data: RoomDesignResult) => {
+  // دالة توليد غرفة واحدة — تستخدم useCallback لتجنب stale closure
+  const generateNextRoom = useCallback((room: RoomResult, style: string, pType: string) => {
+    setDesigningRoom(room.name);
+    utils.client.generatePlanRoomDesign.mutate({
+      roomName: room.name,
+      roomType: room.type,
+      roomArea: room.area,
+      roomDimensions: room.dimensions,
+      designStyle: style,
+      projectType: pType,
+    }).then((data: RoomDesignResult) => {
       setRoomDesigns(prev => ({ ...prev, [data.roomName]: data }));
-      // معالجة الطابور
-      setDesignQueue(prev => {
-        const remaining = prev.slice(1);
-        if (remaining.length > 0) {
-          const nextRoom = remaining[0];
-          setDesigningRoom(nextRoom.name);
-          generateRoomDesignMutation.mutate({
-            roomName: nextRoom.name,
-            roomType: nextRoom.type,
-            roomArea: nextRoom.area,
-            roomDimensions: nextRoom.dimensions,
-            designStyle,
-            projectType,
-            planImageUrl: filePreview || undefined,
-          });
-        } else {
-          setDesigningRoom(null);
-          setStep("designing");
-        }
-        return remaining;
-      });
-    },
-    onError: (err: { message?: string }) => {
-      toast.error("خطأ في تصميم الغرفة: " + (err.message || ""));
+      // انتقل للغرفة التالية في الطابور
+      queueRef.current = queueRef.current.slice(1);
+      if (queueRef.current.length > 0) {
+        generateNextRoom(queueRef.current[0], style, pType);
+      } else {
+        setDesigningRoom(null);
+        setIsAllDone(true);
+        toast.success("اكتملت جميع التصاميم! 🎉");
+      }
+    }).catch((err: { message?: string }) => {
+      const errMsg = err?.message || "";
+      toast.error("خطأ في تصميم الغرفة: " + errMsg);
       setDesigningRoom(null);
-      setDesignQueue([]);
-      setStep("results");
-    },
-  });
+      queueRef.current = [];
+    });
+  }, [utils.client]);
 
   const handleFile = (file: File) => {
     setFileName(file.name);
@@ -142,48 +143,56 @@ export default function PlanDesign() {
     );
   };
 
-  const handleDesignAll = () => {
-    if (!analysisResult) return;
-    const roomsToDesign = analysisResult.rooms.filter(r => selectedRooms.includes(r.name));
-    if (roomsToDesign.length === 0) {
+  const startDesigning = (rooms: RoomResult[]) => {
+    if (rooms.length === 0) {
       toast.error("اختر غرفة واحدة على الأقل");
       return;
     }
-    const totalCost = roomsToDesign.length * CREDITS_PER_ROOM;
-    toast.info(`سيتم استهلاك ${totalCost} نقطة لتصميم ${roomsToDesign.length} غرفة`);
+    const totalCost = rooms.length * CREDITS_PER_ROOM;
+    toast.info(`سيتم استهلاك ${totalCost} نقطة لتصميم ${rooms.length} غرفة`);
 
-    setDesignQueue(roomsToDesign);
-    setDesigningRoom(roomsToDesign[0].name);
+    setIsAllDone(false);
+    queueRef.current = rooms;
     setStep("designing");
+    generateNextRoom(rooms[0], designStyle, projectType);
+  };
 
-    generateRoomDesignMutation.mutate({
-      roomName: roomsToDesign[0].name,
-      roomType: roomsToDesign[0].type,
-      roomArea: roomsToDesign[0].area,
-      roomDimensions: roomsToDesign[0].dimensions,
-      designStyle,
-      projectType,
-      planImageUrl: filePreview || undefined,
-    });
+  const handleDesignAll = () => {
+    if (!analysisResult) return;
+    const roomsToDesign = analysisResult.rooms.filter(r => selectedRooms.includes(r.name));
+    startDesigning(roomsToDesign);
   };
 
   const handleDesignSingle = (room: RoomResult) => {
-    setDesignQueue([room]);
-    setDesigningRoom(room.name);
-    setStep("designing");
+    startDesigning([room]);
+  };
 
-    generateRoomDesignMutation.mutate({
+  const handleRedesign = (room: RoomResult) => {
+    // إعادة تصميم غرفة واحدة
+    setIsAllDone(false);
+    queueRef.current = [room];
+    setDesigningRoom(room.name);
+    utils.client.generatePlanRoomDesign.mutate({
       roomName: room.name,
       roomType: room.type,
       roomArea: room.area,
       roomDimensions: room.dimensions,
       designStyle,
       projectType,
-      planImageUrl: filePreview || undefined,
+    }).then((data: RoomDesignResult) => {
+      setRoomDesigns(prev => ({ ...prev, [data.roomName]: data }));
+      setDesigningRoom(null);
+      queueRef.current = [];
+      toast.success(`تم إعادة تصميم ${room.name} ✨`);
+    }).catch((err: { message?: string }) => {
+      toast.error("خطأ في إعادة التصميم: " + (err?.message || ""));
+      setDesigningRoom(null);
+      queueRef.current = [];
     });
   };
 
   const totalSelectedCost = selectedRooms.length * CREDITS_PER_ROOM;
+  const completedCount = Object.keys(roomDesigns).length;
 
   return (
     <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
@@ -192,7 +201,6 @@ export default function PlanDesign() {
         <button
           onClick={() => {
             if (step === "designing") { setStep("results"); return; }
-            if (step === "done") { setStep("results"); return; }
             if (step === "results") { setStep("config"); return; }
             if (step === "config") { setStep("upload"); return; }
             navigate("/");
@@ -504,16 +512,23 @@ export default function PlanDesign() {
             {/* Header */}
             <div className="bg-gradient-to-br from-[#C9A84C] to-[#8B6914] rounded-3xl p-5 text-white">
               <p className="font-bold text-lg mb-1">تصاميم مخططك</p>
-              <p className="text-sm opacity-80">
-                {designingRoom
-                  ? `جاري تصميم: ${designingRoom}...`
-                  : `اكتمل تصميم ${Object.keys(roomDesigns).length} غرفة`}
-              </p>
-              {designingRoom && (
+              {isAllDone ? (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <p className="text-sm">اكتملت جميع التصاميم! ({completedCount} غرفة)</p>
+                </div>
+              ) : (
+                <p className="text-sm opacity-80">
+                  {designingRoom
+                    ? `جاري تصميم: ${designingRoom}...`
+                    : `جاري التحضير...`}
+                </p>
+              )}
+              {designingRoom && !isAllDone && (
                 <div className="mt-3 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <p className="text-xs opacity-80">
-                    {Object.keys(roomDesigns).length + 1} من {Object.keys(roomDesigns).length + designQueue.length} غرفة
+                    {completedCount} من {completedCount + queueRef.current.length} غرفة مكتملة
                   </p>
                 </div>
               )}
@@ -526,7 +541,7 @@ export default function PlanDesign() {
                 .map((room: RoomResult) => {
                   const design = roomDesigns[room.name];
                   const isGenerating = designingRoom === room.name;
-                  const isPending = !design && !isGenerating && designQueue.some(q => q.name === room.name);
+                  const isPending = !design && !isGenerating && queueRef.current.some(q => q.name === room.name);
 
                   return (
                     <div key={room.name} className="bg-white rounded-2xl overflow-hidden border border-[#e8d9c0]">
@@ -543,9 +558,9 @@ export default function PlanDesign() {
                               {design.creditsCost} نقطة
                             </span>
                           )}
-                          {design && (
+                          {design && !designingRoom && (
                             <button
-                              onClick={() => handleDesignSingle(room)}
+                              onClick={() => handleRedesign(room)}
                               className="p-1.5 rounded-lg bg-[#f0e8d8] text-[#8B6914] hover:bg-[#e8d9c0] transition-colors"
                               title="إعادة التصميم"
                             >
@@ -579,15 +594,24 @@ export default function PlanDesign() {
                 })}
             </div>
 
-            {/* Back to Results */}
-            {!designingRoom && (
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              {isAllDone && (
+                <div className="bg-green-50 rounded-2xl p-4 border border-green-200 flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-green-800">اكتملت جميع التصاميم!</p>
+                    <p className="text-xs text-green-700">تم تصميم {completedCount} غرفة بنجاح</p>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={() => setStep("results")}
                 className="w-full py-3 rounded-2xl border-2 border-[#C9A84C] text-[#C9A84C] font-bold text-sm active:scale-95 transition-transform"
               >
                 العودة لقائمة الغرف
               </button>
-            )}
+            </div>
           </div>
         )}
       </div>
