@@ -81,6 +81,15 @@ interface SpaceAnalysis {
   structuralElements: StructuralElement[];
   currentIssues: string[];
   currentMaterials: string[];
+  technicalWarnings?: TechnicalWarning[];
+}
+
+interface TechnicalWarning {
+  issue: string;
+  location?: string;
+  severity: 'عالي' | 'متوسط' | 'منخفض';
+  treatment: string;
+  specialist?: string;
 }
 
 // ===== BOQ Types =====
@@ -346,6 +355,42 @@ function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* التنبيهات الفنية — بطاقة مميزة */}
+          {analysis.technicalWarnings && analysis.technicalWarnings.length > 0 && (
+            <div className="mt-3 rounded-xl border border-orange-300 bg-orange-50 p-3">
+              <p className="text-xs font-bold text-orange-700 mb-2 flex items-center gap-1">
+                <span>⚠️</span>
+                تنبيهات فنية تتطلب معالجة خاصة
+              </p>
+              <div className="space-y-2">
+                {analysis.technicalWarnings.map((w, i) => (
+                  <div key={i} className="bg-white rounded-lg p-2.5 border border-orange-200">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="text-xs font-semibold text-orange-800">{w.issue}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                        w.severity === 'عالي' ? 'bg-red-100 text-red-700' :
+                        w.severity === 'متوسط' ? 'bg-orange-100 text-orange-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>{w.severity}</span>
+                    </div>
+                    {w.location && <p className="text-[10px] text-orange-600 mb-1">📍 {w.location}</p>}
+                    <p className="text-[10px] text-gray-700 leading-relaxed">
+                      <span className="font-semibold">المعالجة:</span> {w.treatment}
+                    </p>
+                    {w.specialist && (
+                      <p className="text-[10px] text-gray-600 mt-1">
+                        <span className="font-semibold">المختص:</span> {w.specialist}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-orange-600 mt-2 leading-relaxed">
+                ℹ️ تم استبدال هذه الأسطح في التصور التصميمي. يُنصح بمعالجتها قبل البدء بالتنفيذ.
+              </p>
             </div>
           )}
 

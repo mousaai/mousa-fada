@@ -1554,7 +1554,7 @@ ${structuralAnalysisPrompt}
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
 قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة. ${doorChangeRule}
 
-🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات والجدران والإضاءة والأثاث والتشطيبات والألوان والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (الأبواب، النوافذ، الدرجات، الأعمدة، نوع السقف) فيجب الحفاظ عليها تماماً ما لم يطلب المستخدم صراحةً تغييرها.
+🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات (المادة + اللون + النقش)، الجدران (دهان + ورق جدران + حجر + خشب + جبس + بلاط)، السقف (جبس + إضاءة مخفية + عوارض + ثريات + ألوان)، الإضاءة، الأثاث، التشطيبات، الألوان، والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (مواقع الأبواب، النوافذ، الدرجات، الأعمدة، الفتحات) فيجب الحفاظ على مواقعها تماماً ما لم يطلب المستخدم صراحةً تغييرها. ⚠️ التهالك والتلف: إذا لاحظتِ تآكل في الجدران أو ظهور حديد أو رطوبة أو ورق جدران متهالك أو تشققات — استبدليها تلقائياً بتشطيب جديد في التصور، وأضيفي ملاحظة فنية للعميل تشرح المشكلة وطريقة المعالجة المطلوبة.
 
 🎨 قانون التباين الجذري المطلق (DIVERSITY LAW):
 كل فكرة يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -1609,7 +1609,16 @@ ${structuralAnalysisPrompt}
       {"element": "خزانة يسار", "position": "الجدار الغربي", "width": "واسعة", "height": "كامل الارتفاع", "type": "خزانة بيضاء", "keepInDesign": true}
     ],
     "currentIssues": ["مشكلة 1", "مشكلة 2"],
-    "currentMaterials": ["مادة 1", "مادة 2"]
+    "currentMaterials": ["مادة 1", "مادة 2"],
+    "technicalWarnings": [
+      {
+        "issue": "وصف المشكلة (مثال: تآكل في الجدار الشمالي مع ظهور حديد التسليح)",
+        "location": "موقعها في الفضاء",
+        "severity": "عالي/متوسط/منخفض",
+        "treatment": "طريقة المعالجة المطلوبة (مثال: إزالة الجزء المتآكل، معالجة الصدأ، إعادة اللياسة، عزل مائي)",
+        "specialist": "المختص المطلوب (مثال: مقاول إنشائي، فني عزل مائي)"
+      }
+    ]
   },
   "structuralSuggestions": [
     {
@@ -1822,10 +1831,10 @@ ${structuralAnalysisPrompt}
             } else {
               const structuralConstraints = [
                 keepElements ? `EXACT positions of openings: ${keepElements}` : null,
-                userConstraints.ceiling ? `ceiling type must remain UNCHANGED` : null,
+                null, // السقف حر للإبداع — فقط الفتحات ثابتة
                 userConstraints.steps ? `ALL level changes and steps MUST be preserved` : null,
               ].filter(Boolean).join('. ');
-              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL structural elements exactly as in original photo'}. CREATIVE FREEDOM applies ONLY to: finishes, furniture, lighting, colors, branding elements.`;
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL door/window/opening positions exactly as in original photo'}. CREATIVE FREEDOM applies to EVERYTHING ELSE: wall finishes (paint/wallpaper/stone/wood/plaster), flooring (material/color/pattern), ceiling design (gypsum/cove lighting/beams/color), furniture, lighting fixtures, decor, curtains, accessories.`;
             }
 
             // تحديد نوع الفضاء التجاري للبرومبت
@@ -1871,11 +1880,11 @@ ${structuralAnalysisPrompt}
               // الافتراضي: الحفاظ الصارم على البنية الإنشائية
               const structuralConstraints = [
                 keepElements ? `EXACT positions of openings: ${keepElements}` : null,
-                userConstraints.ceiling ? `ceiling type must remain UNCHANGED (flat ceiling stays flat - NO gypsum drops, NO cove lighting, NO exposed beams unless original)` : null,
+                null, // السقف حر للإبداع الكامل — الجبس والإضاءة المخفية والألوان مسموح بها
                 userConstraints.steps ? `ALL level changes and steps MUST be preserved at their exact original positions` : null,
               ].filter(Boolean).join('. ');
 
-              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL structural elements exactly as in original photo'}. Do NOT add, move, remove, or resize any door, window, column, step, or structural opening. Do NOT change flat ceiling to gypsum/coffered/beamed unless ceiling lock is disabled. CREATIVE FREEDOM applies ONLY to: wall finishes, flooring materials, furniture, lighting fixtures, colors, decor, curtains, accessories.`;
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve EXACT positions of all doors, windows, columns, steps, and structural openings'}. Do NOT add, move, remove, or resize any door, window, column, step, or structural opening. FULL CREATIVE FREEDOM on: wall finishes (paint/wallpaper/stone cladding/wood panels/textured plaster/tiles), flooring (change material/color/pattern freely - marble/parquet/concrete/tiles), ceiling design (add gypsum drops/cove lighting/beams/chandeliers/paint freely), furniture, lighting fixtures, colors, decor, curtains, rugs, accessories.`;
             }
 
             // استخراج معلومات الأرضية الأصلية من التحليل
@@ -1888,14 +1897,13 @@ ${structuralAnalysisPrompt}
           })();
           // تحديد ما إذا كانت الأرضية داكنة في الأصل
           const isDarkFloor = /داكن|dark|أسود|black|بني غامق|dark brown|charcoal|anthracite/i.test(currentFloorInfo + ' ' + floorColorFromAnalysis);
-          const floorConstraint = isDarkFloor && !allowOpeningChanges
-            ? `FLOOR COLOR CONSTRAINT: Original floor is DARK. If changing floor material, maintain DARK tones (dark marble/dark concrete/dark wood/charcoal tiles). Do NOT switch to light/white/beige flooring unless explicitly requested.`
-            : '';
+          // الأرضية حرة للإبداع الكامل — لا قيود على اللون أو المادة
+          const floorConstraint = `FLOOR FREEDOM: Change floor material, color, and pattern freely to best match the design style. Choose from: marble, parquet, herringbone wood, patterned tiles, polished concrete, terrazzo, or any material that elevates the design.`;
 
           // قيد الجدران المجهولة
           const wallConstraint = `WALL BOUNDARY RULE: Only design surfaces VISIBLE in the photo. Walls outside the camera frame are UNKNOWN - do NOT add windows, openings, or natural light from unseen walls. If a wall appears solid/plain in the photo = it IS solid - do NOT transform it into a window or opening. Artificial/interior lighting only - no invented natural light sources.`;
 
-          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint} ${floorConstraint} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT within the preserved structural shell. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. TRANSFORM FREELY: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (maintain dark tones if original is dark), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. TRANSFORM FREELY AND BOLDLY: (1) WALLS - change paint color, add wallpaper/stone cladding/wood panels/textured plaster/tiles/murals, (2) FLOOR - change to any material freely: marble/parquet/concrete/patterned tiles/herringbone/terrazzo - choose what best fits the style, (3) CEILING - add gypsum drops/cove lighting/beams/chandeliers/paint/texture - be creative, (4) FURNITURE - choose ICONIC pieces that define the style, (5) LIGHTING - statement chandeliers/hidden coves/industrial pendants/wall sconces, (6) DECOR - art/plants/rugs/cushions/accessories. New color palette: ${palette}. New materials: ${mats}. Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
           }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
