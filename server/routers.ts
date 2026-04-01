@@ -1457,12 +1457,18 @@ ${colorText}
 - الأرض الخاصة: صمّمي بحرية كاملة
 كل نوع فضاء له قواعد تصميم وبنود BOQ مختلفة — طبّقيها بدقة.
 
-🎨 FULL ARCHITECTURAL FREEDOM (صلاحية معمارية كاملة — الافتراضي):
-م. سارة حرة تماماً على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والجدران والفتحات. إذا كان تغيير موضع باب أو إضافة نافذة يحسّن التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.
-القيد الوحيد: فقط ما يحدده المالك صراحةً بأنه لا يتبدّل — وستجدينه في تعليمات المستخدم أدناه.
+🔒 STRUCTURAL DISCIPLINE LAW (قانون الانضباط البنيوي — الافتراضي الصارم):
+القاعدة الذهبية: ما هو مرئي في الصورة يُحلَّل ويُصمَّم — ما هو خارج الإطار أو غير مرئي لا يُفترض ولا يُخترع.
+
+⚠️ قواعد الجدران والفضاءات المجهولة:
+- الجدار الذي لا يُرى ما خلفه أو ما يليه = جدار مغلق صلب — لا تفترضي نافذة أو فتحة أو امتداداً
+- الفضاء خارج إطار الصورة = مجهول — لا تُضيفي ضوءاً طبيعياً من مصدر غير مرئي في الصورة
+- إذا لم تظهر نافذة في الصورة = لا توجد نافذة في هذا الجدار — لا تُضيفيها
+- إذا ظهر جدار أبيض مجرد = يبقى جداراً — لا تحوّليه لفتحة أو نافذة
+
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
-أنتِ حرة تماماً في تغيير كل شيء في الفضاء: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات، الأبواب، النوافذ.
-لا تتقيدي بالتشطيبات الحالية أو المواد الموجودة — صمّمي كأنكِ تبدئين من صفحة بيضاء.
+أنتِ حرة تماماً في تغيير كل شيء قابل للتغيير: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
+لكن: الإبداع يعني تحسين ما هو موجود — لا اختراع ما ليس موجوداً.
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
 2. نفس أبعاد الفضاء بالضبط — لا تغيير في أبعاد الفضاء أو نسبه
@@ -1479,11 +1485,18 @@ ${colorText}
 4. نوع الأثاث: كل فكرة لها أثاث مختلف جذرياً
    مثال: أريكة مخمل ≠ أريكة جلد ≠ مقاعد أرضية ≠ أريكة راتان
 5. المزاج العام: دافئ ≠ بارد ≠ محايد ≠ جريء ≠ هادئ
-🌟 BOLDNESS LAW (قانون الجرأة):
-كل فكرة يجب أن تكون جريئة ومميزة وتستحق أن تُنشر في مجلة ديكور. لا تصاميم عادية أو متوقعة. فكّري خارج الصندوق:
-- استخدمي مواد غير متوقعة (حجر طبيعي، خشب متحجر، معدن مؤكسد، مرمر ملون)
-- اقترحي إضاءة درامية (ثريات ضخمة، إضاءة مخفية، لمبات إديسون، جدار ضوئي)
-- لا تخافي من الألوان الجريئة (أخضر زيتي داكن، أزرق بترولي، بني شوكولاتة، أسود مطفي)
+🌟 BOLDNESS LAW (قانون الجرأة والأصالة):
+كل فكرة يجب أن تكون جريئة ومميزة وتستحق أن تُنشر في مجلة ديكور عالمية. لا تصاميم عادية أو متوقعة.
+
+🏆 TRENDING STYLES LAW (قانون الأنماط الأكثر رغبةً عالمياً):
+دائماً اختاري الأنماط الأكثر إقبالاً وطلباً في العالم حالياً كتوصية افتراضية:
+1. Japandi (ياباندي) — الأكثر بحثاً في Pinterest/Instagram 2024-2025: بساطة يابانية + دفء سكاندنافي
+2. Biophilic Design (التصميم الحيوي) — الأسرع نمواً: طبيعة داخل المنزل، خشب طبيعي، نباتات، ضوء طبيعي
+3. Quiet Luxury (الفخامة الهادئة) — الأكثر رغبةً لدى الثروات: مواد فاخرة بألوان محايدة بدون صراخ
+4. Wabi-Sabi (وابي-سابي) — الأكثر نضجاً: جمال الكمال غير المكتمل، طين، كتان، خشب خشن
+5. Maximalist Eclectic (التلفيقي الجريء) — الأكثر مشاركةً: ألوان جريئة + أنماط متعددة + طبقات
+
+استخدمي هذه الأنماط كأولوية عند عدم تحديد المستخدم لنمط معين. اقترحيها دائماً في الأفكار الثلاثة.
 💰 PRICING LAW (قانون الأسعار الواقعية):
 سطحي: 3,000-15,000 درهم | متوسط: 15,000-50,000 درهم | شامل: 50,000-150,000 درهم
 الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}}`
@@ -1865,7 +1878,24 @@ ${structuralAnalysisPrompt}
               structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL structural elements exactly as in original photo'}. Do NOT add, move, remove, or resize any door, window, column, step, or structural opening. Do NOT change flat ceiling to gypsum/coffered/beamed unless ceiling lock is disabled. CREATIVE FREEDOM applies ONLY to: wall finishes, flooring materials, furniture, lighting fixtures, colors, decor, curtains, accessories.`;
             }
 
-            generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT within the preserved structural shell. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. TRANSFORM FREELY: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+            // استخراج معلومات الأرضية الأصلية من التحليل
+          const currentMaterials = (spaceAnalysisData.currentMaterials || []) as string[];
+          const currentFloorInfo = currentMaterials.find((m: string) => /أرضية|floor|بلاط|tile|باركيه|parquet|خشب|wood|رخام|marble|خرسانة|concrete/i.test(m)) || '';
+          const floorColorFromAnalysis = (() => {
+            const structEls = structuralElements as Array<{element: string; position: string; type?: string; keepInDesign: boolean}>;
+            const floorEl = structEls.find(e => /أرضية|floor/i.test(e.element));
+            return floorEl?.type || '';
+          })();
+          // تحديد ما إذا كانت الأرضية داكنة في الأصل
+          const isDarkFloor = /داكن|dark|أسود|black|بني غامق|dark brown|charcoal|anthracite/i.test(currentFloorInfo + ' ' + floorColorFromAnalysis);
+          const floorConstraint = isDarkFloor && !allowOpeningChanges
+            ? `FLOOR COLOR CONSTRAINT: Original floor is DARK. If changing floor material, maintain DARK tones (dark marble/dark concrete/dark wood/charcoal tiles). Do NOT switch to light/white/beige flooring unless explicitly requested.`
+            : '';
+
+          // قيد الجدران المجهولة
+          const wallConstraint = `WALL BOUNDARY RULE: Only design surfaces VISIBLE in the photo. Walls outside the camera frame are UNKNOWN - do NOT add windows, openings, or natural light from unseen walls. If a wall appears solid/plain in the photo = it IS solid - do NOT transform it into a window or opening. Artificial/interior lighting only - no invented natural light sources.`;
+
+          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint} ${floorConstraint} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT within the preserved structural shell. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. TRANSFORM FREELY: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (maintain dark tones if original is dark), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
           }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
