@@ -1460,14 +1460,17 @@ ${colorText}
 🔒 STRUCTURAL DISCIPLINE LAW (قانون الانضباط البنيوي — الافتراضي الصارم):
 القاعدة الذهبية: ما هو مرئي في الصورة يُحلَّل ويُصمَّم — ما هو خارج الإطار أو غير مرئي لا يُفترض ولا يُخترع.
 
-⚠️ قواعد الجدران والفضاءات المجهولة (صارمة بلا استثناء):
-- الجدار الذي لا يُرى ما خلفه أو ما يليه = جدار مغلق صلب — لا تفترضي نافذة أو فتحة أو امتداداً
-- الفضاء خارج إطار الصورة = مجهول تماماً — لا تُضيفي ضوءاً طبيعياً من مصدر غير مرئي في الصورة
-- إذا لم تظهر نافذة في الصورة = لا توجد نافذة في هذا الجدار — لا تُضيفيها أبداً
-- إذا ظهر جدار أبيض مجرد = يبقى جداراً صلباً — لا تحوّليه لفتحة أو نافذة أبداً
-- الجدار المنقطع أو الناقص (يظهر في حافة الصورة) = جدار منقطع فعلياً — لا تكمليه بجدار كامل أو تضيفي ما وراءه — اتركيه منقطعاً كما هو
-- الفراغ خلف الستائر أو الباب = مجهول — لا تفترضي ما خلفه ولا تضيفي أثاثاً أو مساحة لم تظهر في الصورة
-- المطبخ المرئي في الخلفية = مطبخ حقيقي موجود فعلاً — صمّميه بنفس موضعه وحجمه بدون توسيع أو إضافة مساحة مجهولة
+🚫 قانون الفضاءات المجهولة والجدران المخترعة (صارم بلا أي استثناء — الأهم على الإطلاق):
+إطار الصورة هو الحدود المطلقة لعالم التصميم — لا شيء يوجد خارجه.
+- الجدار الذي لا يُرى ما خلفه = جدار صلب مغلق تماماً — لا تفترضي نافذة أو فتحة أو امتداداً أو غرفة خلفه
+- الفضاء خارج إطار الصورة = مجهول كلياً — لا تُضيفي أي عنصر (جدار، مطبخ، غرفة، ممر) خارج الإطار
+- إذا لم تظهر نافذة في الصورة = لا توجد نافذة في هذا الجدار — لا تُضيفيها أبداً تحت أي ظرف
+- إذا ظهر جدار أبيض مجرد = جدار خرساني صلب — لا تحوّليه لفتحة أو نافذة أو قوس أبداً
+- الجدار المنقطع (يظهر في حافة الصورة) = جدار منقطع فعلياً — لا تكمليه بجدار كامل، لا تضيفي ما وراءه، اتركيه منقطعاً كما هو بالضبط
+- الفراغ خلف الستائر أو الباب = مجهول تماماً — لا تفترضي ما خلفه ولا تضيفي أثاثاً أو مساحة لم تظهر في الصورة
+- المطبخ المرئي في الخلفية = مطبخ حقيقي موجود فعلاً — صمّميه بنفس موضعه وحجمه فقط — ممنوع توسيعه أو إضافة مساحة لم تكن موجودة
+- ممنوع اختراع أي جدار أو حاجز أو قسم أو عنصر معماري غير موجود في الصورة الأصلية
+- ممنوع تمديد الغرفة خارج ما يظهر في الصورة
 
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
 أنتِ حرة تماماً في تغيير كل شيء قابل للتغيير: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
@@ -1964,15 +1967,18 @@ FULL CREATIVE FREEDOM on: wall finishes (paint/wallpaper/stone/wood/textured pla
           // الأرضية حرة للإبداع الكامل — لا قيود على اللون أو المادة
           const floorConstraint = `FLOOR FREEDOM: Change floor material, color, and pattern freely to best match the design style. Choose from: marble, parquet, herringbone wood, patterned tiles, polished concrete, terrazzo, or any material that elevates the design.`;
 
-          // قيد الجدران المجهولة
-          const wallConstraint = `WALL BOUNDARY RULE (ZERO TOLERANCE):
-1. VISIBLE SURFACES ONLY: Design ONLY surfaces visible in the photo. Walls outside the camera frame are COMPLETELY UNKNOWN.
-2. NO INVENTED OPENINGS: If no window appears in the photo = there is NO window on that wall. Do NOT add one.
-3. SOLID WALL RULE: A plain/white wall = a SOLID wall. Do NOT transform it into a window, archway, or opening.
-4. TRUNCATED WALL RULE: A wall that appears cut off at the edge of the frame = it IS truncated. Do NOT complete it with a full wall or add anything behind it. Leave it truncated as-is.
-5. UNKNOWN SPACE RULE: Space behind curtains, doors, or at frame edges = UNKNOWN. Do NOT invent furniture, rooms, or spaces that were not visible in the original photo.
-6. KITCHEN/ELEMENT IN BACKGROUND: If a kitchen or element is visible in the background = it is REAL and EXISTS at that location. Redesign it at the SAME position and SAME size — do NOT expand it or add space that was not in the original.
-7. LIGHTING: Artificial/interior lighting only — no invented natural light from unseen walls.`;
+          // قيد الجدران المجهولة — صارم جداً
+          const wallConstraint = `🚨 UNKNOWN SPACE & INVENTED WALL PROHIBITION (ABSOLUTE — HIGHEST PRIORITY — ZERO EXCEPTIONS):
+The photo frame IS the absolute boundary of the design universe. NOTHING exists outside it.
+1. ZERO WALL INVENTION: Do NOT add any wall, partition, room, hallway, kitchen, or architectural element that does NOT exist in the original photo.
+2. ZERO SPACE EXTENSION: Do NOT extend the room beyond what is visible in the photo — the room ends where the photo ends.
+3. TRUNCATED WALL = TRUNCATED: A wall cut off at the frame edge IS truncated in reality — do NOT complete it, do NOT add anything behind it, leave it truncated exactly as-is.
+4. UNKNOWN BEHIND CURTAINS/DOOR: Space behind curtains or doors = COMPLETELY UNKNOWN — do NOT invent furniture, rooms, or spaces there.
+5. NO INVENTED WINDOWS: If no window appears in the photo = there is NO window on that wall — do NOT add one under any circumstances.
+6. SOLID WHITE WALL = SOLID CONCRETE: A plain/white wall = a solid wall — do NOT transform it into a window, archway, or opening.
+7. BACKGROUND KITCHEN = REAL: If a kitchen is visible in the background = it is REAL — redesign it at the SAME position and SAME size ONLY — do NOT expand it or add space that was not in the original photo.
+8. ARTIFICIAL LIGHTING ONLY: No invented natural light from unseen walls — use interior/artificial lighting only.
+❌ FORBIDDEN: Adding ANY wall, room, kitchen, hallway, window, or space that was not visible in the original photo.`;
 
           generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint}
 
