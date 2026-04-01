@@ -866,3 +866,15 @@
 - [ ] تحديث schema في generatePlanRoomDesign لقبول الحقول المعمارية الجديدة
 - [ ] بناء prompt ديناميكي دقيق يدمج كل التفاصيل المعمارية في توليد التصميم
 - [ ] تحديث PlanDesign.tsx لإرسال التفاصيل الجديدة مع كل طلب تصميم
+
+## الإصدار 29.0 — ترقية النماذج لأقوى وأدق وأسرع
+- [x] إضافة model parameter في InvokeParams وinvokeLLM لدعم نماذج مخصصة
+- [x] ترقية analyzePlan إلى gemini-2.5-pro لتحليل أدق للمخططات المعمارية
+- [x] ترقية analyzeUrban إلى gemini-2.5-pro لتحليل أدق للمناطق الحضرية
+- [x] ترقية imageGeneration.ts: نظام متعدد المستويات (Imagen 3 → Gemini Flash → Manus Forge)
+- [x] استخدام imagen-3.0-generate-002 كأولوية لأعلى جودة فوتوريالستيك
+- [x] استخدام gemini-2.0-flash-exp كاحتياطي أول (سريع ويدعم التعديل)
+- [x] تحسين prompts توليد الصور: 8K، wide-angle، depth of field، cinematic
+- [x] تحسين prompts التصميم الحضري: تفاصيل أكثر دقة وواقعية
+- [x] تحديث اختبارات gemini.independence.test.ts لتتوافق مع النظام الجديد
+- [x] 199 اختبار ناجح

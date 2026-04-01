@@ -3386,6 +3386,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       const aiResponse = await invokeLLM({
         messages,
         response_format: { type: "json_object" },
+        model: "gemini-2.5-pro", // نموذج أقوى لتحليل دقيق للمخططات الحضرية
       });
 
       const rawContent = aiResponse.choices[0]?.message?.content;
@@ -3471,21 +3472,26 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         input.projectScale === "medium" ? "Medium-scale urban design, street-level perspective with context." :
         "Small-scale intimate urban space, detailed street-level view.";
 
-      const prompt = `Photorealistic architectural visualization of ${spaceDesc}. ${styleName} design style. ${areaNote} ${descNote} ${scaleNote}
+      const prompt = `Ultra-photorealistic architectural visualization of ${spaceDesc}. ${styleName} design style. ${areaNote} ${descNote} ${scaleNote}
 
 URBAN DESIGN ELEMENTS:
-- Lush mature trees, manicured landscaping, flower beds, hedges
-- High-quality paving materials: natural stone, brick patterns, decorative concrete
-- Street furniture: designer benches, planters, bollards, bike racks
-- Ambient lighting: decorative lamp posts, ground lights, feature lighting
-- Water features: fountains, reflecting pools, water walls
-- Shading structures: pergolas, tensile canopies, tree canopies
-- Activated ground floors: shops, cafes, restaurants with outdoor seating
-- Clean modern architecture with ${styleName} aesthetic
-- People-friendly scale, wide pedestrian zones
-- Sky: golden hour warm light, soft clouds
+- Lush mature trees (15-20m tall), manicured landscaping, colorful flower beds, shaped hedges
+- Premium paving: natural travertine stone, herringbone brick patterns, decorative concrete with inlays
+- Designer street furniture: sculptural benches, large planters, elegant bollards, artistic bike racks
+- Layered lighting: ornate lamp posts (6m tall), LED ground uplights, feature accent lighting on trees
+- Water features: grand central fountain with jets, shallow reflecting pool, decorative water walls
+- Shade structures: steel and wood pergolas with climbing plants, tensile fabric canopies
+- Active ground floors: boutique shops with glass facades, outdoor cafe terraces, restaurant patios
+- Architecture: ${styleName} with high-quality cladding, large windows, clean lines
+- Human-scale design: wide 8m pedestrian promenades, outdoor seating areas
+- Atmosphere: golden hour warm sunlight, soft clouds, slight lens flare
+- People: well-dressed pedestrians, families, creating life and scale
 
-QUALITY: 8K ultra-realistic, professional architectural photography, cinematic composition, no text overlays, no watermarks, photorealistic render quality.`;
+PHOTOGRAPHY QUALITY:
+- 8K ultra-photorealistic, professional architectural photography
+- Cinematic wide-angle composition, perfect depth of field
+- No text overlays, no watermarks, no construction elements
+- Photorealistic render quality matching real photography`;
 
       const { generateImage } = await import("./_core/imageGeneration");
       const { url: imageUrl } = await generateImage({ prompt });
@@ -3620,6 +3626,7 @@ QUALITY: 8K ultra-realistic, professional architectural photography, cinematic c
         const aiResponse = await invokeLLM({
           messages,
           response_format: { type: "json_object" },
+          model: "gemini-2.5-pro", // نموذج أقوى لتحليل دقيق للمخططات المعمارية
         });
         const rawContent = aiResponse.choices[0]?.message?.content;
         const aiText = typeof rawContent === "string" ? rawContent : "{}";
@@ -3874,7 +3881,17 @@ Create a photorealistic interior design showing:
 
 ${basePrompt}
 
-IMPORTANT: The design MUST accurately reflect the architectural specs above. Show the correct ceiling height (${ceilingH}m), window positions, door locations, and room proportions. High quality, photorealistic, professional interior photography, no text overlays.`;
+PHOTOGRAPHY REQUIREMENTS (CRITICAL):
+- Ultra-photorealistic architectural visualization, 8K resolution quality
+- Professional interior photography style: wide-angle lens, perfect exposure
+- Correct ceiling height of ${ceilingH}m MUST be visible in the perspective
+- Window positions and door locations MUST match the architectural specs exactly
+- Accurate room proportions and spatial depth
+- Natural + artificial 3-layer lighting: ambient (recessed LED) + accent (spotlights) + decorative (chandelier/pendant)
+- No text overlays, no watermarks, no people, no clutter
+- Photorealistic materials: reflective marble, wood grain texture, fabric softness
+- Cinematic composition with slight depth of field
+- Professional real estate photography quality`;
 
       const imageResult = await generateImage({ prompt });
 

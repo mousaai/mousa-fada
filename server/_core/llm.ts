@@ -66,6 +66,8 @@ export type InvokeParams = {
   output_schema?: OutputSchema;
   responseFormat?: ResponseFormat;
   response_format?: ResponseFormat;
+  /** تحديد نموذج مخصص بدلاً من الافتراضي */
+  model?: string;
 };
 
 export type ToolCall = {
@@ -294,7 +296,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: ENV.openAiModel || "gemini-2.5-flash",
+    model: params.model || ENV.openAiModel || "gemini-2.5-flash",
     messages: messages.map(normalizeMessage),
   };
 

@@ -1,18 +1,9 @@
 /**
- * Image generation helper — Gemini Nano Banana (Google AI Studio) أولاً
- * يستخدم gemini-2.5-flash-image (Nano Banana) عبر Google Generative AI SDK
- * مع fallback لـ Manus Forge إذا لم يكن OPENAI_API_KEY متاحاً
- *
- * Example usage:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "A serene landscape with mountains"
- *   });
- *
- * For editing:
- *   const { url: imageUrl } = await generateImage({
- *     prompt: "Add a rainbow to this landscape",
- *     originalImages: [{ url: "https://example.com/original.jpg" }]
- *   });
+ * Image generation helper — نظام توليد الصور متعدد المستويات
+ * الأولوية:
+ *   1. imagen-3.0-generate-002 (أعلى جودة — Google Imagen 3)
+ *   2. gemini-2.0-flash-exp (سريع وجيد — Gemini Flash)
+ *   3. Manus Forge (احتياطي نهائي)
  */
 import { storagePut } from "server/storage";
 import { ENV } from "./env";
@@ -24,7 +15,7 @@ export type GenerateImageOptions = {
     b64Json?: string;
     mimeType?: string;
   }>;
-  /** النموذج المستخدم — افتراضي: gemini-2.5-flash-image */
+  /** النموذج المستخدم — افتراضي: imagen-3.0-generate-002 */
   model?: string;
 };
 
@@ -33,14 +24,74 @@ export type GenerateImageResponse = {
 };
 
 /**
- * توليد الصور عبر Gemini Nano Banana (Google AI Studio)
+ * توليد الصور عبر Google Imagen 3 (أعلى جودة)
+ * يستخدم imagen-3.0-generate-002 عبر Vertex AI / Generative Language API
+ */
+async function generateImageViaImagen3(
+  options: GenerateImageOptions
+): Promise<GenerateImageResponse> {
+  const apiKey = ENV.openAiApiKey;
+  const model = "imagen-3.0-generate-002";
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
+
+  const requestBody = {
+    instances: [{ prompt: options.prompt }],
+    parameters: {
+      sampleCount: 1,
+      aspectRatio: "4:3",
+      safetyFilterLevel: "block_some",
+      personGeneration: "allow_adult",
+    },
+  };
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Imagen 3 generation failed (${response.status} ${response.statusText})${detail ? `: ${detail.substring(0, 200)}` : ""}`
+    );
+  }
+
+  const result = await response.json() as {
+    predictions?: Array<{
+      bytesBase64Encoded?: string;
+      mimeType?: string;
+    }>;
+  };
+
+  const prediction = result.predictions?.[0];
+  if (!prediction?.bytesBase64Encoded) {
+    throw new Error("Imagen 3 did not return an image in the response");
+  }
+
+  const buffer = Buffer.from(prediction.bytesBase64Encoded, "base64");
+  const mimeType = prediction.mimeType || "image/png";
+  const ext = mimeType.includes("jpeg") ? "jpg" : "png";
+
+  const { url } = await storagePut(
+    `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,
+    buffer,
+    mimeType
+  );
+
+  return { url };
+}
+
+/**
+ * توليد الصور عبر Gemini (gemini-2.0-flash-exp أو gemini-2.5-flash-image)
  * يستخدم REST API مباشرة بدون SDK إضافي
  */
 async function generateImageViaGemini(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
   const apiKey = ENV.openAiApiKey;
-  const model = options.model || "gemini-2.5-flash-image";
+  // استخدام gemini-2.0-flash-exp كأفضل نموذج Gemini لتوليد الصور
+  const model = options.model || "gemini-2.0-flash-exp";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   // بناء المحتوى — نص فقط أو نص + صورة للتعديل
@@ -96,7 +147,7 @@ async function generateImageViaGemini(
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     throw new Error(
-      `Gemini image generation failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
+      `Gemini image generation failed (${response.status} ${response.statusText})${detail ? `: ${detail.substring(0, 200)}` : ""}`
     );
   }
 
@@ -134,7 +185,7 @@ async function generateImageViaGemini(
 }
 
 /**
- * توليد الصور عبر Manus Forge (احتياطي)
+ * توليد الصور عبر Manus Forge (احتياطي نهائي)
  */
 async function generateImageViaManus(
   options: GenerateImageOptions
@@ -180,18 +231,30 @@ async function generateImageViaManus(
 }
 
 /**
- * الدالة الرئيسية — تستخدم Gemini Nano Banana أولاً، وتعود لـ Manus Forge احتياطياً
+ * الدالة الرئيسية — نظام توليد متعدد المستويات
+ * الترتيب: Imagen 3 → Gemini Flash → Manus Forge
  */
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  // الأولوية: Google Gemini Nano Banana مباشرة
   if (ENV.openAiApiKey && ENV.openAiApiKey.trim().length > 0) {
+    // المستوى الأول: Google Imagen 3 (أعلى جودة فوتوريالستيك)
+    // فقط للصور الجديدة (بدون originalImages) لأن Imagen 3 لا يدعم التعديل
+    if (!options.originalImages || options.originalImages.length === 0) {
+      try {
+        console.log("[generateImage] Trying Imagen 3 (highest quality)...");
+        return await generateImageViaImagen3(options);
+      } catch (imagen3Error) {
+        console.warn("[generateImage] Imagen 3 failed, trying Gemini Flash:", (imagen3Error as Error).message?.substring(0, 100));
+      }
+    }
+
+    // المستوى الثاني: Gemini Flash (سريع وجيد، يدعم التعديل)
     try {
+      console.log("[generateImage] Trying Gemini Flash (gemini-2.0-flash-exp)...");
       return await generateImageViaGemini(options);
     } catch (geminiError) {
-      console.warn("[generateImage] Gemini failed, falling back to Manus Forge:", geminiError);
-      // إذا فشل Gemini وكان Manus Forge متاحاً، استخدمه كاحتياطي
+      console.warn("[generateImage] Gemini failed, falling back to Manus Forge:", (geminiError as Error).message?.substring(0, 100));
       if (ENV.forgeApiUrl && ENV.forgeApiKey) {
         return await generateImageViaManus(options);
       }
@@ -199,9 +262,9 @@ export async function generateImage(
     }
   }
 
-  // احتياطي: Manus Forge
+  // المستوى الثالث: Manus Forge (احتياطي نهائي)
   if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    throw new Error("No image generation API configured. Set OPENAI_API_KEY for Gemini or BUILT_IN_FORGE_API_URL/KEY for Manus.");
+    throw new Error("No image generation API configured. Set OPENAI_API_KEY for Gemini/Imagen or BUILT_IN_FORGE_API_URL/KEY for Manus.");
   }
 
   return await generateImageViaManus(options);
