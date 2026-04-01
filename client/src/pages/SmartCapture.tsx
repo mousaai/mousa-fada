@@ -2631,11 +2631,13 @@ export default function SmartCapture() {
       preferredColors: preferredColors.length > 0 ? preferredColors : undefined,
       roomDimensions,
       lockStructuralElements: {
-        enabled: true,
-        lockDoors: true,
-        lockWindows: true,
-        lockOpenings: true,
-        lockColumns: false,
+        enabled: !allowPlatformFreedom,
+        lockDoors: !allowPlatformFreedom,
+        lockWindows: !allowPlatformFreedom,
+        lockOpenings: !allowPlatformFreedom,
+        lockColumns: !allowPlatformFreedom,
+        lockSteps: !allowPlatformFreedom,   // الدرجات وفروق المستويات
+        lockCeiling: !allowPlatformFreedom, // نوع السقف (مستوٍ يبقى مستوياً)
         allowPlatformFreedom,
       },
     });
@@ -3268,7 +3270,7 @@ export default function SmartCapture() {
               )}
             </div>
 
-            {/* حرية النظر المعماري */}
+            {/* خيار السماح بتغيير الفتحات والبنية */}
             <div className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
               <button
                 onClick={() => setAllowPlatformFreedom(!allowPlatformFreedom)}
@@ -3277,16 +3279,18 @@ export default function SmartCapture() {
                 <div className="flex items-center gap-2">
                   <span className="text-base">{allowPlatformFreedom ? '🔓' : '🔒'}</span>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#5C3D11]">تحديد قيود التصميم</p>
+                    <p className="text-sm font-bold text-[#5C3D11]">
+                      {allowPlatformFreedom ? 'حرية معمارية كاملة' : 'حفاظ على البنية الإنشائية ✔️'}
+                    </p>
                     <p className="text-[10px] text-[#8B6914]/60">
                       {allowPlatformFreedom
-                        ? '🔓 م. سارة حرة تماماً — تغيّر كل شيء بما فيها الأبواب والنوافذ وفق تقديرها'
-                        : '🔒 حدد عناصر ثابتة لا تتغيّر — م. سارة تبدع في كل ما عداها'}
+                        ? 'م. سارة تغيّر كل شيء بما فيها الأبواب والنوافذ والدرجات'
+                        : 'الأبواب والنوافذ والدرجات والسقف ثابتة — الإبداع في التصميم فقط'}
                     </p>
                   </div>
                 </div>
                 <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
-                  allowPlatformFreedom ? 'bg-[#C9A84C]' : 'bg-gray-200'
+                  allowPlatformFreedom ? 'bg-[#C9A84C]' : 'bg-[#5C3D11]'
                 }`}>
                   <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
                     allowPlatformFreedom ? 'left-6' : 'left-0.5'
@@ -3297,25 +3301,25 @@ export default function SmartCapture() {
               {!allowPlatformFreedom && (
                 <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
                   <div className="bg-amber-50 rounded-xl px-3 py-2.5 border border-amber-200">
-                    <p className="text-[10px] text-amber-700 text-right leading-relaxed mb-2">
-                      🔒 ماذا تريد تثبيته في جميع التصاميم؟
+                    <p className="text-[10px] text-amber-800 text-right leading-relaxed font-semibold mb-1">
+                      🔒 العناصر الثابتة المحفوظة تلقائياً:
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {['الأبواب', 'النوافذ', 'الفتحات', 'الأعمدة', 'الدرج الخارجي'].map(el => (
-                        <button key={el} className="text-[10px] bg-white border border-amber-300 text-amber-700 rounded-lg px-2 py-1 active:bg-amber-100">
-                          {el}
-                        </button>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['الأبواب', 'النوافذ', 'الفتحات', 'الأعمدة', 'الدرجات', 'نوع السقف'].map(el => (
+                        <span key={el} className="text-[10px] bg-amber-100 border border-amber-300 text-amber-800 rounded-lg px-2 py-1">
+                          ✔ {el}
+                        </span>
                       ))}
                     </div>
-                    <p className="text-[9px] text-amber-600/70 text-center mt-2">م. سارة تحترم هذه العناصر وتبدع في كل ما عداها</p>
+                    <p className="text-[9px] text-amber-600/70 text-center mt-2">م. سارة تبدع بحرية كاملة في: الألوان • المواد • الأثاث • الإضاءة • التشطيبات</p>
                   </div>
                 </div>
               )}
               {allowPlatformFreedom && (
                 <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
-                  <div className="bg-green-50 rounded-xl px-3 py-2.5 border border-green-200">
-                    <p className="text-[10px] text-green-700 text-center leading-relaxed">
-                      🔓 م. سارة حرة تماماً — تغيّر كل شيء بما فيها الأبواب والنوافذ وفق تقديرها المعماري
+                  <div className="bg-orange-50 rounded-xl px-3 py-2.5 border border-orange-200">
+                    <p className="text-[10px] text-orange-700 text-center leading-relaxed">
+                      ⚠️ حرية كاملة — م. سارة قد تغيّر مواضع الأبواب والنوافذ والدرجات وفق تقديرها المعماري
                     </p>
                   </div>
                 </div>

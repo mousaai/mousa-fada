@@ -1343,11 +1343,13 @@ ${colorText}
         height: z.number().optional(), // الارتفاع بالمتر
       }).optional(),
       lockStructuralElements: z.object({ // تثبيت العناصر الهيكلية بقرار المستخدم
-        enabled: z.boolean().default(false),
+        enabled: z.boolean().default(true),   // الافتراضي: تثبيت الفتحات دائماً
         lockDoors: z.boolean().default(true),
         lockWindows: z.boolean().default(true),
         lockOpenings: z.boolean().default(true),
-        lockColumns: z.boolean().default(false),
+        lockColumns: z.boolean().default(true),
+        lockSteps: z.boolean().default(true),  // تثبيت الدرجات وفروق المستويات
+        lockCeiling: z.boolean().default(true), // تثبيت نوع السقف (مستوٍ/مرتفع)
         allowPlatformFreedom: z.boolean().default(false), // منح م. سارة حرية النظر المعماري
       }).optional(),
     }))
@@ -1370,31 +1372,32 @@ ${colorText}
         image_url: { url, detail: "high" as const }
       }));
 
-      // قاعدة تغيير العناصر الهيكلية — م. سارة حرة تماماً بالافتراضي
-      // الافتراضي: حرية إبداعية مطلقة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والفتحات
-      // القيد: فقط ما يحدده المالك صراحةً بأنه لا يتبدّل
-      const userConstraints = lockStructuralElements?.enabled === true ? {
-        doors: lockStructuralElements.lockDoors,
-        windows: lockStructuralElements.lockWindows,
-        openings: lockStructuralElements.lockOpenings,
-        columns: lockStructuralElements.lockColumns,
-      } : null;
+      // قاعدة تغيير العناصر الهيكلية — الافتراضي: تثبيت الفتحات والبنية الإنشائية
+      // المبدأ: ما لم يطلب المستخدم صراحةً تغيير عنصر بنيوي، يبقى في مكانه
+      // الإبداع مطلوب في: الألوان، المواد، الأثاث، الإضاءة، التشطيبات فقط
+      const defaultLock = lockStructuralElements?.enabled !== false; // الافتراضي: مقفل
+      const userConstraints = {
+        doors: lockStructuralElements?.lockDoors !== false,
+        windows: lockStructuralElements?.lockWindows !== false,
+        openings: lockStructuralElements?.lockOpenings !== false,
+        columns: lockStructuralElements?.lockColumns !== false,
+        steps: lockStructuralElements?.lockSteps !== false,
+        ceiling: lockStructuralElements?.lockCeiling !== false,
+      };
 
       let doorChangeRule: string;
-      if (!userConstraints) {
-        // الافتراضي: حرية مطلقة
-        doorChangeRule = `🎨 م. سارة حرة تماماً: لكِ صلاحية معمارية كاملة على جميع عناصر الفضاء بما فيها الأبواب والنوافذ والفتحات والجدران والأسقف. إذا كان تغيير موضع باب أو إضافة نافذة يخدم التصميم فافعليه بجرأة. الهدف هو أفضل تصميم ممكن ليس التقيد بالقيود.`;
+      const lockedItems: string[] = [];
+      if (userConstraints.doors) lockedItems.push('الأبواب');
+      if (userConstraints.windows) lockedItems.push('النوافذ');
+      if (userConstraints.openings) lockedItems.push('الفتحات');
+      if (userConstraints.columns) lockedItems.push('الأعمدة');
+      if (userConstraints.steps) lockedItems.push('الدرجات وفروق المستويات');
+      if (userConstraints.ceiling) lockedItems.push('نوع السقف (مستوٍ/مرتفع)');
+
+      if (lockedItems.length > 0) {
+        doorChangeRule = `🔒 قاعدة البنية الإنشائية (غير قابلة للتجاوز): يجب الحفاظ على ${lockedItems.join('، ')} في نفس مواضعها وأحجامها تماماً. هذا ليس خياراً — هذه بنية إنشائية ثابتة. أبدعي بحرية كاملة في كل شيء آخر: الألوان، المواد، الأثاث، الإضاءة، التشطيبات، الديكور. الإبداع يكون في التصميم لا في تغيير البنية.`;
       } else {
-        const lockedItems: string[] = [];
-        if (userConstraints.doors) lockedItems.push('الأبواب');
-        if (userConstraints.windows) lockedItems.push('النوافذ');
-        if (userConstraints.openings) lockedItems.push('الفتحات');
-        if (userConstraints.columns) lockedItems.push('الأعمدة');
-        if (lockedItems.length > 0) {
-          doorChangeRule = `🔒 قرار المالك: حافظي على مواضع وأحجام ${lockedItems.join('، ')} تماماً بلا تغيير (هذا قرار المالك ويجب احترامه). أبدعي بحرية كاملة في كل شيء آخر: الألوان، المواد، الأثاث، الإضاءة، التشطيبات.`;
-        } else {
-          doorChangeRule = `🎨 م. سارة حرة تماماً: لكِ صلاحية معمارية كاملة على جميع عناصر الفضاء.`;
-        }
+        doorChangeRule = `🎨 م. سارة لها صلاحية معمارية كاملة — المستخدم أذن بتغيير جميع العناصر بما فيها الفتحات والبنية.`;
       }
 
       // بناء تعليمات المرجع إذا وجد
@@ -1538,7 +1541,7 @@ ${structuralAnalysisPrompt}
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
 قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة. ${doorChangeRule}
 
-🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات والجدران والأسقف والإضاءة والأثاث والتشطيبات. لا تتقيدي بما هو موجود حالياً.
+🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات والجدران والإضاءة والأثاث والتشطيبات والألوان والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (الأبواب، النوافذ، الدرجات، الأعمدة، نوع السقف) فيجب الحفاظ عليها تماماً ما لم يطلب المستخدم صراحةً تغييرها.
 
 🎨 قانون التباين الجذري المطلق (DIVERSITY LAW):
 كل فكرة يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -1785,11 +1788,28 @@ ${structuralAnalysisPrompt}
             // برومبت لاندسكيب وفضاءات خارجية
             generatedPrompt = `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
           } else {
-            // برومبت الديكور الداخلي - صلاحية كاملة
-            const structuralNote = keepElements
-              ? `STRUCTURAL REFERENCE (for context only): ${keepElements}. م. سارة has FULL CREATIVE FREEDOM to redesign everything including moving/resizing openings if it improves the design.`
-              : `م. سارة has FULL CREATIVE FREEDOM on all elements.`;
-            generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} BOLD COMPLETE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT. This design must look COMPLETELY DIFFERENT from a standard room - push boundaries, be daring, be memorable. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. REPLACE EVERYTHING: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), ceiling (coffered/coved/exposed beams/dramatic gypsum), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
+            // برومبت الديكور الداخلي — الحفاظ على البنية + إبداع كامل في التصميم
+            const allowOpeningChanges = lockStructuralElements?.allowPlatformFreedom === true ||
+              (lockStructuralElements?.enabled === false);
+
+            let structuralNote: string;
+            if (allowOpeningChanges) {
+              // المستخدم أذن صراحةً بتغيير الفتحات
+              structuralNote = keepElements
+                ? `STRUCTURAL REFERENCE: ${keepElements}. User has granted FULL CREATIVE FREEDOM including moving/resizing openings.`
+                : `User has granted FULL CREATIVE FREEDOM on all elements including structure.`;
+            } else {
+              // الافتراضي: الحفاظ الصارم على البنية الإنشائية
+              const structuralConstraints = [
+                keepElements ? `EXACT positions of openings: ${keepElements}` : null,
+                userConstraints.ceiling ? `ceiling type must remain UNCHANGED (flat ceiling stays flat - NO gypsum drops, NO cove lighting, NO exposed beams unless original)` : null,
+                userConstraints.steps ? `ALL level changes and steps MUST be preserved at their exact original positions` : null,
+              ].filter(Boolean).join('. ');
+
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL structural elements exactly as in original photo'}. Do NOT add, move, remove, or resize any door, window, column, step, or structural opening. Do NOT change flat ceiling to gypsum/coffered/beamed unless ceiling lock is disabled. CREATIVE FREEDOM applies ONLY to: wall finishes, flooring materials, furniture, lighting fixtures, colors, decor, curtains, accessories.`;
+            }
+
+            generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} BOLD CREATIVE TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY and DRAMATIC VISUAL IMPACT within the preserved structural shell. New color palette: ${palette}. New materials: ${mats}. New furniture matching the style - choose ICONIC pieces that define the style. TRANSFORM FREELY: wall finish (paint/wallpaper/stone/wood panels/textured plaster), flooring (marble/herringbone wood/geometric tiles/polished concrete), lighting (statement chandeliers/hidden coves/industrial pendants/wall sconces), decor (art/plants/rugs/cushions). Make it look like a LUXURY MAGAZINE COVER - not a generic renovation. Cinematic lighting, natural shadows, ultra-realistic textures, 8K resolution, architectural digest quality, professional interior photography, no people, no text, no watermarks.`;
           }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة

@@ -323,7 +323,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
+  // محاولة أولى: Google Gemini مباشرة
+  let response = await fetch(resolveApiUrl(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -331,6 +332,25 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     },
     body: JSON.stringify(payload),
   });
+
+  // fallback تلقائي: إذا فشل Gemini، نجرب Manus Forge
+  if (!response.ok && ENV.forgeApiKey) {
+    const errorText = await response.text();
+    console.warn(`[LLM] Gemini failed (${response.status}), falling back to Manus Forge. Error: ${errorText.substring(0, 100)}`);
+    
+    const forgeUrl = ENV.forgeApiUrl
+      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
+      : "https://forge.manus.im/v1/chat/completions";
+    
+    response = await fetch(forgeUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${ENV.forgeApiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
