@@ -394,7 +394,7 @@ export const appRouter = router({
 
   // ===== رفع الصور =====
   upload: router({
-    image: protectedProcedure
+    image: mousaProcedure
       .input(z.object({
         base64: z.string(),
         mimeType: z.string().default("image/jpeg"),
@@ -403,7 +403,8 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const buffer = Buffer.from(input.base64, "base64");
         const ext = input.mimeType.split("/")[1] || "jpg";
-        const key = `users/${ctx.user.id}/images/${nanoid()}.${ext}`;
+        const userId = ctx.user?.id || 0;
+        const key = `users/${userId}/images/${nanoid()}.${ext}`;
         const { url } = await storagePut(key, buffer, input.mimeType);
         return { url, key };
       }),
@@ -421,7 +422,7 @@ export const appRouter = router({
         return project;
       }),
 
-    create: protectedProcedure
+    create: mousaProcedure
       .input(z.object({
         name: z.string().min(1),
         description: z.string().optional(),
@@ -432,7 +433,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         return createProject({
-          userId: ctx.user.id,
+          userId: ctx.user?.id || 0,
           name: input.name,
           description: input.description ?? null,
           projectType: input.projectType,
@@ -482,7 +483,7 @@ export const appRouter = router({
 
   // ===== التحليلات =====
   analyses: router({
-    analyze: protectedProcedure
+    analyze: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         imageUrl: z.string(),
@@ -493,9 +494,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const result = await analyzeInteriorDesign(input.imageUrl, input.designStyle, input.spaceType, input.area);
+        const userId = ctx.user?.id || 0;
         await createAnalysis({
           projectId: input.projectId,
-          userId: ctx.user.id,
+          userId,
           imageUrl: input.imageUrl,
           imageKey: input.imageKey ?? null,
           designStyle: input.designStyle,
