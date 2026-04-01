@@ -1588,11 +1588,18 @@ ${structuralAnalysisPrompt}
 
 🚨 قانون تشطيب الجدران الإلزامي (بلا استثناء):
 كل جدار مرئي في الصورة يجب أن يحصل على تشطيب جديد في التصور — لا يُترك أي جدار بمظهره الأصلي حتى لو كان نظيفاً.
-✅ الجدار الأبيض السادة: غيّريه بدهان ملون أو ورق جدران أو كلادينج يناسب النمط
+✅ الجدار الأبيض السادة: غيّريه بدهان ملون أو ورق جدران أو كلادينج يناسب النمط — الجدار الأبيض غير مقبول أبداً
 ✅ الجدار المتلف/المتمزق: أصلحيه وغيّريه بتشطيب جديد إلزامياً
 ✅ الجدار بورق جدران قديم: استبدليه بدهان أو كلادينج أو حجر أو خشب حسب النمط — لا تتركيه بنفس ورق الجدران القديم أبداً
 ✅ الجدار ببلاط قديم/متهالك: استبدليه بتشطيب جديد يناسب النمط
-❌ ممنوع منعاً مطلقاً: ترك أي جدار بمظهره الأصلي في التصور — كل جدار يجب أن يتحوّل في التصور ⚠️ قانون إصلاح التلف الإلزامي (ينطبق على جميع مستويات الميزانية بلا استثناء):
+✅ الجدار المنقطع/الجزئي (مقطوع عند حافة الصورة): الجزء المرئي منه يجب أن يتلقى نفس تشطيب الجدران الأخرى — لا يُترك أبيض سادة
+❌ ممنوع منعاً مطلقاً: ترك أي جدار (بما فيها الجدران الجزئية) بمظهره الأصلي في التصور — كل جدار يجب أن يتحوّل في التصور
+
+🚨 قانون السقف الإلزامي (بلا استثناء):
+السقف الأبيض السادة غير مقبول أبداً — كل سقف يجب أن يتحوّل في التصور.
+✅ السقف الافتراضي: جبس متعدد المستويات + إضاءة مخفية دافئة
+✅ أضيفي دائماً: ثريا مميزة أو مجموعة بندنت كنقطة محورية
+❌ ممنوع: ترك السقف سطحاً أبيض سادة — يجب أن يكون للسقف تصميم جبسي + إضاءة ⚠️ قانون إصلاح التلف الإلزامي (ينطبق على جميع مستويات الميزانية بلا استثناء):
 إذا لاحظتِ أي تلف أو تهالك في الصورة — تآكل جدران، ظهور حديد، رطوبة، ورق جدران متمزق أو متهالك، تشققات، دهان متشقق، بلاط مكسور — يجب إصلاحها واستبدالها بتشطيب جديد في التصور بغض النظر عن مستوى الميزانية.
 ✅ الخيار الاقتصادي: استبدلي التلف بدهان بسيط أو ورق جدران اقتصادي — لكن لا تتركي التلف ظاهراً أبداً.
 ✅ الخيار المتوسط: استبدلي بدهان جديد + تصميم محسّن.
@@ -1975,14 +1982,15 @@ FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
 
 (1) WALLS — MANDATORY TRANSFORMATION (ZERO EXCEPTIONS — EVERY VISIBLE WALL MUST CHANGE):
     RULE: NO wall may keep its original appearance in the render. Every wall visible in the photo MUST receive a new finish.
-    - Plain/white wall: MUST be changed to colored paint, wallpaper, cladding, or textured finish
+    - Plain/white wall: MUST be changed to colored paint, wallpaper, cladding, or textured finish — white walls are NOT acceptable
     - Damaged/torn wall: MUST be repaired AND given a new finish — NEVER leave damage visible
     - Old wallpaper: MUST be replaced with paint, cladding, stone, or wood — NEVER keep old wallpaper
     - Old/deteriorated tiles: MUST be replaced with new finish matching the style
+    - TRUNCATED/PARTIAL wall (wall cut off at frame edge): The VISIBLE portion MUST receive a new finish — apply the same wall treatment as the main walls, do NOT leave it plain/white
     - Choose the most impactful wall treatment: Paint (rich saturated color OR sophisticated neutral), stone cladding (marble/travertine/limestone), wood panels (oak/walnut/teak), decorative plaster (venetian/microcement/tadelakt), patterned tiles, textured wallpaper, fabric panels, or bold murals
     - Feature/accent wall: create a DRAMATIC focal point on the main wall
     - Decorative moldings, wainscoting, or architectural details if style calls for it
-    ❌ FORBIDDEN: Leaving ANY wall with its original appearance in the render
+    ❌ FORBIDDEN: Leaving ANY wall (including partial/truncated walls) with its original plain/white appearance in the render
 
 (2) FLOOR — MANDATORY TRANSFORMATION: Replace with the most aspirational flooring for this style:
     - Marble: large-format slabs (120x60 or 60x60), book-matched, veined patterns
@@ -1991,12 +1999,14 @@ FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
     - Choose material AND color AND pattern that best elevates the design
     - Add area rugs with texture and pattern that complement the style
 
-(3) CEILING — MANDATORY TRANSFORMATION: Create a stunning ceiling design:
-    - Gypsum: multi-level drops, cove lighting channels, coffered grid, tray ceiling
+(3) CEILING — MANDATORY TRANSFORMATION (plain white ceiling is FORBIDDEN):
+    RULE: The ceiling MUST be transformed — a plain flat white ceiling is NEVER acceptable.
+    - Gypsum: multi-level drops, cove lighting channels, coffered grid, tray ceiling (MOST COMMON — use this as default)
     - OR: exposed wooden beams, metal grid (industrial), stretched fabric, acoustic panels
-    - Integrated LED cove lighting: warm 2700K for luxury/gulf, cool 4000K for modern/minimal
-    - Statement chandelier OR cluster of pendants OR sculptural ceiling light as focal point
+    - ALWAYS add integrated LED cove lighting: warm 2700K for luxury/gulf, cool 4000K for modern/minimal
+    - ALWAYS add a statement chandelier OR cluster of pendants OR sculptural ceiling light as focal point
     - Paint ceiling in contrasting or complementary color to walls
+    ❌ FORBIDDEN: Leaving the ceiling as a plain flat white surface — it MUST have gypsum design + lighting
 
 (4) LIGHTING — LAYERED LIGHTING DESIGN (3 layers minimum):
     - Ambient: cove LED strips, recessed spotlights, ceiling fixtures
