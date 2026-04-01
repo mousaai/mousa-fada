@@ -1460,11 +1460,14 @@ ${colorText}
 🔒 STRUCTURAL DISCIPLINE LAW (قانون الانضباط البنيوي — الافتراضي الصارم):
 القاعدة الذهبية: ما هو مرئي في الصورة يُحلَّل ويُصمَّم — ما هو خارج الإطار أو غير مرئي لا يُفترض ولا يُخترع.
 
-⚠️ قواعد الجدران والفضاءات المجهولة:
+⚠️ قواعد الجدران والفضاءات المجهولة (صارمة بلا استثناء):
 - الجدار الذي لا يُرى ما خلفه أو ما يليه = جدار مغلق صلب — لا تفترضي نافذة أو فتحة أو امتداداً
-- الفضاء خارج إطار الصورة = مجهول — لا تُضيفي ضوءاً طبيعياً من مصدر غير مرئي في الصورة
-- إذا لم تظهر نافذة في الصورة = لا توجد نافذة في هذا الجدار — لا تُضيفيها
-- إذا ظهر جدار أبيض مجرد = يبقى جداراً — لا تحوّليه لفتحة أو نافذة
+- الفضاء خارج إطار الصورة = مجهول تماماً — لا تُضيفي ضوءاً طبيعياً من مصدر غير مرئي في الصورة
+- إذا لم تظهر نافذة في الصورة = لا توجد نافذة في هذا الجدار — لا تُضيفيها أبداً
+- إذا ظهر جدار أبيض مجرد = يبقى جداراً صلباً — لا تحوّليه لفتحة أو نافذة أبداً
+- الجدار المنقطع أو الناقص (يظهر في حافة الصورة) = جدار منقطع فعلياً — لا تكمليه بجدار كامل أو تضيفي ما وراءه — اتركيه منقطعاً كما هو
+- الفراغ خلف الستائر أو الباب = مجهول — لا تفترضي ما خلفه ولا تضيفي أثاثاً أو مساحة لم تظهر في الصورة
+- المطبخ المرئي في الخلفية = مطبخ حقيقي موجود فعلاً — صمّميه بنفس موضعه وحجمه بدون توسيع أو إضافة مساحة مجهولة
 
 🎨 FULL CREATIVE FREEDOM (إطلاق الإبداع الكامل):
 أنتِ حرة تماماً في تغيير كل شيء قابل للتغيير: الأرضيات، الجدران، الأسقف، الإضاءة، الأثاث، المواد، التشطيبات.
@@ -1581,7 +1584,12 @@ ${structuralAnalysisPrompt}
 المرحلة الثانية: قدّمي ${count} أفكار تصميمية بأنماط مختلفة ضمن الميزانية.
 قاعدة مطلقة: التصوير الافتراضي يجب أن يكون نفس الصورة بالضبط: نفس الزاوية، نفس الزوم، نفس اتجاه الكاميرا، نفس أبعاد الغرفة. ${doorChangeRule}
 
-🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات (المادة + اللون + النقش)، الجدران (دهان + ورق جدران + حجر + خشب + جبس + بلاط)، السقف (جبس + إضاءة مخفية + عوارض + ثريات + ألوان)، الإضاءة، الأثاث، التشطيبات، الألوان، والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (مواقع الأبواب، النوافذ، الدرجات، الأعمدة، الفتحات) فيجب الحفاظ على مواقعها تماماً ما لم يطلب المستخدم صراحةً تغييرها. ⚠️ التهالك والتلف: إذا لاحظتِ تآكل في الجدران أو ظهور حديد أو رطوبة أو ورق جدران متهالك أو تشققات — استبدليها تلقائياً بتشطيب جديد في التصور، وأضيفي ملاحظة فنية للعميل تشرح المشكلة وطريقة المعالجة المطلوبة.
+🎨 إطلاق الإبداع: لكِ الحرية الكاملة في تغيير الأرضيات (المادة + اللون + النقش)، الجدران (دهان + ورق جدران + حجر + خشب + جبس + بلاط)، السقف (جبس + إضاءة مخفية + عوارض + ثريات + ألوان)، الإضاءة، الأثاث، التشطيبات، الألوان، والمواد. ابدعي بجرأة في كل ما هو قابل للتغيير. أما البنية الإنشائية (مواقع الأبواب، النوافذ، الدرجات، الأعمدة، الفتحات) فيجب الحفاظ على مواقعها تماماً ما لم يطلب المستخدم صراحةً تغييرها. ⚠️ قانون إصلاح التلف الإلزامي (ينطبق على جميع مستويات الميزانية بلا استثناء):
+إذا لاحظتِ أي تلف أو تهالك في الصورة — تآكل جدران، ظهور حديد، رطوبة، ورق جدران متمزق أو متهالك، تشققات، دهان متشقق، بلاط مكسور — يجب إصلاحها واستبدالها بتشطيب جديد في التصور بغض النظر عن مستوى الميزانية.
+✅ الخيار الاقتصادي: استبدلي التلف بدهان بسيط أو ورق جدران اقتصادي — لكن لا تتركي التلف ظاهراً أبداً.
+✅ الخيار المتوسط: استبدلي بدهان جديد + تصميم محسّن.
+✅ الخيار الشامل: استبدلي بتشطيب فاخر كامل.
+أضيفي دائماً ملاحظة فنية للعميل تشرح التلف الملاحظ وطريقة معالجته المطلوبة.
 
 🎨 قانون التباين الجذري المطلق (DIVERSITY LAW):
 كل فكرة يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -1942,7 +1950,14 @@ FULL CREATIVE FREEDOM on: wall finishes (paint/wallpaper/stone/wood/textured pla
           const floorConstraint = `FLOOR FREEDOM: Change floor material, color, and pattern freely to best match the design style. Choose from: marble, parquet, herringbone wood, patterned tiles, polished concrete, terrazzo, or any material that elevates the design.`;
 
           // قيد الجدران المجهولة
-          const wallConstraint = `WALL BOUNDARY RULE: Only design surfaces VISIBLE in the photo. Walls outside the camera frame are UNKNOWN - do NOT add windows, openings, or natural light from unseen walls. If a wall appears solid/plain in the photo = it IS solid - do NOT transform it into a window or opening. Artificial/interior lighting only - no invented natural light sources.`;
+          const wallConstraint = `WALL BOUNDARY RULE (ZERO TOLERANCE):
+1. VISIBLE SURFACES ONLY: Design ONLY surfaces visible in the photo. Walls outside the camera frame are COMPLETELY UNKNOWN.
+2. NO INVENTED OPENINGS: If no window appears in the photo = there is NO window on that wall. Do NOT add one.
+3. SOLID WALL RULE: A plain/white wall = a SOLID wall. Do NOT transform it into a window, archway, or opening.
+4. TRUNCATED WALL RULE: A wall that appears cut off at the edge of the frame = it IS truncated. Do NOT complete it with a full wall or add anything behind it. Leave it truncated as-is.
+5. UNKNOWN SPACE RULE: Space behind curtains, doors, or at frame edges = UNKNOWN. Do NOT invent furniture, rooms, or spaces that were not visible in the original photo.
+6. KITCHEN/ELEMENT IN BACKGROUND: If a kitchen or element is visible in the background = it is REAL and EXISTS at that location. Redesign it at the SAME position and SAME size — do NOT expand it or add space that was not in the original.
+7. LIGHTING: Artificial/interior lighting only — no invented natural light from unseen walls.`;
 
           generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint}
 
