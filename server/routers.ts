@@ -3422,7 +3422,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       designStyle: z.string().default("modern"),
     }))
     .mutation(async ({ input }) => {
-      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.`;
 
       const messages: Message[] = [
         { role: "system", content: systemPrompt },
@@ -3435,41 +3435,36 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
             } as ImageContent,
             {
               type: "text" as const,
-              text: `حلّلي هذا المخطط المعماري واستخرجي كل المعلومات الممكنة.
+              text: `حلّلي هذا المخطط المعماري بدقة واستخرجي كل المعلومات.
 نوع المشروع: ${input.projectType}
 نمط التصميم المطلوب: ${input.designStyle}
 
-أعيدي JSON بهذا الشكل بالضبط:
+استخرجي كل الغرف والمساحات الموجودة في المخطط (غرف نوم، صالات، مطابخ، حمامات، ممرات، مداخل، مخازن، إلخ).
+إذا لم تتمكني من قراءة المخطط بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.
+
+أعيدي JSON بهذا الشكل بالضبط (لا تضيفي أي نص خارج JSON):
 {
-  "projectType": "سكني/تجاري/مختلط",
-  "totalArea": 0,
+  "projectType": "سكني",
+  "totalArea": 150,
   "floors": 1,
   "summary": "وصف موجز للمخطط",
   "rooms": [
     {
-      "name": "اسم الغرفة بالعربية",
-      "type": "نوع الغرفة",
-      "area": 0,
-      "dimensions": "0×0 م"
+      "name": "غرفة النوم الرئيسية",
+      "type": "bedroom",
+      "area": 20,
+      "dimensions": "4×5 م"
     }
   ],
   "recommendations": [
     "توصية مهنية من م. سارة"
   ]
-}
-إذا لم تتمكني من قراءة المخطط بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.`,
+}`,
             } as TextContent,
           ],
         },
       ];
 
-      const aiResponse = await invokeLLM({
-        messages,
-        response_format: { type: "json_object" },
-      });
-
-      const rawContent = aiResponse.choices[0]?.message?.content;
-      const aiText = typeof rawContent === "string" ? rawContent : "{}";
       let parsed: {
         projectType?: string;
         totalArea?: number;
@@ -3478,15 +3473,98 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         rooms?: Array<{ name: string; type: string; area: number; dimensions: string }>;
         recommendations?: string[];
       } = {};
-      try { parsed = JSON.parse(aiText); } catch { parsed = {}; }
+
+      try {
+        const aiResponse = await invokeLLM({
+          messages,
+          response_format: { type: "json_object" },
+        });
+        const rawContent = aiResponse.choices[0]?.message?.content;
+        const aiText = typeof rawContent === "string" ? rawContent : "{}";
+        // استخراج JSON من الرد حتى لو كان محاطاً بنص
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : aiText;
+        try { parsed = JSON.parse(jsonStr); } catch { parsed = {}; }
+      } catch (err) {
+        console.error("[analyzePlan] LLM error:", err);
+        // إرجاع بيانات افتراضية بدلاً من الفشل الكامل
+        parsed = {
+          projectType: input.projectType,
+          totalArea: 0,
+          floors: 1,
+          summary: "تعذّر تحليل المخطط بشكل كامل — يرجى المحاولة مرة أخرى",
+          rooms: [],
+          recommendations: ["تأكد من وضوح المخطط وأن الصورة ذات دقة عالية"],
+        };
+      }
 
       return {
         projectType: parsed.projectType || input.projectType,
         totalArea: parsed.totalArea || 0,
         floors: parsed.floors || 1,
         summary: parsed.summary || "تم تحليل المخطط بنجاح",
-        rooms: parsed.rooms || [],
-        recommendations: parsed.recommendations || [],
+        rooms: Array.isArray(parsed.rooms) ? parsed.rooms : [],
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+      };
+    }),
+
+  // ===== توليد تصاميم لغرف المخطط =====
+  generatePlanRoomDesign: protectedProcedure
+    .input(z.object({
+      roomName: z.string(),
+      roomType: z.string(),
+      roomArea: z.number(),
+      roomDimensions: z.string(),
+      designStyle: z.string(),
+      projectType: z.string(),
+      planImageUrl: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // خصم النقاط
+      const mousaUser = ctx.user as { id?: number; mousaId?: number };
+      const mousaUserId = mousaUser.id || mousaUser.mousaId;
+      if (mousaUserId) {
+        const cost = CREDIT_COSTS["generatePlanDesign"];
+        const balanceData = await checkMousaBalance(mousaUserId);
+        if (balanceData.balance < cost) {
+          throw new Error(`رصيد غير كافٍ — تحتاج ${cost} نقطة، رصيدك الحالي ${balanceData.balance} نقطة`);
+        }
+        await deductMousaCredits(mousaUserId, cost, `تصميم ${input.roomName} من المخطط`);
+      }
+
+      const roomTypeMap: Record<string, string> = {
+        bedroom: "غرفة نوم", living: "غرفة معيشة", kitchen: "مطبخ",
+        bathroom: "حمام", dining: "غرفة طعام", office: "مكتب",
+        corridor: "ممر", entrance: "مدخل", storage: "مخزن",
+        balcony: "شرفة", majlis: "مجلس", prayer: "غرفة صلاة",
+      };
+      const roomTypeAr = roomTypeMap[input.roomType] || input.roomType;
+
+      const styleMap: Record<string, string> = {
+        modern: "عصري", gulf: "خليجي فاخر", classic: "كلاسيكي",
+        minimal: "مينيمال", luxury: "فاخر Quiet Luxury",
+      };
+      const styleAr = styleMap[input.designStyle] || input.designStyle;
+
+      const prompt = `Interior design visualization for ${roomTypeAr} (${input.roomDimensions}, ${input.roomArea}m²).
+Style: ${styleAr}. Project type: ${input.projectType}.
+Create a photorealistic interior design image showing:
+- Complete floor transformation (marble/herringbone parquet/porcelain tiles)
+- Ceiling design with gypsum levels and hidden LED lighting
+- All walls with new finishes (paint/cladding/wallpaper/stone)
+- Appropriate furniture and decor for ${roomTypeAr}
+- 3-layer lighting: ambient + accent + decorative
+Do NOT add walls or spaces not visible in the original plan.
+High quality, photorealistic, professional interior photography style.`;
+
+      const imageResult = await generateImage({ prompt });
+
+      return {
+        roomName: input.roomName,
+        roomType: input.roomType,
+        imageUrl: imageResult.url ?? "",
+        creditsCost: CREDIT_COSTS["generatePlanDesign"],
+        style: styleAr,
       };
     }),
 

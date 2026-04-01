@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Upload, FileText, Sparkles, CheckCircle, AlertCircle, Loader2, Building2, Home, Briefcase } from "lucide-react";
+import { ChevronLeft, Upload, FileText, Sparkles, CheckCircle, AlertCircle, Loader2, Building2, Home, Briefcase, Coins, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -21,6 +21,9 @@ const STYLES = [
   { id: "luxury", label: "فاخر" },
 ];
 
+// تكلفة النقاط لكل عملية
+const CREDITS_PER_ROOM = 50;
+
 interface RoomResult {
   name: string;
   type: string;
@@ -37,28 +40,72 @@ interface PlanAnalysisResult {
   recommendations: string[];
 }
 
+interface RoomDesignResult {
+  roomName: string;
+  roomType: string;
+  imageUrl: string;
+  creditsCost: number;
+  style: string;
+}
+
 export default function PlanDesign() {
   const [, navigate] = useLocation();
   const { dir } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<"upload" | "config" | "analyzing" | "results">("upload");
+  const [step, setStep] = useState<"upload" | "config" | "analyzing" | "results" | "designing" | "done">("upload");
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [projectType, setProjectType] = useState("residential");
   const [designStyle, setDesignStyle] = useState("modern");
   const [analysisResult, setAnalysisResult] = useState<PlanAnalysisResult | null>(null);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
+  const [roomDesigns, setRoomDesigns] = useState<Record<string, RoomDesignResult>>({});
+  const [designingRoom, setDesigningRoom] = useState<string | null>(null);
+  const [designQueue, setDesignQueue] = useState<RoomResult[]>([]);
 
   const analyzePlanMutation = trpc.analyzePlan.useMutation({
-    onSuccess: (data: PlanAnalysisResult) => {
+    onSuccess: (data: { projectType: string; totalArea: number; rooms: RoomResult[]; floors: number; summary: string; recommendations: string[] }) => {
       setAnalysisResult(data);
       setSelectedRooms(data.rooms.map((r: RoomResult) => r.name));
       setStep("results");
     },
     onError: (err: { message?: string }) => {
-      toast.error("حدث خطأ في تحليل المخطط: " + (err.message || ""));
+      toast.error("حدث خطأ في تحليل المخطط: " + (err.message || "يرجى المحاولة مرة أخرى"));
       setStep("config");
+    },
+  });
+
+  const generateRoomDesignMutation = trpc.generatePlanRoomDesign.useMutation({
+    onSuccess: (data: RoomDesignResult) => {
+      setRoomDesigns(prev => ({ ...prev, [data.roomName]: data }));
+      // معالجة الطابور
+      setDesignQueue(prev => {
+        const remaining = prev.slice(1);
+        if (remaining.length > 0) {
+          const nextRoom = remaining[0];
+          setDesigningRoom(nextRoom.name);
+          generateRoomDesignMutation.mutate({
+            roomName: nextRoom.name,
+            roomType: nextRoom.type,
+            roomArea: nextRoom.area,
+            roomDimensions: nextRoom.dimensions,
+            designStyle,
+            projectType,
+            planImageUrl: filePreview || undefined,
+          });
+        } else {
+          setDesigningRoom(null);
+          setStep("designing");
+        }
+        return remaining;
+      });
+    },
+    onError: (err: { message?: string }) => {
+      toast.error("خطأ في تصميم الغرفة: " + (err.message || ""));
+      setDesigningRoom(null);
+      setDesignQueue([]);
+      setStep("results");
     },
   });
 
@@ -95,16 +142,63 @@ export default function PlanDesign() {
     );
   };
 
-  const handleDesignRoom = (room: RoomResult) => {
-    // الانتقال إلى SmartCapture مع بيانات الغرفة
-    navigate(`/smart-capture?fromPlan=1&room=${encodeURIComponent(room.name)}&area=${room.area}&style=${designStyle}`);
+  const handleDesignAll = () => {
+    if (!analysisResult) return;
+    const roomsToDesign = analysisResult.rooms.filter(r => selectedRooms.includes(r.name));
+    if (roomsToDesign.length === 0) {
+      toast.error("اختر غرفة واحدة على الأقل");
+      return;
+    }
+    const totalCost = roomsToDesign.length * CREDITS_PER_ROOM;
+    toast.info(`سيتم استهلاك ${totalCost} نقطة لتصميم ${roomsToDesign.length} غرفة`);
+
+    setDesignQueue(roomsToDesign);
+    setDesigningRoom(roomsToDesign[0].name);
+    setStep("designing");
+
+    generateRoomDesignMutation.mutate({
+      roomName: roomsToDesign[0].name,
+      roomType: roomsToDesign[0].type,
+      roomArea: roomsToDesign[0].area,
+      roomDimensions: roomsToDesign[0].dimensions,
+      designStyle,
+      projectType,
+      planImageUrl: filePreview || undefined,
+    });
   };
+
+  const handleDesignSingle = (room: RoomResult) => {
+    setDesignQueue([room]);
+    setDesigningRoom(room.name);
+    setStep("designing");
+
+    generateRoomDesignMutation.mutate({
+      roomName: room.name,
+      roomType: room.type,
+      roomArea: room.area,
+      roomDimensions: room.dimensions,
+      designStyle,
+      projectType,
+      planImageUrl: filePreview || undefined,
+    });
+  };
+
+  const totalSelectedCost = selectedRooms.length * CREDITS_PER_ROOM;
 
   return (
     <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
       {/* Header */}
       <header className="flex items-center justify-between px-5 pt-safe pt-4 pb-3 bg-white/80 backdrop-blur border-b border-[#e8d9c0]">
-        <button onClick={() => navigate("/")} className="p-2 rounded-full hover:bg-[#f0e8d8] transition-colors">
+        <button
+          onClick={() => {
+            if (step === "designing") { setStep("results"); return; }
+            if (step === "done") { setStep("results"); return; }
+            if (step === "results") { setStep("config"); return; }
+            if (step === "config") { setStep("upload"); return; }
+            navigate("/");
+          }}
+          className="p-2 rounded-full hover:bg-[#f0e8d8] transition-colors"
+        >
           <ChevronLeft className="w-6 h-6 text-[#8B6914]" />
         </button>
         <div className="text-center">
@@ -121,7 +215,7 @@ export default function PlanDesign() {
           <div className="space-y-6">
             {/* Progress */}
             <div className="flex items-center gap-2">
-              {["رفع المخطط", "الإعدادات", "التحليل", "النتائج"].map((s, i) => (
+              {["رفع المخطط", "الإعدادات", "التحليل", "التصاميم"].map((s, i) => (
                 <div key={s} className="flex items-center gap-1 flex-1">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-[#C9A84C] text-white" : "bg-[#e8d9c0] text-[#8B6914]"}`}>
                     {i + 1}
@@ -165,8 +259,8 @@ export default function PlanDesign() {
               {[
                 { icon: "🏠", title: "استخراج الغرف", desc: "تحليل تلقائي لجميع الغرف والمساحات" },
                 { icon: "📐", title: "الأبعاد الدقيقة", desc: "استخراج الأبعاد والمساحات من المخطط" },
-                { icon: "🎨", title: "تصور ثلاثي الأبعاد", desc: "توليد صور تصورية لكل غرفة" },
-                { icon: "💰", title: "تقرير التكاليف", desc: "BOQ كامل لجميع غرف المشروع" },
+                { icon: "🎨", title: "تصور تصميمي", desc: "توليد صور تصميمية لكل غرفة" },
+                { icon: "💰", title: "تقرير التكاليف", desc: "تكلفة تصميم كل غرفة بالنقاط" },
               ].map(card => (
                 <div key={card.title} className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
                   <span className="text-2xl">{card.icon}</span>
@@ -174,6 +268,24 @@ export default function PlanDesign() {
                   <p className="text-[10px] text-[#8B6914]/70 mt-0.5">{card.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Credits Info */}
+            <div className="bg-gradient-to-r from-[#C9A84C]/10 to-[#8B6914]/10 rounded-2xl p-4 border border-[#C9A84C]/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Coins className="w-4 h-4 text-[#C9A84C]" />
+                <p className="text-sm font-bold text-[#5C3D11]">تكلفة النقاط</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#8B6914]/70">تحليل المخطط</span>
+                  <span className="font-bold text-[#5C3D11]">مجاني</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8B6914]/70">تصميم كل غرفة</span>
+                  <span className="font-bold text-[#C9A84C]">{CREDITS_PER_ROOM} نقطة</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -239,14 +351,19 @@ export default function PlanDesign() {
               </div>
             </div>
 
-            {/* Analyze Button */}
+            {/* Analyze Button — مجاني */}
+            <div className="bg-green-50 rounded-2xl p-3 border border-green-200 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <p className="text-xs text-green-700">تحليل المخطط مجاني — النقاط تُستهلك فقط عند توليد التصاميم</p>
+            </div>
+
             <button
               onClick={handleAnalyze}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
             >
               <span className="flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                ابدأ تحليل المخطط
+                ابدأ تحليل المخطط (مجاني)
               </span>
             </button>
           </div>
@@ -266,12 +383,12 @@ export default function PlanDesign() {
               <p className="text-sm text-[#8B6914]/70">استخراج الغرف والأبعاد والمساحات...</p>
             </div>
             <div className="w-full max-w-xs space-y-2">
-              {["قراءة المخطط", "استخراج الغرف", "حساب المساحات", "تحضير التصاميم"].map((step, i) => (
-                <div key={step} className="flex items-center gap-3">
+              {["قراءة المخطط", "استخراج الغرف", "حساب المساحات", "تحضير التصاميم"].map((s, i) => (
+                <div key={s} className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
                     <Loader2 className="w-3 h-3 text-[#C9A84C] animate-spin" style={{ animationDelay: `${i * 0.3}s` }} />
                   </div>
-                  <p className="text-sm text-[#8B6914]">{step}</p>
+                  <p className="text-sm text-[#8B6914]">{s}</p>
                 </div>
               ))}
             </div>
@@ -319,6 +436,20 @@ export default function PlanDesign() {
               </div>
             )}
 
+            {/* Credits Summary */}
+            <div className="bg-gradient-to-r from-[#C9A84C]/10 to-[#8B6914]/10 rounded-2xl p-4 border border-[#C9A84C]/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-[#C9A84C]" />
+                  <p className="text-sm font-bold text-[#5C3D11]">تكلفة التصميم</p>
+                </div>
+                <div className="text-left">
+                  <p className="text-lg font-black text-[#C9A84C]">{totalSelectedCost} نقطة</p>
+                  <p className="text-[10px] text-[#8B6914]/70">{selectedRooms.length} غرفة × {CREDITS_PER_ROOM} نقطة</p>
+                </div>
+              </div>
+            </div>
+
             {/* Rooms List */}
             <div>
               <p className="text-sm font-bold text-[#5C3D11] mb-3">الغرف المكتشفة ({analysisResult.rooms.length})</p>
@@ -338,12 +469,15 @@ export default function PlanDesign() {
                           <p className="text-xs text-[#8B6914]/70">{room.dimensions} — {room.area} م²</p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDesignRoom(room)}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold active:scale-95 transition-transform"
-                      >
-                        صمّم
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#C9A84C] font-bold">{CREDITS_PER_ROOM} نقطة</span>
+                        <button
+                          onClick={() => handleDesignSingle(room)}
+                          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold active:scale-95 transition-transform"
+                        >
+                          صمّم
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -352,17 +486,108 @@ export default function PlanDesign() {
 
             {/* Design All Button */}
             <button
-              onClick={() => {
-                const firstRoom = analysisResult.rooms.find((r: RoomResult) => selectedRooms.includes(r.name));
-                if (firstRoom) handleDesignRoom(firstRoom);
-              }}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
+              onClick={handleDesignAll}
+              disabled={selectedRooms.length === 0}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white font-bold text-base shadow-lg active:scale-95 transition-transform disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                صمّم الغرف المحددة ({selectedRooms.length})
+                صمّم الغرف المحددة ({selectedRooms.length}) — {totalSelectedCost} نقطة
               </span>
             </button>
+          </div>
+        )}
+
+        {/* Step 5: Designing — عرض التصاميم مع التوليد التدريجي */}
+        {step === "designing" && (
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-[#C9A84C] to-[#8B6914] rounded-3xl p-5 text-white">
+              <p className="font-bold text-lg mb-1">تصاميم مخططك</p>
+              <p className="text-sm opacity-80">
+                {designingRoom
+                  ? `جاري تصميم: ${designingRoom}...`
+                  : `اكتمل تصميم ${Object.keys(roomDesigns).length} غرفة`}
+              </p>
+              {designingRoom && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <p className="text-xs opacity-80">
+                    {Object.keys(roomDesigns).length + 1} من {Object.keys(roomDesigns).length + designQueue.length} غرفة
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Room Designs */}
+            <div className="space-y-4">
+              {analysisResult?.rooms
+                .filter(r => selectedRooms.includes(r.name) || roomDesigns[r.name])
+                .map((room: RoomResult) => {
+                  const design = roomDesigns[room.name];
+                  const isGenerating = designingRoom === room.name;
+                  const isPending = !design && !isGenerating && designQueue.some(q => q.name === room.name);
+
+                  return (
+                    <div key={room.name} className="bg-white rounded-2xl overflow-hidden border border-[#e8d9c0]">
+                      {/* Room Header */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-[#e8d9c0]">
+                        <div>
+                          <p className="text-sm font-bold text-[#5C3D11]">{room.name}</p>
+                          <p className="text-xs text-[#8B6914]/70">{room.dimensions} — {room.area} م²</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {design && (
+                            <span className="text-[10px] text-[#C9A84C] font-bold flex items-center gap-1">
+                              <Coins className="w-3 h-3" />
+                              {design.creditsCost} نقطة
+                            </span>
+                          )}
+                          {design && (
+                            <button
+                              onClick={() => handleDesignSingle(room)}
+                              className="p-1.5 rounded-lg bg-[#f0e8d8] text-[#8B6914] hover:bg-[#e8d9c0] transition-colors"
+                              title="إعادة التصميم"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Image Area */}
+                      {design ? (
+                        <img
+                          src={design.imageUrl}
+                          alt={`تصميم ${room.name}`}
+                          className="w-full aspect-video object-cover"
+                        />
+                      ) : isGenerating ? (
+                        <div className="w-full aspect-video bg-gradient-to-br from-[#f0e8d8] to-[#e8d9c0] flex flex-col items-center justify-center gap-3">
+                          <Loader2 className="w-8 h-8 text-[#C9A84C] animate-spin" />
+                          <p className="text-sm text-[#8B6914] font-bold">جاري التصميم...</p>
+                          <p className="text-xs text-[#8B6914]/60">قد يستغرق 15-30 ثانية</p>
+                        </div>
+                      ) : isPending ? (
+                        <div className="w-full aspect-video bg-[#f0e8d8] flex flex-col items-center justify-center gap-2">
+                          <ImageIcon className="w-8 h-8 text-[#C9A84C]/50" />
+                          <p className="text-xs text-[#8B6914]/60">في الانتظار...</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Back to Results */}
+            {!designingRoom && (
+              <button
+                onClick={() => setStep("results")}
+                className="w-full py-3 rounded-2xl border-2 border-[#C9A84C] text-[#C9A84C] font-bold text-sm active:scale-95 transition-transform"
+              >
+                العودة لقائمة الغرف
+              </button>
+            )}
           </div>
         )}
       </div>
