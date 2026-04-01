@@ -20,7 +20,9 @@ import DesignIdeas from "./pages/DesignIdeas";
 import SmartCapture from "./pages/SmartCapture";
 import VoiceDesigner from "./pages/VoiceDesigner";
 import FurnitureStore from "./pages/FurnitureStore";
-import CreditsDoc from "./pages/CreditsDoc";
+import CreditsDoc from "@/pages/CreditsDoc";
+import PlanDesign from "@/pages/PlanDesign";
+import UrbanDesign from "@/pages/UrbanDesign";
 
 function Router() {
   return (
@@ -47,6 +49,10 @@ function Router() {
       <Route path={"/furniture"} component={FurnitureStore} />
       <Route path={"/store"} component={FurnitureStore} />
       <Route path={"/credits-doc"} component={CreditsDoc} />
+      <Route path={"/plan-design"} component={PlanDesign} />
+      <Route path={"/plan"} component={PlanDesign} />
+      <Route path={"/urban-design"} component={UrbanDesign} />
+      <Route path={"/urban"} component={UrbanDesign} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

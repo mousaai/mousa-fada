@@ -1774,6 +1774,15 @@ ${structuralAnalysisPrompt}
           const isExteriorFacade = /واجهة|خارجي|مدخل|مبنى|بوابة|facade|exterior|building|front|entrance/.test(spaceTypeStr);
           const isStreet = /شارع|طريق|ممشى|رصيف|حضري|عام|منطقة تجارية|سوق|موقف|street|road|walkway|sidewalk|alley|plaza|square|urban|commercial|parking|public/.test(spaceTypeStr);
           const isLandscape = /حديقة|لاندسكيب|مسبح|جلسة خارجية|ممر|ساحة|فناء|سطح|شرفة|تراس|garden|landscape|pool|outdoor|terrace|pathway|courtyard|rooftop|balcony/.test(spaceTypeStr);
+          // الفضاءات التجارية والمتخصصة
+          const isRestaurantCafe = /مطعم|كافيه|كافيتيريا|مقهى|restaurant|cafe|cafeteria|food court|dining hall/.test(spaceTypeStr);
+          const isRetailShop = /محل|معرض|متجر|بوتيك|صالة عرض|shop|store|boutique|showroom|retail/.test(spaceTypeStr);
+          const isHotelLobby = /فندق|لوبي|منتجع|استقبال|hotel|lobby|resort|reception hall/.test(spaceTypeStr);
+          const isClinicHospital = /عيادة|مستشفى|مركز طبي|صحي|clinic|hospital|medical center|healthcare/.test(spaceTypeStr);
+          const isMosquePrayer = /مسجد|مصلى|جامع|mosque|prayer hall|masjid/.test(spaceTypeStr);
+          const isOfficeCommercial = /مكتب تجاري|شركة|مقر|مبنى إداري|corporate office|headquarters|commercial office|open office/.test(spaceTypeStr);
+          const isEducational = /مدرسة|جامعة|فصل|قاعة|school|university|classroom|lecture hall|educational/.test(spaceTypeStr);
+          const isCommercialSpace = isRestaurantCafe || isRetailShop || isHotelLobby || isClinicHospital || isMosquePrayer || isOfficeCommercial || isEducational;
           const isInterior = !isExteriorFacade && !isStreet && !isLandscape;
           
           let generatedPrompt: string;
@@ -1787,8 +1796,55 @@ ${structuralAnalysisPrompt}
           } else if (isLandscape) {
             // برومبت لاندسكيب وفضاءات خارجية
             generatedPrompt = `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
+          } else if (isCommercialSpace) {
+            // برومبت الفضاءات التجارية والمتخصصة
+            const allowOpeningChanges = lockStructuralElements?.allowPlatformFreedom === true ||
+              (lockStructuralElements?.enabled === false);
+
+            let structuralNote: string;
+            if (allowOpeningChanges) {
+              structuralNote = keepElements
+                ? `STRUCTURAL REFERENCE: ${keepElements}. User has granted FULL CREATIVE FREEDOM including moving/resizing openings.`
+                : `User has granted FULL CREATIVE FREEDOM on all elements including structure.`;
+            } else {
+              const structuralConstraints = [
+                keepElements ? `EXACT positions of openings: ${keepElements}` : null,
+                userConstraints.ceiling ? `ceiling type must remain UNCHANGED` : null,
+                userConstraints.steps ? `ALL level changes and steps MUST be preserved` : null,
+              ].filter(Boolean).join('. ');
+              structuralNote = `⚠️ ABSOLUTE STRUCTURAL CONSTRAINTS (NON-NEGOTIABLE): ${structuralConstraints || 'Preserve ALL structural elements exactly as in original photo'}. CREATIVE FREEDOM applies ONLY to: finishes, furniture, lighting, colors, branding elements.`;
+            }
+
+            // تحديد نوع الفضاء التجاري للبرومبت
+            let commercialSpaceType = "commercial space";
+            let commercialFocus = "";
+            if (isRestaurantCafe) {
+              commercialSpaceType = "restaurant/cafe interior";
+              commercialFocus = `Focus on: dining zones (seating arrangements, booth/table mix), bar/counter design, kitchen visibility, ambient lighting zones (task/accent/ambient), acoustic materials, brand identity through color and materials, customer flow and wayfinding. Create an atmosphere that makes customers want to stay longer.`;
+            } else if (isRetailShop) {
+              commercialSpaceType = "retail shop/showroom interior";
+              commercialFocus = `Focus on: product display systems (shelving/racks/pedestals), customer journey and flow, focal points and hero displays, fitting room design (if applicable), checkout counter, window display, brand identity through materials and lighting. Maximize product visibility and purchase intent.`;
+            } else if (isHotelLobby) {
+              commercialSpaceType = "hotel lobby/reception";
+              commercialFocus = `Focus on: grand entrance statement, reception desk as focal point, waiting/lounge areas, wayfinding to elevators/amenities, luggage handling space, concierge area, brand identity through luxury materials. Create a memorable first impression.`;
+            } else if (isClinicHospital) {
+              commercialSpaceType = "medical clinic/healthcare interior";
+              commercialFocus = `Focus on: calming color palette (soft blues/greens/whites), easy-to-clean materials, clear wayfinding, reception and waiting area comfort, privacy considerations, accessibility (wide corridors, no obstacles), clinical hygiene standards. Balance professionalism with patient comfort.`;
+            } else if (isMosquePrayer) {
+              commercialSpaceType = "mosque/prayer hall interior";
+              commercialFocus = `Focus on: mihrab as the spiritual focal point (ornate arch, calligraphy), prayer hall proportions and carpet layout, minbar design, acoustic quality (sound absorption materials), natural light through high windows, Islamic geometric patterns on walls/ceiling, ablution area if visible, serene and spiritual atmosphere. Apply Islamic architectural principles.`;
+            } else if (isOfficeCommercial) {
+              commercialSpaceType = "corporate office interior";
+              commercialFocus = `Focus on: open workspace layout (collaborative zones + focus areas), meeting rooms visibility, reception/brand wall, ergonomic furniture, biophilic elements (plants/natural light), acoustic panels, technology integration (screens/whiteboards), employee wellbeing. Balance productivity with company culture.`;
+            } else if (isEducational) {
+              commercialSpaceType = "educational space interior";
+              commercialFocus = `Focus on: flexible seating arrangements (collaborative/individual), display walls and boards, natural lighting, acoustic treatment, age-appropriate colors and scale, storage solutions, technology integration, inspiring and stimulating environment.`;
+            }
+
+            generatedPrompt = `Photorealistic ${commercialSpaceType} redesign. ${cameraNote} ${roomNote} ${structuralNote} BOLD CREATIVE COMMERCIAL TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY tailored for commercial use. ${commercialFocus} New color palette: ${palette}. New materials: ${mats}. TRANSFORM FREELY: wall finishes, flooring, ceiling treatment, lighting design, furniture and fixtures, branding elements, decorative features. Make it look like a LUXURY COMMERCIAL DESIGN MAGAZINE COVER - professional, functional, and visually stunning. Cinematic lighting, ultra-realistic textures, 8K resolution, professional commercial photography, no people, no text, no watermarks.`;
+
           } else {
-            // برومبت الديكور الداخلي — الحفاظ على البنية + إبداع كامل في التصميم
+            // برومبت الديكور الداخلي السكني — الحفاظ على البنية + إبداع كامل في التصميم
             const allowOpeningChanges = lockStructuralElements?.allowPlatformFreedom === true ||
               (lockStructuralElements?.enabled === false);
 
@@ -1840,6 +1896,7 @@ ${structuralAnalysisPrompt}
           const isPoolSpace = /مسبح|pool|swimming/.test(spaceTypeForBOQ);
           const isStreetSpace = /شارع|طريق|ممشى|رصيف|street|road|walkway|sidewalk|alley|plaza|square/.test(spaceTypeForBOQ);
           const isLandscapeSpace = /حديقة|لاندسكيب|جلسة خارجية|ممر|ساحة|garden|landscape|outdoor|terrace|pathway/.test(spaceTypeForBOQ);
+          const isCommercialBOQ = /مطعم|كافيه|محل|معرض|فندق|لوبي|عيادة|مسجد|مصلى|مكتب تجاري|مدرسة|restaurant|cafe|shop|store|hotel|lobby|clinic|mosque|corporate office|school/.test(spaceTypeForBOQ);
           
           let boqResult;
           if (isFacadeSpace) {
@@ -1851,6 +1908,24 @@ ${structuralAnalysisPrompt}
           } else if (isLandscapeSpace) {
             const subCat = /ممر|pathway/.test(spaceTypeForBOQ) ? "pathway" : "landscape";
             boqResult = calculateExteriorBOQ(dims, String(idea.style || "modern"), subCat, aiBoqRaw, boqSource);
+          } else if (isCommercialBOQ) {
+            // الفضاءات التجارية: تكاليف أعلى من السكني بسبب متطلبات التشغيل والهوية البصرية
+            boqResult = calculateBOQ(
+              dims,
+              String(idea.style || "modern"),
+              String(idea.scenario || "full"), // التجاري دائماً تحول شامل
+              String(spaceAnalysisData.spaceType || ""),
+              aiBoqRaw,
+              boqSource
+            );
+            // مضاعفة التكلفة للفضاءات التجارية (معامل 1.4 للتجاري)
+            if (boqResult) {
+              boqResult = {
+                ...boqResult,
+                grandTotalMin: Math.round(boqResult.grandTotalMin * 1.4),
+                grandTotalMax: Math.round(boqResult.grandTotalMax * 1.4),
+              };
+            }
           } else {
             boqResult = calculateBOQ(
               dims,
@@ -3079,5 +3154,166 @@ ${structuralAnalysisPrompt}
         }
       }),
   }),
+
+  // ===== تحليل التصميم الحضري =====
+  analyzeUrban: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      urbanType: z.string().default("residential_district"),
+      designStyle: z.string().default("modern"),
+      projectScale: z.enum(["small", "medium", "large"]).default("medium"),
+    }))
+    .mutation(async ({ input }) => {
+      const systemPrompt = `أنتِ م. سارة، مهندسة تخطيط حضري وخبيرة تصميم معماري. تحللين الصور الجوية والمخططات الحضرية وتقدمين تحليلات شاملة. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+
+      const messages: Message[] = [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url" as const,
+              image_url: { url: input.imageUrl, detail: "high" as const },
+            } as ImageContent,
+            {
+              type: "text" as const,
+              text: `حلّلي هذه الصورة الجوية/الحضرية واستخرجي تحليلاً حضرياً شاملاً.
+نوع المنطقة: ${input.urbanType}
+نمط التصميم: ${input.designStyle}
+حجم المشروع: ${input.projectScale}
+
+أعيدي JSON بهذا الشكل بالضبط:
+{
+  "projectName": "اسم المشروع الحضري",
+  "totalArea": 0,
+  "estimatedPopulation": 0,
+  "sustainabilityScore": 75,
+  "summary": "وصف موجز للمنطقة",
+  "keyFeatures": ["ميزة رئيسية"],
+  "zones": [
+    {
+      "name": "اسم المنطقة",
+      "type": "نوع المنطقة",
+      "area": 0,
+      "description": "وصف المنطقة"
+    }
+  ],
+  "recommendations": [
+    "توصية حضرية من م. سارة"
+  ]
+}
+إذا لم تتمكني من قراءة الصورة بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.`,
+            } as TextContent,
+          ],
+        },
+      ];
+
+      const aiResponse = await invokeLLM({
+        messages,
+        response_format: { type: "json_object" },
+      });
+
+      const rawContent = aiResponse.choices[0]?.message?.content;
+      const aiText = typeof rawContent === "string" ? rawContent : "{}";
+      let parsed: {
+        projectName?: string;
+        totalArea?: number;
+        estimatedPopulation?: number;
+        sustainabilityScore?: number;
+        summary?: string;
+        keyFeatures?: string[];
+        zones?: Array<{ name: string; type: string; area: number; description: string }>;
+        recommendations?: string[];
+      } = {};
+      try { parsed = JSON.parse(aiText); } catch { parsed = {}; }
+
+      return {
+        projectName: parsed.projectName || "تحليل المنطقة الحضرية",
+        totalArea: parsed.totalArea || 0,
+        estimatedPopulation: parsed.estimatedPopulation,
+        sustainabilityScore: parsed.sustainabilityScore || 70,
+        summary: parsed.summary || "تم تحليل المنطقة بنجاح",
+        keyFeatures: parsed.keyFeatures || [],
+        zones: parsed.zones || [],
+        recommendations: parsed.recommendations || [],
+      };
+    }),
+
+  // ===== تحليل المخطط المعماري =====
+  analyzePlan: publicProcedure
+    .input(z.object({
+      imageUrl: z.string(),
+      projectType: z.enum(["residential", "commercial", "mixed"]).default("residential"),
+      designStyle: z.string().default("modern"),
+    }))
+    .mutation(async ({ input }) => {
+      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+
+      const messages: Message[] = [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url" as const,
+              image_url: { url: input.imageUrl, detail: "high" as const },
+            } as ImageContent,
+            {
+              type: "text" as const,
+              text: `حلّلي هذا المخطط المعماري واستخرجي كل المعلومات الممكنة.
+نوع المشروع: ${input.projectType}
+نمط التصميم المطلوب: ${input.designStyle}
+
+أعيدي JSON بهذا الشكل بالضبط:
+{
+  "projectType": "سكني/تجاري/مختلط",
+  "totalArea": 0,
+  "floors": 1,
+  "summary": "وصف موجز للمخطط",
+  "rooms": [
+    {
+      "name": "اسم الغرفة بالعربية",
+      "type": "نوع الغرفة",
+      "area": 0,
+      "dimensions": "0×0 م"
+    }
+  ],
+  "recommendations": [
+    "توصية مهنية من م. سارة"
+  ]
+}
+إذا لم تتمكني من قراءة المخطط بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.`,
+            } as TextContent,
+          ],
+        },
+      ];
+
+      const aiResponse = await invokeLLM({
+        messages,
+        response_format: { type: "json_object" },
+      });
+
+      const rawContent = aiResponse.choices[0]?.message?.content;
+      const aiText = typeof rawContent === "string" ? rawContent : "{}";
+      let parsed: {
+        projectType?: string;
+        totalArea?: number;
+        floors?: number;
+        summary?: string;
+        rooms?: Array<{ name: string; type: string; area: number; dimensions: string }>;
+        recommendations?: string[];
+      } = {};
+      try { parsed = JSON.parse(aiText); } catch { parsed = {}; }
+
+      return {
+        projectType: parsed.projectType || input.projectType,
+        totalArea: parsed.totalArea || 0,
+        floors: parsed.floors || 1,
+        summary: parsed.summary || "تم تحليل المخطط بنجاح",
+        rooms: parsed.rooms || [],
+        recommendations: parsed.recommendations || [],
+      };
+    }),
+
 });
 export type AppRouter = typeof appRouter;

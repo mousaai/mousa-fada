@@ -1,6 +1,6 @@
 import { useAuth } from "@/components/AuthGate";
 import { useLocation } from "wouter";
-import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, ShoppingBag } from "lucide-react";
+import { Camera, Sparkles, FolderOpen, Mic, MessageCircle, ChevronLeft, ShoppingBag, Map, FileText } from "lucide-react";
 import { CreditBadge } from "@/components/CreditBadge";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -245,7 +245,7 @@ export default function Home() {
           <span className="text-white font-bold text-sm">{t("home.hero.cta")}</span>
         </button>
 
-        {/* 2 Unique Quick Action Buttons */}
+        {/* Quick Action Buttons — 2x2 grid */}
         <div className="w-full grid grid-cols-2 gap-3">
           {/* Draw by Voice */}
           <button
@@ -266,7 +266,6 @@ export default function Home() {
             onClick={() => navigate("/furniture")}
             className="relative flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-amber-200 active:scale-95 transition-transform"
           >
-            {/* Beta badge */}
             <span className="absolute top-2 left-2 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">{t("common.beta")}</span>
             <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center">
               <ShoppingBag className="w-7 h-7 text-amber-700" />
@@ -274,6 +273,34 @@ export default function Home() {
             <div className="text-center">
               <p className="text-sm font-bold text-amber-800">{t("home.sections.store")}</p>
               <p className="text-[10px] text-amber-700/60 mt-0.5">{t("home.sections.store.desc")}</p>
+            </div>
+          </button>
+
+          {/* Design from Plan */}
+          <button
+            onClick={() => navigate("/plan-design")}
+            className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-blue-100 active:scale-95 transition-transform"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
+              <FileText className="w-7 h-7 text-blue-700" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-blue-800">صمّم من المخطط</p>
+              <p className="text-[10px] text-blue-700/60 mt-0.5">ارفع مخططك واحصل على تصميم</p>
+            </div>
+          </button>
+
+          {/* Urban Design */}
+          <button
+            onClick={() => navigate("/urban-design")}
+            className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-green-100 active:scale-95 transition-transform"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center">
+              <Map className="w-7 h-7 text-green-700" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-green-800">التصميم الحضري</p>
+              <p className="text-[10px] text-green-700/60 mt-0.5">أحياء، شوارع، مناطق عامة</p>
             </div>
           </button>
         </div>
