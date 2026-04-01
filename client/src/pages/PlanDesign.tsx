@@ -24,11 +24,37 @@ const STYLES = [
 // تكلفة النقاط لكل عملية
 const CREDITS_PER_ROOM = 50;
 
+interface RoomDoor {
+  wall?: string;
+  openDirection?: string;
+  hingesSide?: string;
+  width?: number;
+  type?: string;
+}
+
+interface RoomWindow {
+  wall?: string;
+  width?: number;
+  height?: number;
+  type?: string;
+}
+
 interface RoomResult {
   name: string;
   type: string;
   area: number;
   dimensions: string;
+  // حقول معمارية جديدة
+  floor?: string;
+  ceilingHeight?: number;
+  doors?: RoomDoor[];
+  windows?: RoomWindow[];
+  wallsDescription?: string;
+  staircaseShape?: string | null;
+  staircaseDirection?: string | null;
+  elevatorOpeningDirection?: string | null;
+  balconyOrientation?: string | null;
+  balconyCovered?: boolean | null;
 }
 
 interface PlanAnalysisResult {
@@ -87,10 +113,20 @@ export default function PlanDesign() {
     utils.client.generatePlanRoomDesign.mutate({
       roomName: room.name || "غرفة",
       roomType: room.type || "room",
-      roomArea: room.area || 0,
+      roomArea: typeof room.area === "number" ? room.area : 0,
       roomDimensions: room.dimensions || "غير محدد",
       designStyle: style,
       projectType: pType,
+      // إرسال التفاصيل المعمارية الجديدة
+      ceilingHeight: room.ceilingHeight ?? 3,
+      wallsDescription: room.wallsDescription ?? "",
+      doors: room.doors ?? [],
+      windows: room.windows ?? [],
+      staircaseShape: room.staircaseShape ?? null,
+      staircaseDirection: room.staircaseDirection ?? null,
+      elevatorOpeningDirection: room.elevatorOpeningDirection ?? null,
+      balconyOrientation: room.balconyOrientation ?? null,
+      balconyCovered: room.balconyCovered ?? null,
     }).then((data: RoomDesignResult) => {
       setRoomDesigns(prev => ({ ...prev, [data.roomName]: data }));
       // انتقل للغرفة التالية في الطابور
@@ -175,10 +211,19 @@ export default function PlanDesign() {
     utils.client.generatePlanRoomDesign.mutate({
       roomName: room.name || "غرفة",
       roomType: room.type || "room",
-      roomArea: room.area || 0,
+      roomArea: typeof room.area === "number" ? room.area : 0,
       roomDimensions: room.dimensions || "غير محدد",
       designStyle,
       projectType,
+      ceilingHeight: room.ceilingHeight ?? 3,
+      wallsDescription: room.wallsDescription ?? "",
+      doors: room.doors ?? [],
+      windows: room.windows ?? [],
+      staircaseShape: room.staircaseShape ?? null,
+      staircaseDirection: room.staircaseDirection ?? null,
+      elevatorOpeningDirection: room.elevatorOpeningDirection ?? null,
+      balconyOrientation: room.balconyOrientation ?? null,
+      balconyCovered: room.balconyCovered ?? null,
     }).then((data: RoomDesignResult) => {
       setRoomDesigns(prev => ({ ...prev, [data.roomName]: data }));
       setDesigningRoom(null);

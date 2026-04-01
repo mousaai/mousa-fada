@@ -3435,42 +3435,83 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
             } as ImageContent,
             {
               type: "text" as const,
-              text: `أنتِ مهندسة معمارية متخصصة. حلّلي هذا المخطط المعماري بدقة عالية.
+              text: `أنتِ مهندسة معمارية متخصصة بقراءة المخططات. حلّلي هذا المخطط المعماري بدقة عالية جداً.
 نوع المشروع: ${input.projectType}
 نمط التصميم المطلوب: ${input.designStyle}
 
-تعليمات مهمة:
-1. استخرجي كل الفضاءات الموجودة في المخطط بدقة: غرف نوم، صالات، مطابخ، حمامات، ممرات، مداخل، شرفات، غرف ملابس، مصاعد، قاعات، مناطق جلوس خارجية، إلخ.
-2. لكل غرفة حدّدي: الاسم بالعربية، النوع بالإنجليزية، المساحة بالمتر المربع، والأبعاد.
-3. استخدمي هذه الأنواع فقط لحقل "type": bedroom, living, kitchen, bathroom, dining, office, corridor, entrance, storage, balcony, majlis, prayer, elevator, staircase, laundry, garage, outdoor, hall, closet, room
-4. إذا كانت المساحة غير مكتوبة بوضوح، قدّريها بناءاً على حجم الغرفة في المخطط.
-5. لا تتركي أي حقل null — إذا لم تعرفي القيمة ضعي تقديراً منطقياً.
-6. المصعد والدرج هما عناصر معمارية وليسا غرفاً — أدرجيهما بنوع elevator و staircase.
+تعليمات التحليل المعماري الدقيق:
+1. استخرجي كل الفضاءات بدقة: غرف نوم، صالات، مطابخ، حمامات، ممرات، مداخل، شرفات، غرف ملابس، مصاعد، درج، قاعات، مناطق خارجية، إلخ.
+2. لكل فضاء استخرجي التفاصيل المعمارية الدقيقة التالية:
+   - الاسم بالعربية والنوع بالإنجليزية
+   - المساحة بالمتر المربع والأبعاد (عرض × طول)
+   - ارتفاع الدور: ابحثي عن كوتات الارتفاع في المخطط (3م، 3.5م، 4م، 5م، double height)
+   - الطابق الذي توجد فيه (ground, first, second)
+   - مواقع الأبواب: على أي جدار (north/south/east/west)، اتجاه الفتح (inward/outward)، جانب المفصلة (left/right)
+   - مواقع النوافذ والفتحات: على أي جدار، عرض النافذة، هل هي بانورامية أو عادية
+   - تقسيمات الجدران: أي جدران مصمتة وأيها فيها فتحات
+   - للمصعد: من أي جهة يُفتح (من الممر؟ من المدخل؟)
+   - للسلم: شكله (straight/L-shape/U-shape/circular/floating)، اتجاه الصعود
+   - للشرفة: هل هي مكشوفة أو مغطاة، اتجاهها (شمال/جنوب/شرق/غرب)
+3. استخدمي هذه الأنواع فقط: bedroom, living, kitchen, bathroom, dining, office, corridor, entrance, storage, balcony, majlis, prayer, elevator, staircase, laundry, garage, outdoor, hall, closet, room
+4. قدّري الارتفاع من الكوتات في المخطط — إذا لم تجدي كوتات، قدّري: غرف عادية=3م، مداخل فاخرة=4-5م، double height=5-6م
+5. لا تتركي أي حقل null — ضعي تقديراً منطقياً دائماً
 
 أعيدي JSON بهذا الشكل بالضبط (لا تضيفي أي نص خارج JSON):
 {
   "projectType": "سكني",
   "totalArea": 761,
   "floors": 2,
+  "floorHeights": { "ground": 5, "first": 3.5 },
   "summary": "وصف موجز للمخطط",
   "rooms": [
     {
       "name": "غرفة النوم الرئيسية",
       "type": "bedroom",
+      "floor": "first",
       "area": 25,
-      "dimensions": "5×5 م"
+      "dimensions": "5×5 م",
+      "ceilingHeight": 3.5,
+      "doors": [{"wall": "north", "openDirection": "inward", "hingesSide": "right", "width": 1.0}],
+      "windows": [{"wall": "east", "width": 2.5, "height": 2.0, "type": "panoramic"}],
+      "wallsDescription": "الجدار الشمالي: باب رئيسي. الجدار الشرقي: نافذة بانورامية. الجدار الجنوبي والغربي: مصمتان."
     },
     {
       "name": "مصعد بانورامي",
       "type": "elevator",
-      "area": 5,
-      "dimensions": "2×2.5 م"
+      "floor": "ground",
+      "area": 4,
+      "dimensions": "2×2 م",
+      "ceilingHeight": 5,
+      "elevatorOpeningDirection": "من الممر الرئيسي، الباب يفتح شمالاً",
+      "doors": [{"wall": "north", "openDirection": "sliding", "width": 1.0}],
+      "windows": [{"wall": "east", "width": 2.0, "height": 5.0, "type": "panoramic_glass"}],
+      "wallsDescription": "ثلاثة جدران زجاجية بانورامية، باب منزلق من الشمال."
+    },
+    {
+      "name": "درج",
+      "type": "staircase",
+      "floor": "ground",
+      "area": 10,
+      "dimensions": "3×4 م",
+      "ceilingHeight": 5,
+      "staircaseShape": "floating",
+      "staircaseDirection": "يصعد من الجنوب نحو الشمال",
+      "doors": [],
+      "windows": [{"wall": "east", "width": 3.0, "height": 4.0, "type": "floor_to_ceiling"}],
+      "wallsDescription": "جدار شرقي زجاجي من الأرض للسقف. باقي الجدران مصمتة."
     },
     {
       "name": "شرفة",
       "type": "balcony",
-      "area": 12,
-      "dimensions": "3×4 م"
+      "floor": "first",
+      "area": 8,
+      "dimensions": "2×4 م",
+      "ceilingHeight": 0,
+      "balconyOrientation": "شمال",
+      "balconyCovered": false,
+      "doors": [{"wall": "south", "openDirection": "outward", "hingesSide": "left", "width": 2.0, "type": "sliding_glass"}],
+      "windows": [],
+      "wallsDescription": "مكشوفة من الشمال والشرق والغرب. باب زجاجي منزلق من الجنوب."
     }
   ],
   "recommendations": [
@@ -3515,13 +3556,32 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         };
       }
 
-      // تنظيف بيانات الغرف لتجنب null في الحقول
+      // تنظيف بيانات الغرف لتجنب null في الحقول مع الحقول المعمارية الجديدة
       const cleanRooms = Array.isArray(parsed.rooms)
-        ? parsed.rooms.map((r: { name?: string; type?: string; area?: number | null; dimensions?: string | null }) => ({
+        ? parsed.rooms.map((r: {
+            name?: string; type?: string; area?: number | null; dimensions?: string | null;
+            floor?: string | null; ceilingHeight?: number | null;
+            doors?: Array<{wall?: string; openDirection?: string; hingesSide?: string; width?: number; type?: string}> | null;
+            windows?: Array<{wall?: string; width?: number; height?: number; type?: string}> | null;
+            wallsDescription?: string | null;
+            staircaseShape?: string | null; staircaseDirection?: string | null;
+            elevatorOpeningDirection?: string | null;
+            balconyOrientation?: string | null; balconyCovered?: boolean | null;
+          }) => ({
             name: r.name || "غرفة",
             type: r.type || "room",
             area: typeof r.area === "number" ? r.area : 0,
             dimensions: r.dimensions || "غير محدد",
+            floor: r.floor || "ground",
+            ceilingHeight: typeof r.ceilingHeight === "number" ? r.ceilingHeight : 3,
+            doors: Array.isArray(r.doors) ? r.doors : [],
+            windows: Array.isArray(r.windows) ? r.windows : [],
+            wallsDescription: r.wallsDescription || "",
+            staircaseShape: r.staircaseShape || null,
+            staircaseDirection: r.staircaseDirection || null,
+            elevatorOpeningDirection: r.elevatorOpeningDirection || null,
+            balconyOrientation: r.balconyOrientation || null,
+            balconyCovered: r.balconyCovered ?? null,
           }))
         : [];
 
@@ -3529,6 +3589,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         projectType: parsed.projectType || input.projectType,
         totalArea: parsed.totalArea || 0,
         floors: parsed.floors || 1,
+        floorHeights: (parsed as { floorHeights?: Record<string, number> }).floorHeights || {},
         summary: parsed.summary || "تم تحليل المخطط بنجاح",
         rooms: cleanRooms,
         recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
@@ -3545,6 +3606,27 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       designStyle: z.string(),
       projectType: z.string(),
       planImageUrl: z.string().optional(),
+      // حقول معمارية جديدة
+      ceilingHeight: z.number().nullable().optional().transform(v => v ?? 3),
+      wallsDescription: z.string().nullable().optional().transform(v => v ?? ""),
+      doors: z.array(z.object({
+        wall: z.string().optional(),
+        openDirection: z.string().optional(),
+        hingesSide: z.string().optional(),
+        width: z.number().optional(),
+        type: z.string().optional(),
+      })).nullable().optional().transform(v => v ?? []),
+      windows: z.array(z.object({
+        wall: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        type: z.string().optional(),
+      })).nullable().optional().transform(v => v ?? []),
+      staircaseShape: z.string().nullable().optional(),
+      staircaseDirection: z.string().nullable().optional(),
+      elevatorOpeningDirection: z.string().nullable().optional(),
+      balconyOrientation: z.string().nullable().optional(),
+      balconyCovered: z.boolean().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
       // ⚠️ مؤقت: تجاوز فحص الرصيد — المنصة مفتوحة للجميع
@@ -3654,18 +3736,61 @@ Style: ${styleAr}. Features:
 Photorealistic, luxury residential garage.`,
       };
 
-      // استخدم prompt مخصص إذا وجد، وإلا استخدم العام
+      // بناء وصف معماري دقيق من التفاصيل المستخرجة
+      const ceilingH = input.ceilingHeight || 3;
+      const dims = input.roomDimensions || "غير محدد";
+      const area = input.roomArea || 0;
+
+      // وصف النوافذ
+      const windowsDesc = (input.windows || []).map((w, i) => {
+        const wallNames: Record<string, string> = { north: "شمالي", south: "جنوبي", east: "شرقي", west: "غربي" };
+        const wallAr = wallNames[w.wall || ""] || w.wall || "";
+        const winType = w.type === "panoramic" || w.type === "panoramic_glass" || w.type === "floor_to_ceiling"
+          ? "panoramic floor-to-ceiling window" : "standard window";
+        return `Window ${i+1}: ${winType} on ${wallAr} wall, ${w.width || 1}m wide x ${w.height || 1.5}m tall`;
+      }).join(". ");
+
+      // وصف الأبواب
+      const doorsDesc = (input.doors || []).map((d, i) => {
+        const wallNames: Record<string, string> = { north: "شمالي", south: "جنوبي", east: "شرقي", west: "غربي" };
+        const wallAr = wallNames[d.wall || ""] || d.wall || "";
+        const doorType = d.type === "sliding_glass" ? "sliding glass door" : d.openDirection === "sliding" ? "sliding door" : `door opening ${d.openDirection || "inward"}, hinges on ${d.hingesSide || "right"}`;
+        return `Door ${i+1}: ${doorType} on ${wallAr} wall, ${d.width || 0.9}m wide`;
+      }).join(". ");
+
+      // وصف الجدران
+      const wallsDesc = input.wallsDescription || "";
+
+      // بناء الجزء المعماري المشترك
+      const architecturalContext = `
+ARCHITECTURAL SPECIFICATIONS (MUST be reflected in the design):
+- Room: ${input.roomName} (${roomTypeAr})
+- Dimensions: ${dims} | Area: ${area}m² | Ceiling height: ${ceilingH}m
+${doorsDesc ? `- Doors: ${doorsDesc}` : ""}
+${windowsDesc ? `- Windows/Openings: ${windowsDesc}` : ""}
+${wallsDesc ? `- Wall layout: ${wallsDesc}` : ""}
+${input.staircaseShape ? `- Staircase shape: ${input.staircaseShape}, direction: ${input.staircaseDirection || ""}` : ""}
+${input.elevatorOpeningDirection ? `- Elevator opens from: ${input.elevatorOpeningDirection}` : ""}
+${input.balconyOrientation ? `- Balcony faces: ${input.balconyOrientation}, ${input.balconyCovered ? "covered" : "open sky"}` : ""}
+Style: ${styleAr} | Project type: ${input.projectType}`;
+
+      // بناء prompt مخصص لكل نوع غرفة مع السياق المعماري
       const specificPrompt = roomSpecificPrompts[input.roomType];
-      const prompt = specificPrompt || `Luxury ${roomTypeAr} interior design, ${input.roomDimensions || "غير محدد"} (${input.roomArea || 0}m²).
-Style: ${styleAr}. Project: ${input.projectType}.
+      const basePrompt = specificPrompt || `Luxury ${roomTypeAr} interior design.
 Create a photorealistic interior design showing:
 - Premium flooring (marble/herringbone parquet/porcelain tiles based on room type)
-- Layered ceiling with gypsum molding and hidden LED cove lighting
+- Layered ceiling with gypsum molding and hidden LED cove lighting at ${ceilingH}m height
 - Walls with luxury finishes (paint/stone cladding/wallpaper/wood panels)
 - Appropriate high-end furniture and decor for ${roomTypeAr}
 - 3-layer lighting: ambient + accent + decorative chandeliers/pendants
-- ${styleAr === "خليجي فاخر" ? "Gulf Arabic design elements: mashrabiya patterns, geometric tiles, gold accents" : ""}
-High quality, photorealistic, professional interior photography, no text overlays.`;
+- ${styleAr === "خليجي فاخر" ? "Gulf Arabic design elements: mashrabiya patterns, geometric tiles, gold accents" : ""}`;
+
+      // دمج السياق المعماري مع الـ prompt الأساسي
+      const prompt = `${architecturalContext}
+
+${basePrompt}
+
+IMPORTANT: The design MUST accurately reflect the architectural specs above. Show the correct ceiling height (${ceilingH}m), window positions, door locations, and room proportions. High quality, photorealistic, professional interior photography, no text overlays.`;
 
       const imageResult = await generateImage({ prompt });
 
