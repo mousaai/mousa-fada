@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Upload, MapPin, Sparkles, Loader2, CheckCircle, Building2, Trees, Car, Users } from "lucide-react";
+import { ChevronLeft, Upload, MapPin, Sparkles, Loader2, CheckCircle, Building2, Trees, Car, Users, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -42,6 +42,13 @@ interface UrbanAnalysisResult {
   estimatedPopulation?: number;
 }
 
+interface ZoneDesign {
+  zoneName: string;
+  imageUrl: string;
+  loading: boolean;
+  error?: string;
+}
+
 export default function UrbanDesign() {
   const [, navigate] = useLocation();
   const { dir } = useLanguage();
@@ -54,6 +61,10 @@ export default function UrbanDesign() {
   const [designStyle, setDesignStyle] = useState("modern");
   const [projectScale, setProjectScale] = useState<"small" | "medium" | "large">("medium");
   const [analysisResult, setAnalysisResult] = useState<UrbanAnalysisResult | null>(null);
+  const [zoneDesigns, setZoneDesigns] = useState<Record<string, ZoneDesign>>({});
+  const [designingAll, setDesigningAll] = useState(false);
+  const [designQueue, setDesignQueue] = useState<UrbanZone[]>([]);
+  const [currentDesigning, setCurrentDesigning] = useState<string | null>(null);
 
   const analyzeUrbanMutation = trpc.analyzeUrban.useMutation({
     onSuccess: (data: UrbanAnalysisResult) => {
@@ -63,6 +74,72 @@ export default function UrbanDesign() {
     onError: (err: { message?: string }) => {
       toast.error("حدث خطأ في التحليل: " + (err.message || ""));
       setStep("config");
+    },
+  });
+
+  const generateZoneDesignMutation = trpc.generateUrbanZoneDesign.useMutation({
+    onSuccess: (data) => {
+      setZoneDesigns(prev => ({
+        ...prev,
+        [data.zoneName]: { zoneName: data.zoneName, imageUrl: data.imageUrl ?? "", loading: false },
+      }));
+      setCurrentDesigning(null);
+      // معالجة الطابور
+      setDesignQueue(prev => {
+        const remaining = prev.slice(1);
+        if (remaining.length > 0) {
+          const next = remaining[0];
+          setCurrentDesigning(next.name);
+          setZoneDesigns(p => ({
+            ...p,
+            [next.name]: { zoneName: next.name, imageUrl: "", loading: true },
+          }));
+          generateZoneDesignMutation.mutate({
+            zoneName: next.name,
+            zoneType: next.type,
+            zoneArea: next.area,
+            zoneDescription: next.description,
+            designStyle,
+            urbanType,
+            projectScale,
+          });
+        } else {
+          setDesigningAll(false);
+        }
+        return remaining;
+      });
+    },
+    onError: (err: { message?: string }, variables) => {
+      const zoneName = variables.zoneName;
+      setZoneDesigns(prev => ({
+        ...prev,
+        [zoneName]: { zoneName, imageUrl: "", loading: false, error: err.message || "خطأ في التوليد" },
+      }));
+      setCurrentDesigning(null);
+      // تخطي المنطقة الفاشلة والمتابعة
+      setDesignQueue(prev => {
+        const remaining = prev.slice(1);
+        if (remaining.length > 0) {
+          const next = remaining[0];
+          setCurrentDesigning(next.name);
+          setZoneDesigns(p => ({
+            ...p,
+            [next.name]: { zoneName: next.name, imageUrl: "", loading: true },
+          }));
+          generateZoneDesignMutation.mutate({
+            zoneName: next.name,
+            zoneType: next.type,
+            zoneArea: next.area,
+            zoneDescription: next.description,
+            designStyle,
+            urbanType,
+            projectScale,
+          });
+        } else {
+          setDesigningAll(false);
+        }
+        return remaining;
+      });
     },
   });
 
@@ -95,8 +172,70 @@ export default function UrbanDesign() {
   };
 
   const handleDesignZone = (zone: UrbanZone) => {
-    navigate(`/smart-capture?fromUrban=1&zone=${encodeURIComponent(zone.name)}&area=${zone.area}&style=${designStyle}`);
+    setZoneDesigns(prev => ({
+      ...prev,
+      [zone.name]: { zoneName: zone.name, imageUrl: "", loading: true },
+    }));
+    setCurrentDesigning(zone.name);
+    generateZoneDesignMutation.mutate({
+      zoneName: zone.name,
+      zoneType: zone.type,
+      zoneArea: zone.area,
+      zoneDescription: zone.description,
+      designStyle,
+      urbanType,
+      projectScale,
+    });
   };
+
+  const handleDesignAll = () => {
+    if (!analysisResult?.zones?.length) return;
+    const zones = analysisResult.zones;
+    setDesigningAll(true);
+    // تهيئة حالة التحميل لجميع المناطق
+    const initDesigns: Record<string, ZoneDesign> = {};
+    zones.forEach(z => {
+      initDesigns[z.name] = { zoneName: z.name, imageUrl: "", loading: false };
+    });
+    setZoneDesigns(initDesigns);
+    // بدء الطابور
+    setDesignQueue(zones.slice(1));
+    const first = zones[0];
+    setCurrentDesigning(first.name);
+    setZoneDesigns(prev => ({
+      ...prev,
+      [first.name]: { zoneName: first.name, imageUrl: "", loading: true },
+    }));
+    generateZoneDesignMutation.mutate({
+      zoneName: first.name,
+      zoneType: first.type,
+      zoneArea: first.area,
+      zoneDescription: first.description,
+      designStyle,
+      urbanType,
+      projectScale,
+    });
+  };
+
+  const handleRedesignZone = (zone: UrbanZone) => {
+    setZoneDesigns(prev => ({
+      ...prev,
+      [zone.name]: { zoneName: zone.name, imageUrl: "", loading: true },
+    }));
+    generateZoneDesignMutation.mutate({
+      zoneName: zone.name,
+      zoneType: zone.type,
+      zoneArea: zone.area,
+      zoneDescription: zone.description,
+      designStyle,
+      urbanType,
+      projectScale,
+    });
+  };
+
+  const completedCount = Object.values(zoneDesigns).filter(d => d.imageUrl && !d.loading).length;
+  const totalZones = analysisResult?.zones?.length || 0;
+  const allCompleted = completedCount === totalZones && totalZones > 0;
 
   return (
     <div className="min-h-screen bg-[#faf6f0] flex flex-col" dir={dir}>
@@ -320,6 +459,36 @@ export default function UrbanDesign() {
               <p className="text-sm opacity-90 mt-3 leading-relaxed">{analysisResult.summary}</p>
             </div>
 
+            {/* Design Progress */}
+            {(designingAll || completedCount > 0) && (
+              <div className={`rounded-2xl p-4 ${allCompleted ? "bg-green-50 border border-green-200" : "bg-[#2C5F2E]/10 border border-[#2C5F2E]/20"}`}>
+                <div className="flex items-center gap-2">
+                  {allCompleted ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Loader2 className="w-5 h-5 text-[#2C5F2E] animate-spin" />
+                  )}
+                  <p className="font-bold text-sm text-[#1a3d1b]">
+                    {allCompleted ? `اكتملت جميع التصاميم! (${completedCount} منطقة)` : `جاري تصميم: ${currentDesigning}...`}
+                  </p>
+                </div>
+                {!allCompleted && (
+                  <p className="text-xs text-[#2C5F2E]/70 mt-1">{completedCount} من {totalZones} منطقة مكتملة</p>
+                )}
+              </div>
+            )}
+
+            {/* Design All Button */}
+            {!designingAll && completedCount < totalZones && (
+              <button
+                onClick={handleDesignAll}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#2C5F2E] to-[#1a3d1b] text-white font-bold text-sm shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                صمّم جميع المناطق ({totalZones} منطقة)
+              </button>
+            )}
+
             {/* Key Features */}
             {analysisResult.keyFeatures?.length > 0 && (
               <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
@@ -332,27 +501,67 @@ export default function UrbanDesign() {
               </div>
             )}
 
-            {/* Zones */}
+            {/* Zones with Designs */}
             <div>
               <p className="text-sm font-bold text-[#5C3D11] mb-3">المناطق المكتشفة ({analysisResult.zones.length})</p>
-              <div className="space-y-3">
-                {analysisResult.zones.map((zone: UrbanZone) => (
-                  <div key={zone.name} className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-[#5C3D11]">{zone.name}</p>
-                        <p className="text-xs text-[#8B6914]/70 mt-0.5">{zone.type} — {zone.area} هكتار</p>
-                        <p className="text-xs text-[#5C3D11]/70 mt-1">{zone.description}</p>
+              <div className="space-y-4">
+                {analysisResult.zones.map((zone: UrbanZone) => {
+                  const design = zoneDesigns[zone.name];
+                  return (
+                    <div key={zone.name} className="bg-white rounded-2xl border border-[#e8d9c0] overflow-hidden">
+                      {/* Zone Header */}
+                      <div className="flex items-start justify-between gap-3 p-4">
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-[#5C3D11]">{zone.name}</p>
+                          <p className="text-xs text-[#8B6914]/70 mt-0.5">{zone.type} — {zone.area} هكتار</p>
+                          <p className="text-xs text-[#5C3D11]/70 mt-1">{zone.description}</p>
+                        </div>
+                        {!design || design.error ? (
+                          <button
+                            onClick={() => handleDesignZone(zone)}
+                            disabled={designingAll}
+                            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2C5F2E] to-[#1a3d1b] text-white text-xs font-bold active:scale-95 transition-transform disabled:opacity-50"
+                          >
+                            صمّم
+                          </button>
+                        ) : design.imageUrl && !design.loading ? (
+                          <button
+                            onClick={() => handleRedesignZone(zone)}
+                            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#2C5F2E]/30 text-[#2C5F2E] text-xs font-bold active:scale-95 transition-transform"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            50 نقطة
+                          </button>
+                        ) : null}
                       </div>
-                      <button
-                        onClick={() => handleDesignZone(zone)}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2C5F2E] to-[#1a3d1b] text-white text-xs font-bold active:scale-95 transition-transform"
-                      >
-                        صمّم
-                      </button>
+
+                      {/* Design Image */}
+                      {design?.loading && (
+                        <div className="mx-4 mb-4 rounded-xl bg-[#2C5F2E]/5 border border-[#2C5F2E]/10 flex items-center justify-center" style={{ height: 200 }}>
+                          <div className="flex flex-col items-center gap-3">
+                            <Loader2 className="w-8 h-8 text-[#2C5F2E] animate-spin" />
+                            <p className="text-xs text-[#2C5F2E]/70">م. سارة تصمم {zone.name}...</p>
+                          </div>
+                        </div>
+                      )}
+                      {design?.imageUrl && !design.loading && (
+                        <div className="mx-4 mb-4 rounded-xl overflow-hidden">
+                          <img
+                            src={design.imageUrl}
+                            alt={`تصميم ${zone.name}`}
+                            className="w-full object-cover"
+                            style={{ maxHeight: 280 }}
+                          />
+                        </div>
+                      )}
+                      {design?.error && (
+                        <div className="mx-4 mb-4 rounded-xl bg-red-50 border border-red-200 p-3">
+                          <p className="text-xs text-red-600">حدث خطأ في التصميم. اضغط "صمّم" للمحاولة مجدداً.</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

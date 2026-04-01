@@ -3414,6 +3414,90 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       };
     }),
 
+  // ===== توليد تصميم منطقة حضرية =====
+  generateUrbanZoneDesign: mousaProcedure
+    .input(z.object({
+      zoneName: z.string(),
+      zoneType: z.string(),
+      zoneArea: z.number().optional().nullable(),
+      zoneDescription: z.string().optional().nullable(),
+      designStyle: z.string().default("modern"),
+      urbanType: z.string().default("residential_district"),
+      projectScale: z.string().default("medium"),
+    }))
+    .mutation(async ({ input }) => {
+      // بناء prompt حضري دقيق بناءً على نوع المنطقة
+      const styleNames: Record<string, string> = {
+        modern: "modern contemporary urban",
+        gulf: "Gulf Arabic traditional with modern elements, mashrabiya, geometric patterns",
+        mediterranean: "Mediterranean coastal, terracotta, arches, lush greenery",
+        sustainable: "sustainable eco-friendly, green roofs, solar panels, biophilic design",
+        smart_city: "smart city futuristic, LED lighting, digital signage, tech infrastructure",
+      };
+      const styleName = styleNames[input.designStyle] || "modern contemporary";
+
+      // تحديد نوع الفضاء الحضري
+      const zoneTypeMap: Record<string, string> = {
+        residential: "luxury residential neighborhood with villas and landscaped streets",
+        commercial: "vibrant commercial street with shops, cafes, and pedestrian zones",
+        park: "lush public park with walking paths, fountains, and recreational areas",
+        mixed: "mixed-use urban district with residential towers, retail, and public plazas",
+        waterfront: "scenic waterfront promenade with marina, cafes, and coastal landscaping",
+        cultural: "cultural district with museums, art galleries, and public art installations",
+        entrance: "grand urban entrance with landmark gateway and welcoming landscaping",
+        plaza: "open public plaza with water features, seating, and shade structures",
+        street: "tree-lined boulevard with wide sidewalks, street furniture, and lighting",
+        garden: "formal garden with geometric patterns, fountains, and ornamental planting",
+      };
+
+      // تحديد نوع المنطقة من الاسم والنوع
+      const zoneNameLower = (input.zoneName || "").toLowerCase();
+      const zoneTypeLower = (input.zoneType || "").toLowerCase();
+      let spaceDesc = "urban public space";
+      for (const [key, val] of Object.entries(zoneTypeMap)) {
+        if (zoneNameLower.includes(key) || zoneTypeLower.includes(key)) {
+          spaceDesc = val;
+          break;
+        }
+      }
+      // fallback بناءً على urbanType
+      if (spaceDesc === "urban public space") {
+        spaceDesc = zoneTypeMap[input.urbanType.replace("residential_district", "residential").replace("commercial_street", "commercial").replace("public_park", "park").replace("mixed_use", "mixed").replace("waterfront", "waterfront").replace("cultural_district", "cultural")] || "modern urban district";
+      }
+
+      const areaNote = input.zoneArea ? `Total area: ${input.zoneArea} hectares.` : "";
+      const descNote = input.zoneDescription ? `Zone description: ${input.zoneDescription}.` : "";
+      const scaleNote = input.projectScale === "large" ? "Large-scale urban masterplan, aerial perspective showing full district." :
+        input.projectScale === "medium" ? "Medium-scale urban design, street-level perspective with context." :
+        "Small-scale intimate urban space, detailed street-level view.";
+
+      const prompt = `Photorealistic architectural visualization of ${spaceDesc}. ${styleName} design style. ${areaNote} ${descNote} ${scaleNote}
+
+URBAN DESIGN ELEMENTS:
+- Lush mature trees, manicured landscaping, flower beds, hedges
+- High-quality paving materials: natural stone, brick patterns, decorative concrete
+- Street furniture: designer benches, planters, bollards, bike racks
+- Ambient lighting: decorative lamp posts, ground lights, feature lighting
+- Water features: fountains, reflecting pools, water walls
+- Shading structures: pergolas, tensile canopies, tree canopies
+- Activated ground floors: shops, cafes, restaurants with outdoor seating
+- Clean modern architecture with ${styleName} aesthetic
+- People-friendly scale, wide pedestrian zones
+- Sky: golden hour warm light, soft clouds
+
+QUALITY: 8K ultra-realistic, professional architectural photography, cinematic composition, no text overlays, no watermarks, photorealistic render quality.`;
+
+      const { generateImage } = await import("./_core/imageGeneration");
+      const { url: imageUrl } = await generateImage({ prompt });
+
+      return {
+        zoneName: input.zoneName,
+        zoneType: input.zoneType,
+        imageUrl,
+        style: input.designStyle,
+      };
+    }),
+
   // ===== تحليل المخطط المعماري =====
   analyzePlan: publicProcedure
     .input(z.object({
