@@ -910,3 +910,19 @@
 - [x] إضافة procedures جديدة (analyzeFloorPlanAdvanced, generateRoomDesign)
 - [x] اختبار شامل — 211 اختبار ناجح
 - [x] حفظ checkpoint ونشر
+
+## الإصدار 36.0 — تكامل mousa.ai (Credits + Handoff Token)
+- [ ] إضافة MOUSA_PLATFORM_API_KEY كـ secret
+- [ ] بناء server/mousa.ts — دوال verifyHandoffToken, checkBalance, deductCredits
+- [ ] إضافة procedures في routers.ts: mousa.verifyToken, mousa.checkBalance, mousa.deductCredits
+- [ ] تحديث App.tsx لاستقبال token من URL والتحقق منه عند الدخول
+- [ ] إضافة MousaCreditsContext لإدارة رصيد المستخدم في الواجهة
+- [ ] خصم 20 credit تلقائياً بعد كل عملية AI ناجحة
+- [ ] عرض الرصيد الحالي في شريط التنقل العلوي
+- [ ] رسالة احترافية عند نفاد الرصيد مع رابط الشحن
+- [ ] اختبار شامل وحفظ checkpoint ونشر
+
+## الإصدار 36.0 — تفعيل التكامل الكامل مع mousa.ai
+- [x] تفعيل AuthGate.tsx — استخدام useMousaAuth الحقيقي
+- [x] اختبار شامل — 4 اختبارات ناجحة
+- [x] حفظ checkpoint ونشر
