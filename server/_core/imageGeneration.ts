@@ -33,7 +33,7 @@ export type GenerateImageResponse = {
 async function generateImageViaImagen4(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  const apiKey = ENV.googleAiApiKey || ENV.openAiApiKey;
+  const apiKey = ENV.googleAiApiKey;
   const model = "imagen-4.0-generate-001";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
 
@@ -96,7 +96,7 @@ async function generateImageViaGemini(
   options: GenerateImageOptions,
   model: string = "gemini-2.5-flash-image"
 ): Promise<GenerateImageResponse> {
-  const apiKey = ENV.googleAiApiKey || ENV.openAiApiKey;
+  const apiKey = ENV.googleAiApiKey;
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   // بناء المحتوى — نص فقط أو نص + صورة للتعديل
@@ -244,7 +244,7 @@ async function generateImageViaManus(
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  const googleKey = ENV.googleAiApiKey || ENV.openAiApiKey;
+  const googleKey = ENV.googleAiApiKey;
   const hasOriginalImages = options.originalImages && options.originalImages.length > 0;
 
   if (googleKey && googleKey.trim().length > 0) {

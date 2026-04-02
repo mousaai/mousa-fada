@@ -6,13 +6,14 @@
  */
 import { describe, it, expect, vi } from "vitest";
 
-// Mock ENV
+// Mock ENV — يستخدم MY_GOOGLE_AI_KEY كأولوية (Manus يحمي OPENAI_API_KEY)
+const EFFECTIVE_KEY = process.env.MY_GOOGLE_AI_KEY || process.env.OPENAI_API_KEY || "test-key";
 vi.mock("server/_core/env", () => ({
   ENV: {
     openAiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    openAiApiKey: process.env.OPENAI_API_KEY || "test-key",
+    openAiApiKey: EFFECTIVE_KEY,
     openAiModel: "gemini-2.5-flash",
-    googleAiApiKey: process.env.GOOGLE_AI_API_KEY || "google-test-key",
+    googleAiApiKey: EFFECTIVE_KEY,
     forgeApiUrl: "https://forge.manus.ai",
     forgeApiKey: "manus-key",
   },
@@ -58,13 +59,12 @@ describe("استقلالية Gemini — النصوص", () => {
     });
 
     const calledHeaders = fetchSpy.mock.calls[0]?.[1]?.headers as Record<string, string>;
-    expect(calledHeaders?.authorization).toContain(process.env.OPENAI_API_KEY || "test-key");
+    // يتحقق من استخدام المفتاح الفعلي (MY_GOOGLE_AI_KEY له الأولوية)
+    expect(calledHeaders?.authorization).toContain(EFFECTIVE_KEY);
     expect(calledHeaders?.authorization).not.toContain("manus-key");
-
     fetchSpy.mockRestore();
   });
 });
-
 describe("استقلالية Gemini — الصور (نظام متعدد المستويات)", () => {
   it("يجب أن يستخدم Imagen 4 أولاً لتوليد الصور الجديدة", async () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({

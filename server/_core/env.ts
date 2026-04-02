@@ -1,3 +1,7 @@
+// MY_GOOGLE_AI_KEY: مفتاح Google AI الجديد من My First Project (106380466667)
+// له الأولوية على جميع المفاتيح الافتراضية المحمية في النظام
+const MY_GOOGLE_AI_KEY = process.env.MY_GOOGLE_AI_KEY || "";
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
@@ -8,10 +12,11 @@ export const ENV = {
   // Manus Forge (احتياطي فقط)
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  // Google Gemini مباشرة (الأولوية)
+  // Google Gemini مباشرة عبر OpenAI-compatible API
+  // إذا وُجد MY_GOOGLE_AI_KEY يستخدمه بدلاً من OPENAI_API_KEY الافتراضي
   openAiBaseUrl: process.env.OPENAI_BASE_URL ?? "",
-  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
+  openAiApiKey: MY_GOOGLE_AI_KEY || (process.env.OPENAI_API_KEY ?? ""),
   openAiModel: process.env.OPENAI_MODEL ?? "gemini-2.5-flash",
-  // Google AI Studio API Key (Imagen 3 + Gemini Flash لتوليد الصور)
-  googleAiApiKey: process.env.GOOGLE_AI_API_KEY ?? "",
+  // Google AI Studio API Key (لتوليد الصور عبر Imagen 4 + Gemini Image)
+  googleAiApiKey: MY_GOOGLE_AI_KEY || process.env.GOOGLE_AI_API_KEY || "",
 };

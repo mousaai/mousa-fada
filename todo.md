@@ -889,3 +889,11 @@
 - [x] إضافة GOOGLE_AI_API_KEY كـ secret منفصل
 - [x] تحديث imageGeneration.ts لاستخدام GOOGLE_AI_API_KEY لـ Imagen 4 وGemini Image Models
 - [x] اختبار والتحقق: Imagen 4 يحتاج Vertex AI, Gemini Image 429, النظام يسقط لـ Manus Forge بشكل صحيح
+
+## الإصدار 33.0 — إصلاح مفتاح Google AI
+- [x] إضافة MY_GOOGLE_AI_KEY كمتغير بيئة مستقل بأعلى أولوية
+- [x] تحديث env.ts: MY_GOOGLE_AI_KEY يتجاوز OPENAI_API_KEY وGOOGLE_AI_API_KEY المحميين في النظام
+- [x] التحقق من عمل Gemini 2.5 Flash و Imagen 4 مع المفتاح الجديد
+- [x] تحديث اختبارات gemini.independence.test.ts لتتوافق مع المفتاح الجديد
+- [x] إضافة اختبار google-ai-key.test.ts للتحقق من صحة المفتاح
+- [x] 212 اختبار ناجح
