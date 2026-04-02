@@ -12,4 +12,6 @@ export const ENV = {
   openAiBaseUrl: process.env.OPENAI_BASE_URL ?? "",
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   openAiModel: process.env.OPENAI_MODEL ?? "gemini-2.5-flash",
+  // Google AI Studio API Key (Imagen 3 + Gemini Flash لتوليد الصور)
+  googleAiApiKey: process.env.GOOGLE_AI_API_KEY ?? "",
 };

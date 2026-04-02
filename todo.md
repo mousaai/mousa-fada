@@ -881,3 +881,11 @@
 
 ## الإصدار 30.0 — إصلاح التصميم الحضري
 - [x] إصلاح صفحة UrbanDesign: توقف التحويل للكاميرا وضمان توليد التصاميم مباشرة
+
+## الإصدار 31.0 — إصلاح prompts التصميم
+- [ ] إصلاح prompts generateVisualization وquickAnalyze لتوليد فضاء جديد نظيف بدون الحفاظ على ورق الجدران أو العناصر المتهالكة
+
+## الإصدار 32.0 — ترقية نماذج توليد الصور بـ Google AI API
+- [x] إضافة GOOGLE_AI_API_KEY كـ secret منفصل
+- [x] تحديث imageGeneration.ts لاستخدام GOOGLE_AI_API_KEY لـ Imagen 4 وGemini Image Models
+- [x] اختبار والتحقق: Imagen 4 يحتاج Vertex AI, Gemini Image 429, النظام يسقط لـ Manus Forge بشكل صحيح

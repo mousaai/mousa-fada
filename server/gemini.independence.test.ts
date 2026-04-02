@@ -1,7 +1,7 @@
 /**
  * اختبار استقلالية Gemini — يتحقق من:
  * 1. أن invokeLLM يستخدم Google Gemini مباشرة (OPENAI_BASE_URL)
- * 2. أن generateImage يستخدم Imagen 3 أولاً ثم Gemini Flash ثم Manus Forge
+ * 2. أن generateImage يستخدم Imagen 4 أولاً ثم Gemini 3 Pro Image ثم Gemini 2.5 Flash Image ثم Manus Forge
  * 3. نظام fallback متعدد المستويات
  */
 import { describe, it, expect, vi } from "vitest";
@@ -12,6 +12,7 @@ vi.mock("server/_core/env", () => ({
     openAiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     openAiApiKey: process.env.OPENAI_API_KEY || "test-key",
     openAiModel: "gemini-2.5-flash",
+    googleAiApiKey: process.env.GOOGLE_AI_API_KEY || "google-test-key",
     forgeApiUrl: "https://forge.manus.ai",
     forgeApiKey: "manus-key",
   },
@@ -65,12 +66,12 @@ describe("استقلالية Gemini — النصوص", () => {
 });
 
 describe("استقلالية Gemini — الصور (نظام متعدد المستويات)", () => {
-  it("يجب أن يستخدم Imagen 3 أولاً لتوليد الصور الجديدة", async () => {
+  it("يجب أن يستخدم Imagen 4 أولاً لتوليد الصور الجديدة", async () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         predictions: [{
-          bytesBase64Encoded: Buffer.from("fake-imagen3-data").toString("base64"),
+          bytesBase64Encoded: Buffer.from("fake-imagen4-data").toString("base64"),
           mimeType: "image/png",
         }]
       }),
@@ -81,17 +82,18 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
 
     const calledUrl = fetchSpy.mock.calls[0]?.[0] as string;
     expect(calledUrl).toContain("generativelanguage.googleapis.com");
-    expect(calledUrl).toContain("imagen-3.0-generate-002");
+    // يجب أن يستخدم Imagen 4
+    expect(calledUrl).toContain("imagen-4.0-generate-001");
     expect(result.url).toBeDefined();
 
     fetchSpy.mockRestore();
   }, 10000);
 
-  it("يجب أن يعود لـ Gemini Flash إذا فشل Imagen 3", async () => {
+  it("يجب أن يعود لـ Gemini 3 Pro Image إذا فشل Imagen 4", async () => {
     const fetchSpy = vi.spyOn(global, "fetch")
-      // Imagen 3 يفشل
-      .mockResolvedValueOnce({ ok: false, text: async () => "Imagen 3 error", statusText: "Error", status: 500 } as Response)
-      // Gemini Flash ينجح
+      // Imagen 4 يفشل
+      .mockResolvedValueOnce({ ok: false, text: async () => "Imagen 4 error", statusText: "Error", status: 500 } as Response)
+      // Gemini 3 Pro Image ينجح
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -99,7 +101,7 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
             content: {
               parts: [{
                 inlineData: {
-                  data: Buffer.from("gemini-flash-image").toString("base64"),
+                  data: Buffer.from("gemini3-pro-image").toString("base64"),
                   mimeType: "image/png",
                 }
               }]
@@ -112,19 +114,29 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
     const result = await generateImage({ prompt: "غرفة نوم هادئة" });
 
     expect(result.url).toBeDefined();
-    // يجب أن يُستدعى مرتين: Imagen 3 (فشل) + Gemini Flash (نجح)
+    // يجب أن يُستدعى مرتين: Imagen 4 (فشل) + Gemini 3 Pro Image (نجح)
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     const secondUrl = fetchSpy.mock.calls[1]?.[0] as string;
-    expect(secondUrl).toContain("gemini-2.0-flash-exp");
+    expect(secondUrl).toContain("gemini-3-pro-image-preview");
 
     fetchSpy.mockRestore();
   }, 10000);
 
-  it("يجب أن يعود لـ Manus Forge إذا فشل Imagen 3 وGemini Flash", async () => {
+  it("يجب أن يعود لـ Manus Forge إذا فشلت جميع نماذج Google", async () => {
     const fetchSpy = vi.spyOn(global, "fetch")
-      // Imagen 3 يفشل
-      .mockResolvedValueOnce({ ok: false, text: async () => "Imagen 3 error", statusText: "Error", status: 500 } as Response)
-      // Gemini Flash يفشل (لا يُعيد صورة)
+      // Imagen 4 يفشل
+      .mockResolvedValueOnce({ ok: false, text: async () => "Imagen 4 error", statusText: "Error", status: 500 } as Response)
+      // Gemini 3 Pro Image يفشل (لا يُعيد صورة)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: "no image" }] } }] }),
+      } as Response)
+      // Gemini 2.5 Flash Image يفشل
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ candidates: [{ content: { parts: [{ text: "no image" }] } }] }),
+      } as Response)
+      // Gemini 3.1 Flash Image يفشل
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ candidates: [{ content: { parts: [{ text: "no image" }] } }] }),
@@ -144,8 +156,9 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
     const result = await generateImage({ prompt: "مطبخ عصري" });
 
     expect(result.url).toBeDefined();
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    // 4 محاولات Google + 1 Manus Forge
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
 
     fetchSpy.mockRestore();
-  }, 10000);
+  }, 15000);
 });
