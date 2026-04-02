@@ -6,6 +6,7 @@ import { publicProcedure, protectedProcedure, mousaProcedure, router } from "./_
 import { checkAndDeductCredits } from "./creditHelper";
 import { invokeLLM, type Message, type ImageContent, type TextContent } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
+import { analyzeFloorPlanAdvanced, generateRoomDesignIdea, analyzeAndDesignFloorPlan } from "./floorPlanEngine";
 import { storagePut } from "./storage";
 import {
   createProject, getUserProjects, getProjectById, updateProject, deleteProject,
@@ -531,6 +532,54 @@ export const appRouter = router({
           status: "analyzed",
         });
         return result;
+      }),
+    // تحليل المخطط المتقدم مع توليد أفكار تصميم لكل غرفة
+    analyzeFloorPlanAdvanced: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        imageUrl: z.string(),
+        imageKey: z.string().optional(),
+        generateDesigns: z.boolean().default(true),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.generateDesigns) {
+          const { analysis, roomDesigns } = await analyzeAndDesignFloorPlan(input.imageUrl);
+          await updateProject(input.projectId, ctx.user.id, {
+            floorPlanUrl: input.imageUrl,
+            floorPlanKey: input.imageKey ?? null,
+            floorPlanData: { analysis, roomDesigns },
+            status: "analyzed",
+          });
+          return { analysis, roomDesigns };
+        } else {
+          const analysis = await analyzeFloorPlanAdvanced(input.imageUrl);
+          await updateProject(input.projectId, ctx.user.id, {
+            floorPlanUrl: input.imageUrl,
+            floorPlanKey: input.imageKey ?? null,
+            floorPlanData: { analysis, roomDesigns: [] },
+            status: "analyzed",
+          });
+          return { analysis, roomDesigns: [] };
+        }
+      }),
+    // توليد فكرة تصميم لغرفة واحدة
+    generateRoomDesign: protectedProcedure
+      .input(z.object({
+        room: z.object({
+          name: z.string(),
+          type: z.enum(["living", "bedroom", "kitchen", "bathroom", "corridor", "dining", "office", "other"]),
+          width: z.number(),
+          length: z.number(),
+          area: z.number(),
+          windows: z.number(),
+          doors: z.number(),
+          notes: z.string(),
+          orientation: z.string().optional(),
+        }),
+        overallStyle: z.string().default("modern"),
+      }))
+      .mutation(async ({ input }) => {
+        return await generateRoomDesignIdea(input.room, input.overallStyle);
       }),
 
     getByProject: protectedProcedure

@@ -902,4 +902,11 @@
 - [x] إزالة fallback إلى Manus Forge من imageGeneration.ts
 - [x] إزالة fallback إلى Manus Forge من llm.ts
 - [x] تحديث الاختبارات — 212 اختبار ناجح
-- [ ] حفظ checkpoint ونشر
+- [x] حفظ checkpoint f21b3263 ونشر
+
+## الإصدار 35.0 — نظام AI متفوق على Manus
+- [x] بناء retry logic ذكي في imageGeneration.ts و llm.ts (3 محاولات، 2s → 5s → 12s)
+- [x] بناء محرك تحليل المخططات المتقدم — floorPlanEngine.ts مع Gemini 2.5 Pro
+- [x] إضافة procedures جديدة (analyzeFloorPlanAdvanced, generateRoomDesign)
+- [x] اختبار شامل — 211 اختبار ناجح
+- [x] حفظ checkpoint ونشر
