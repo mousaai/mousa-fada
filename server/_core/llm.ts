@@ -212,28 +212,25 @@ const normalizeToolChoice = (
 };
 
 /**
- * يعطي الأولوية لـ Google Gemini مباشرة (OPENAI_BASE_URL)
- * ويعود لـ Manus Forge كاحتياطي فقط
+ * يستخدم Google Gemini مباشرة عبر OPENAI_BASE_URL
+ * ⚠️ Manus Forge محذوف تماماً — لا fallback إلى Manus في أي حال
  */
 const resolveApiUrl = () => {
   if (ENV.openAiBaseUrl && ENV.openAiBaseUrl.trim().length > 0) {
     return `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`;
   }
-  if (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0) {
-    return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
-  }
-  return "https://forge.manus.im/v1/chat/completions";
+  throw new Error("لم يتم ضبط OPENAI_BASE_URL. يرجى إضافة MY_GOOGLE_AI_KEY في متغيرات البيئة.");
 };
 
-const resolveApiKey = () =>
-  (ENV.openAiApiKey && ENV.openAiApiKey.trim().length > 0)
-    ? ENV.openAiApiKey
-    : ENV.forgeApiKey;
+const resolveApiKey = () => {
+  if (ENV.openAiApiKey && ENV.openAiApiKey.trim().length > 0) {
+    return ENV.openAiApiKey;
+  }
+  throw new Error("لم يتم ضبط OPENAI_API_KEY / MY_GOOGLE_AI_KEY.");
+};
 
 const assertApiKey = () => {
-  if (!resolveApiKey()) {
-    throw new Error("OPENAI_API_KEY or BUILT_IN_FORGE_API_KEY is not configured");
-  }
+  resolveApiKey(); // يرمي خطأ إذا لم يوجد مفتاح
 };
 
 const normalizeResponseFormat = ({
@@ -325,8 +322,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  // محاولة أولى: Google Gemini مباشرة
-  let response = await fetch(resolveApiUrl(), {
+  // Google Gemini مباشرة — لا fallback إلى Manus
+  const response = await fetch(resolveApiUrl(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -334,25 +331,6 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     },
     body: JSON.stringify(payload),
   });
-
-  // fallback تلقائي: إذا فشل Gemini، نجرب Manus Forge
-  if (!response.ok && ENV.forgeApiKey) {
-    const errorText = await response.text();
-    console.warn(`[LLM] Gemini failed (${response.status}), falling back to Manus Forge. Error: ${errorText.substring(0, 100)}`);
-    
-    const forgeUrl = ENV.forgeApiUrl
-      ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-      : "https://forge.manus.im/v1/chat/completions";
-    
-    response = await fetch(forgeUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-  }
 
   if (!response.ok) {
     const errorText = await response.text();

@@ -5,7 +5,7 @@
  *   2. gemini-3-pro-image-preview (Gemini 3 Pro للصور — جودة عالية)
  *   3. gemini-2.5-flash-image (Gemini 2.5 Flash للصور — سريع ويدعم التعديل)
  *   4. gemini-3.1-flash-image-preview (Gemini 3.1 Flash للصور)
- *   5. Manus Forge (احتياطي نهائي)
+ * ملاحظة: Manus Forge محذوف تماماً — لا يُستخدم في أي حال
  */
 import { storagePut } from "server/storage";
 import { ENV } from "./env";
@@ -190,56 +190,11 @@ async function generateImageViaGemini(
 }
 
 /**
- * توليد الصور عبر Manus Forge (احتياطي نهائي)
- */
-async function generateImageViaManus(
-  options: GenerateImageOptions
-): Promise<GenerateImageResponse> {
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL("images.v1.ImageService/GenerateImage", baseUrl).toString();
-
-  const response = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify({
-      prompt: options.prompt,
-      original_images: options.originalImages || [],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Manus image generation failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
-  }
-
-  const result = (await response.json()) as {
-    image: { b64Json: string; mimeType: string };
-  };
-
-  const buffer = Buffer.from(result.image.b64Json, "base64");
-  const { url } = await storagePut(
-    `generated/${Date.now()}.png`,
-    buffer,
-    result.image.mimeType
-  );
-
-  return { url };
-}
-
-/**
- * الدالة الرئيسية — نظام توليد متعدد المستويات
+ * الدالة الرئيسية — نظام توليد متعدد المستويات (Google فقط)
  * الترتيب:
- *   للصور الجديدة: Imagen 4 → Gemini 3 Pro Image → Gemini 2.5 Flash Image → Gemini 3.1 Flash Image → Manus Forge
- *   للتعديل: Gemini 3 Pro Image → Gemini 2.5 Flash Image → Gemini 3.1 Flash Image → Manus Forge
+ *   للصور الجديدة: Imagen 4 → Gemini 3 Pro Image → Gemini 2.5 Flash Image → Gemini 3.1 Flash Image
+ *   للتعديل: Gemini 3 Pro Image → Gemini 2.5 Flash Image → Gemini 3.1 Flash Image
+ * ⚠️ Manus Forge محذوف تماماً
  */
 export async function generateImage(
   options: GenerateImageOptions
@@ -247,47 +202,46 @@ export async function generateImage(
   const googleKey = ENV.googleAiApiKey;
   const hasOriginalImages = options.originalImages && options.originalImages.length > 0;
 
-  if (googleKey && googleKey.trim().length > 0) {
-    // المستوى الأول: Google Imagen 4 (أعلى جودة — للصور الجديدة فقط)
-    if (!hasOriginalImages) {
-      try {
-        console.log("[generateImage] Trying Imagen 4 (highest quality)...");
-        return await generateImageViaImagen4(options);
-      } catch (err) {
-        console.warn("[generateImage] Imagen 4 failed:", (err as Error).message?.substring(0, 120));
-      }
-    }
+  if (!googleKey || googleKey.trim().length === 0) {
+    throw new Error("GOOGLE_AI_API_KEY غير مضبوط. يرجى إضافة MY_GOOGLE_AI_KEY في متغيرات البيئة.");
+  }
 
-    // المستوى الثاني: Gemini 3 Pro Image (جودة عالية، يدعم التعديل)
+  // المستوى الأول: Google Imagen 4 (أعلى جودة — للصور الجديدة فقط)
+  if (!hasOriginalImages) {
     try {
-      console.log("[generateImage] Trying Gemini 3 Pro Image...");
-      return await generateImageViaGemini(options, "gemini-3-pro-image-preview");
+      console.log("[generateImage] Trying Imagen 4 (highest quality)...");
+      return await generateImageViaImagen4(options);
     } catch (err) {
-      console.warn("[generateImage] Gemini 3 Pro Image failed:", (err as Error).message?.substring(0, 120));
-    }
-
-    // المستوى الثالث: Gemini 2.5 Flash Image (سريع، يدعم التعديل)
-    try {
-      console.log("[generateImage] Trying Gemini 2.5 Flash Image...");
-      return await generateImageViaGemini(options, "gemini-2.5-flash-image");
-    } catch (err) {
-      console.warn("[generateImage] Gemini 2.5 Flash Image failed:", (err as Error).message?.substring(0, 120));
-    }
-
-    // المستوى الرابع: Gemini 3.1 Flash Image Preview
-    try {
-      console.log("[generateImage] Trying Gemini 3.1 Flash Image Preview...");
-      return await generateImageViaGemini(options, "gemini-3.1-flash-image-preview");
-    } catch (err) {
-      console.warn("[generateImage] Gemini 3.1 Flash Image failed:", (err as Error).message?.substring(0, 120));
+      console.warn("[generateImage] Imagen 4 failed:", (err as Error).message?.substring(0, 120));
     }
   }
 
-  // المستوى الأخير: Manus Forge (احتياطي نهائي)
-  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-    throw new Error("No image generation API configured. Set GOOGLE_AI_API_KEY for Google APIs or BUILT_IN_FORGE_API_URL/KEY for Manus.");
+  // المستوى الثاني: Gemini 3 Pro Image (جودة عالية، يدعم التعديل)
+  try {
+    console.log("[generateImage] Trying Gemini 3 Pro Image...");
+    return await generateImageViaGemini(options, "gemini-3-pro-image-preview");
+  } catch (err) {
+    console.warn("[generateImage] Gemini 3 Pro Image failed:", (err as Error).message?.substring(0, 120));
   }
 
-  console.log("[generateImage] Falling back to Manus Forge...");
-  return await generateImageViaManus(options);
+  // المستوى الثالث: Gemini 2.5 Flash Image (سريع، يدعم التعديل)
+  try {
+    console.log("[generateImage] Trying Gemini 2.5 Flash Image...");
+    return await generateImageViaGemini(options, "gemini-2.5-flash-image");
+  } catch (err) {
+    console.warn("[generateImage] Gemini 2.5 Flash Image failed:", (err as Error).message?.substring(0, 120));
+  }
+
+  // المستوى الرابع: Gemini 3.1 Flash Image Preview
+  try {
+    console.log("[generateImage] Trying Gemini 3.1 Flash Image Preview...");
+    return await generateImageViaGemini(options, "gemini-3.1-flash-image-preview");
+  } catch (err) {
+    console.warn("[generateImage] Gemini 3.1 Flash Image failed:", (err as Error).message?.substring(0, 120));
+  }
+
+  // جميع النماذج فشلت — رمي خطأ واضح
+  throw new Error(
+    "فشل توليد الصورة: جميع نماذج Google (Imagen 4, Gemini 3 Pro, Gemini 2.5 Flash, Gemini 3.1 Flash) غير متاحة حالياً. يرجى المحاولة لاحقاً."
+  );
 }

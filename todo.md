@@ -897,3 +897,9 @@
 - [x] تحديث اختبارات gemini.independence.test.ts لتتوافق مع المفتاح الجديد
 - [x] إضافة اختبار google-ai-key.test.ts للتحقق من صحة المفتاح
 - [x] 212 اختبار ناجح
+
+## الإصدار 34.0 — إزالة Manus Forge تماماً
+- [x] إزالة fallback إلى Manus Forge من imageGeneration.ts
+- [x] إزالة fallback إلى Manus Forge من llm.ts
+- [x] تحديث الاختبارات — 212 اختبار ناجح
+- [ ] حفظ checkpoint ونشر

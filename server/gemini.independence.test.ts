@@ -122,7 +122,7 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
     fetchSpy.mockRestore();
   }, 10000);
 
-  it("يجب أن يعود لـ Manus Forge إذا فشلت جميع نماذج Google", async () => {
+    it("يجب أن يرمي خطأً واضحًا إذا فشلت جميع نماذج Google (لا Manus Forge)", async () => {
     const fetchSpy = vi.spyOn(global, "fetch")
       // Imagen 4 يفشل
       .mockResolvedValueOnce({ ok: false, text: async () => "Imagen 4 error", statusText: "Error", status: 500 } as Response)
@@ -140,25 +140,12 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ candidates: [{ content: { parts: [{ text: "no image" }] } }] }),
-      } as Response)
-      // Manus Forge ينجح
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          image: {
-            b64Json: Buffer.from("manus-image").toString("base64"),
-            mimeType: "image/png",
-          }
-        }),
       } as Response);
-
     const { generateImage } = await import("server/_core/imageGeneration");
-    const result = await generateImage({ prompt: "مطبخ عصري" });
-
-    expect(result.url).toBeDefined();
-    // 4 محاولات Google + 1 Manus Forge
-    expect(fetchSpy).toHaveBeenCalledTimes(5);
-
+    // يجب أن يرمي خطأً واضحًا — Manus Forge محذوف تماماً
+    await expect(generateImage({ prompt: "مطبخ عصري" })).rejects.toThrow("فشل توليد الصورة");
+    // 4 محاولات Google فقط — لا محاولة Manus
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
     fetchSpy.mockRestore();
   }, 15000);
 });
