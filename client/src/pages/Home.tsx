@@ -276,7 +276,7 @@ export default function Home() {
             </div>
           </button>
 
-          {/* Design from Plan */}
+          {/* Design from Plan — v40 */}
           <button
             onClick={() => navigate("/plan-design")}
             className="flex flex-col items-center gap-3 bg-white rounded-3xl p-5 shadow-sm border border-blue-100 active:scale-95 transition-transform"
