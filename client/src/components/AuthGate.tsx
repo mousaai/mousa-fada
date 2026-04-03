@@ -31,9 +31,9 @@ export function useAuth(): AuthContextType {
 }
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const { user, loading, error, deductCredits, refreshBalance, logout } = useMousaAuth();
+  const { user, loading, deductCredits, refreshBalance, logout } = useMousaAuth();
 
-  // شاشة التحميل أثناء التحقق من الهوية
+  // شاشة تحميل قصيرة فقط
   if (loading) {
     return (
       <div style={{
@@ -56,51 +56,15 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           marginBottom: 20,
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ color: "#8a7560", fontSize: 16, margin: 0 }}>جاري التحقق من هويتك...</p>
+        <p style={{ color: "#8a7560", fontSize: 16, margin: 0 }}>جاري التحميل...</p>
       </div>
     );
   }
 
-  // شاشة الخطأ — إعادة التوجيه لـ mousa.ai
-  if (error || !user) {
-    return (
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "#f5f0e8",
-        fontFamily: "system-ui, sans-serif",
-        direction: "rtl",
-        padding: 24,
-        textAlign: "center",
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔐</div>
-        <h2 style={{ color: "#3d2b1f", fontSize: 22, marginBottom: 8 }}>يجب الدخول عبر موسى</h2>
-        <p style={{ color: "#8a7560", fontSize: 15, marginBottom: 24, maxWidth: 320 }}>
-          للوصول إلى منصة فضاء، يرجى الدخول من خلال حسابك على موسى
-        </p>
-        <a
-          href="https://www.mousa.ai/?ref=fada"
-          style={{
-            background: "#c9a96e",
-            color: "#fff",
-            padding: "12px 32px",
-            borderRadius: 12,
-            textDecoration: "none",
-            fontSize: 16,
-            fontWeight: 600,
-          }}
-        >
-          الذهاب إلى موسى
-        </a>
-      </div>
-    );
-  }
+  const activeUser = user ?? GUEST_USER;
 
   return (
-    <AuthContext.Provider value={{ user, deductCredits, refreshBalance, logout }}>
+    <AuthContext.Provider value={{ user: activeUser, deductCredits, refreshBalance, logout }}>
       {children}
     </AuthContext.Provider>
   );

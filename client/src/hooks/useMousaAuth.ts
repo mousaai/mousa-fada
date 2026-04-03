@@ -22,6 +22,15 @@ interface AuthState {
   token: string | null;
 }
 
+const GUEST_USER: MousaUser = {
+  userId: 0,
+  openId: "guest",
+  name: "زائر",
+  email: "",
+  creditBalance: 0,
+  platform: "fada",
+};
+
 export function useMousaAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -36,6 +45,7 @@ export function useMousaAuth() {
 
   async function initAuth() {
     try {
+      // أولاً: تحقق من جلسة محفوظة
       const savedSession = loadSavedSession();
       if (savedSession) {
         setState({ user: savedSession.user, loading: false, error: null, token: savedSession.token });
@@ -43,30 +53,28 @@ export function useMousaAuth() {
         return;
       }
 
+      // ثانياً: تحقق من token في الـ URL (قادم من mousa.ai)
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("token");
 
-      if (!token) {
-        setState({ user: null, loading: false, error: "يجب الدخول عبر mousa.ai", token: null });
-        redirectToMousa();
-        return;
+      if (token) {
+        try {
+          const user = await verifyToken(token);
+          saveSession(token, user);
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+          setState({ user, loading: false, error: null, token });
+          return;
+        } catch {
+          // إذا فشل التحقق من الـ token، اعمل كزائر
+        }
       }
 
-      const user = await verifyToken(token);
-      saveSession(token, user);
-
-      const cleanUrl = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, document.title, cleanUrl);
-
-      setState({ user, loading: false, error: null, token });
-    } catch (err) {
-      const errorMsg = (err as Error).message;
-      if (errorMsg.includes("TOKEN_EXPIRED")) {
-        clearSession();
-        redirectToMousa();
-        return;
-      }
-      setState({ user: null, loading: false, error: errorMsg || "خطأ في المصادقة", token: null });
+      // ثالثاً: بدون token — يدخل كزائر بدون قيود
+      setState({ user: GUEST_USER, loading: false, error: null, token: null });
+    } catch {
+      // في حالة أي خطأ، يدخل كزائر
+      setState({ user: GUEST_USER, loading: false, error: null, token: null });
     }
   }
 
@@ -99,7 +107,7 @@ export function useMousaAuth() {
   }
 
   async function deductCredits(amount: number, description?: string): Promise<{ newBalance: number }> {
-    if (!state.user) throw new Error("المستخدم غير مسجّل الدخول");
+    if (!state.user || state.user.openId === "guest") throw new Error("المستخدم غير مسجّل الدخول");
 
     const response = await fetch(`${MOUSA_API_URL}/api/platform/deduct-credits`, {
       method: "POST",
@@ -134,7 +142,7 @@ export function useMousaAuth() {
   }
 
   async function refreshBalance(): Promise<number> {
-    if (!state.user || !state.token) return 0;
+    if (!state.user || !state.token || state.user.openId === "guest") return 0;
     try {
       const user = await verifyToken(state.token);
       setState(prev => ({
@@ -160,7 +168,7 @@ export function useMousaAuth() {
 
   function logout() {
     clearSession();
-    window.location.href = "https://www.mousa.ai";
+    setState({ user: GUEST_USER, loading: false, error: null, token: null });
   }
 
   return { ...state, deductCredits, refreshBalance, logout };
@@ -197,8 +205,4 @@ function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(STORAGE_KEY);
   } catch {}
-}
-
-function redirectToMousa() {
-  setTimeout(() => { window.location.href = "https://www.mousa.ai"; }, 1500);
 }
