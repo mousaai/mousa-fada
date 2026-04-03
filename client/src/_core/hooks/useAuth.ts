@@ -1,4 +1,3 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -8,8 +7,16 @@ type UseAuthOptions = {
   redirectPath?: string;
 };
 
+// رابط تسجيل الدخول عبر mousa.ai (حسب الدليل التقني)
+export function getMousaLoginUrl(returnPath?: string): string {
+  const returnUrl = encodeURIComponent(
+    window.location.origin + (returnPath ?? window.location.pathname)
+  );
+  return `https://www.mousa.ai/api/platform/login-redirect?platform=fada&return_url=${returnUrl}`;
+}
+
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  const { redirectOnUnauthenticated = false, redirectPath = "/login" } =
     options ?? {};
   const utils = trpc.useUtils();
 
@@ -42,10 +49,7 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    localStorage.setItem("fada-user-info", JSON.stringify(meQuery.data));
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
@@ -66,8 +70,10 @@ export function useAuth(options?: UseAuthOptions) {
     if (state.user) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
+    if (window.location.pathname === "/login") return;
 
-    window.location.href = redirectPath
+    // توجيه لـ mousa.ai لتسجيل الدخول (يعود تلقائياً بعد الدخول)
+    window.location.href = getMousaLoginUrl(window.location.pathname);
   }, [
     redirectOnUnauthenticated,
     redirectPath,
@@ -80,5 +86,6 @@ export function useAuth(options?: UseAuthOptions) {
     ...state,
     refresh: () => meQuery.refetch(),
     logout,
+    loginUrl: getMousaLoginUrl,
   };
 }

@@ -23,6 +23,7 @@ import FurnitureStore from "./pages/FurnitureStore";
 import CreditsDoc from "@/pages/CreditsDoc";
 import PlanDesign from "@/pages/PlanDesign";
 import UrbanDesign from "@/pages/UrbanDesign";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
@@ -53,6 +54,8 @@ function Router() {
       <Route path={"/plan"} component={PlanDesign} />
       <Route path={"/urban-design"} component={UrbanDesign} />
       <Route path={"/urban"} component={UrbanDesign} />
+      <Route path={"/login"} component={Login} />
+      <Route path={"/register"} component={Login} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

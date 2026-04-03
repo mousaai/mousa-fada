@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, mousaProcedure, router } from "./_core/trpc";
@@ -8,6 +8,8 @@ import { invokeLLM, type Message, type ImageContent, type TextContent } from "./
 import { generateImage } from "./_core/imageGeneration";
 import { analyzeFloorPlanAdvanced, generateRoomDesignIdea, analyzeAndDesignFloorPlan } from "./floorPlanEngine";
 import { storagePut } from "./storage";
+import { registerUser, loginUser, verifyPassword, hashPassword } from "./_core/localAuth";
+import { TRPCError } from "@trpc/server";
 import {
   createProject, getUserProjects, getProjectById, updateProject, deleteProject,
   createAnalysis, getProjectAnalyses, getAnalysisById, getUserAnalyses,
@@ -17,7 +19,8 @@ import {
   createArScan, getArScanByScanId, updateArScan, getUserArScans,
   getMarketPrices, seedMarketPrices,
   createMoodBoard, getProjectMoodBoards,
-  createReport, getProjectReports
+  createReport, getProjectReports,
+  getUserByOpenId, upsertUser
 } from "./db";
 import { nanoid } from "nanoid";
 import { verifyMousaToken, checkMousaBalance, deductMousaCredits, CREDIT_COSTS, type CreditOperation } from "./mousa";
@@ -391,6 +394,52 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
+        email: z.string().email("بريد إلكتروني غير صحيح"),
+        password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const { openId, sessionToken } = await registerUser(input);
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+          const user = await getUserByOpenId(openId);
+          return { success: true, user };
+        } catch (error: any) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: error.message ?? "فشل إنشاء الحساب" });
+        }
+      }),
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const { user, sessionToken } = await loginUser(input);
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+          return { success: true, user };
+        } catch (error: any) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: error.message ?? "بيانات الدخول غير صحيحة" });
+        }
+      }),
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = await getUserByOpenId(ctx.user.openId);
+        if (!user?.passwordHash) throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن تغيير كلمة المرور" });
+        const valid = await verifyPassword(input.currentPassword, user.passwordHash);
+        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "كلمة المرور الحالية غير صحيحة" });
+        const newHash = await hashPassword(input.newPassword);
+        await upsertUser({ openId: ctx.user.openId, passwordHash: newHash });
+        return { success: true };
+      }),
   }),
 
   // ===== رفع الصور =====

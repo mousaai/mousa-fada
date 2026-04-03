@@ -978,3 +978,15 @@
 - [ ] استبدال storagePut/storageGet بـ S3/R2 مباشر
 - [ ] التأكد من أن DATABASE_URL مستقل
 - [ ] حفظ checkpoint وتجهيز ZIP
+
+## التكامل مع mousa.ai (حسب الدليل التقني الرسمي)
+
+- [x] تحديث context.ts لقراءة cookie `app_session_id` وفك JWT بـ `JWT_SECRET` من mousa.ai
+- [x] إنشاء `server/_core/mousaAuth.ts` — قراءة قاعدة بيانات mousa.ai مباشرة (users + credit_wallets)
+- [x] تحديث env.ts لإضافة `MOUSA_JWT_SECRET` و`PLATFORM_API_KEY` و`MOUSA_DB_URL`
+- [x] تحديث creditHelper.ts لاستخدام `deduct-credits` API من mousa.ai
+- [x] إضافة `check-balance` قبل كل عملية AI
+- [x] توجيه المستخدم لـ mousa.ai/api/platform/login-redirect إذا لم تكن هناك جلسة
+- [ ] إزالة نظام JWT المحلي (localAuth.ts) بعد اكتمال التكامل
+- [x] اختبار شامل للتكامل
+- [ ] حفظ checkpoint نهائي

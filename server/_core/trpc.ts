@@ -28,20 +28,26 @@ const requireUser = t.middleware(async opts => {
 export const protectedProcedure = t.procedure.use(requireUser);
 
 /**
- * mousaProcedure: ⚠️ وضع مؤقت — مفتوحة للجميع بدون فحص Mousa.ai
- * سيتم إعادة تفعيل الفحص عند الأمر.
+ * mousaProcedure: procedure مستقلة — لا تعتمد على Mousa.ai
+ * المستخدم المسجّل يحصل على وصول كامل، الزوار يحصلون على guest mode
  */
 export const mousaProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
-
-    // ⚠️ مؤقت: تجاوز فحص تسجيل الدخول وفحص Mousa.ai
-    // نُمرر ctx.user كـ null-safe مع mousaUserId افتراضي
+    const guestUser = {
+      id: 0, openId: "guest", name: "زائر", email: "",
+      role: "user" as const,
+      mousaUserId: null, mousaBalance: 0, mousaLastSync: null,
+      passwordHash: null, passwordResetToken: null, passwordResetExpiry: null,
+      emailVerified: false, emailVerifyToken: null,
+      loginMethod: "guest",
+      createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date()
+    };
     return next({
       ctx: {
         ...ctx,
-        user: ctx.user ?? { id: 0, openId: "guest", name: "زائر", email: "", role: "user" as const, mousaUserId: null, createdAt: new Date() },
-        mousaUserId: ctx.user?.mousaUserId ?? null,
+        user: ctx.user ?? guestUser,
+        mousaUserId: ctx.user?.id ?? null,
       },
     });
   }),

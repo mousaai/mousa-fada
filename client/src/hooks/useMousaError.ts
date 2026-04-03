@@ -6,7 +6,7 @@
 
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { getLoginUrl } from "@/const";
+
 
 interface MousaErrorData {
   code?: string;
@@ -61,7 +61,7 @@ export function useMousaError() {
         action: {
           label: "تسجيل الدخول",
           onClick: () => {
-            window.location.href = getLoginUrl();
+            window.location.href = "/login";
           },
         },
         duration: 8000,
@@ -121,7 +121,7 @@ export function handleMousaErrorStatic(error: { message?: string; data?: { code?
     toast.error("يجب تسجيل الدخول أولاً", {
       action: {
         label: "تسجيل الدخول",
-        onClick: () => { window.location.href = getLoginUrl(); },
+        onClick: () => { window.location.href = "/login"; },
       },
       duration: 8000,
     });

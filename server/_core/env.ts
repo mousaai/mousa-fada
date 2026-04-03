@@ -26,4 +26,16 @@ export const ENV = {
   openAiModel: process.env.OPENAI_MODEL ?? "gemini-2.5-flash",
   // Google AI Studio API Key (لتوليد الصور عبر Imagen 4 + Gemini Image)
   googleAiApiKey: MY_GOOGLE_AI_KEY || process.env.GOOGLE_AI_API_KEY || "",
+  // Google Maps API Key (مباشر — بدون Manus proxy أسرع بـ 200-400ms)
+  googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+  // Telegram Bot (إشعارات فورية — بدل Manus Notifications)
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+  telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
+  // تكامل mousa.ai — حسب الدليل التقني الرسمي
+  // JWT_SECRET من mousa.ai لفك تشفير cookie app_session_id
+  mousaJwtSecret: process.env.MOUSA_JWT_SECRET ?? "gUZSqUcmSESjwVurZ47xye",
+  // API Key لمنصة فضاء للتواصل مع mousa.ai
+  mousaPlatformApiKey: process.env.MOUSA_PLATFORM_API_KEY ?? "USAA",
+  // قاعدة بيانات mousa.ai للقراءة فقط (users + credit_wallets)
+  mousaDbUrl: process.env.MOUSA_DB_URL ?? "",
 };

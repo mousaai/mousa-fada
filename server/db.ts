@@ -39,6 +39,22 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet[field] = normalized;
     };
     textFields.forEach(assignNullable);
+    // حقول المصادقة المستقلة
+    const authFields = ["passwordHash", "passwordResetToken", "emailVerifyToken"] as const;
+    for (const field of authFields) {
+      if ((user as any)[field] !== undefined) {
+        (values as any)[field] = (user as any)[field] ?? null;
+        updateSet[field] = (user as any)[field] ?? null;
+      }
+    }
+    if ((user as any).passwordResetExpiry !== undefined) {
+      (values as any).passwordResetExpiry = (user as any).passwordResetExpiry ?? null;
+      updateSet.passwordResetExpiry = (user as any).passwordResetExpiry ?? null;
+    }
+    if ((user as any).emailVerified !== undefined) {
+      (values as any).emailVerified = (user as any).emailVerified;
+      updateSet.emailVerified = (user as any).emailVerified;
+    }
     if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
     if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
     else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
@@ -52,6 +68,20 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) { console.warn("[Database] Cannot get user: database not available"); return undefined; }
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByResetToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.passwordResetToken, token)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
