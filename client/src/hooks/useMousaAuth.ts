@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 
 const MOUSA_API_URL = "https://www.mousa.ai";
-const STORAGE_KEY = "mousa_user_session";
-const TOKEN_KEY = "mousa_auth_token";
 const THIS_PLATFORM = "fada";
 const PLATFORM_API_KEY = "USAA";
+
+// أسماء الـ cookies
+const COOKIE_TOKEN = "fada_auth_token";
+const COOKIE_USER = "fada_user_session";
+// مدة صلاحية الـ cookie: 23 ساعة
+const COOKIE_MAX_AGE = 23 * 60 * 60;
 
 export interface MousaUser {
   userId: number;
@@ -45,7 +49,7 @@ export function useMousaAuth() {
 
   async function initAuth() {
     try {
-      // أولاً: تحقق من جلسة محفوظة
+      // أولاً: تحقق من cookie محفوظ
       const savedSession = loadSavedSession();
       if (savedSession) {
         setState({ user: savedSession.user, loading: false, error: null, token: savedSession.token });
@@ -73,7 +77,6 @@ export function useMousaAuth() {
       // ثالثاً: بدون token — يدخل كزائر بدون قيود
       setState({ user: GUEST_USER, loading: false, error: null, token: null });
     } catch {
-      // في حالة أي خطأ، يدخل كزائر
       setState({ user: GUEST_USER, loading: false, error: null, token: null });
     }
   }
@@ -174,17 +177,33 @@ export function useMousaAuth() {
   return { ...state, deductCredits, refreshBalance, logout };
 }
 
+// ===== Cookie Helpers =====
+
+function setCookie(name: string, value: string, maxAge: number) {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
+}
+
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; Max-Age=0; Path=/`;
+}
+
 function saveSession(token: string, user: MousaUser) {
   try {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, savedAt: Date.now() }));
+    setCookie(COOKIE_TOKEN, token, COOKIE_MAX_AGE);
+    setCookie(COOKIE_USER, JSON.stringify({ user, savedAt: Date.now() }), COOKIE_MAX_AGE);
   } catch {}
 }
 
 function loadSavedSession(): { token: string; user: MousaUser } | null {
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const sessionStr = localStorage.getItem(STORAGE_KEY);
+    const token = getCookie(COOKIE_TOKEN);
+    const sessionStr = getCookie(COOKIE_USER);
     if (!token || !sessionStr) return null;
 
     const session = JSON.parse(sessionStr);
@@ -202,7 +221,7 @@ function loadSavedSession(): { token: string; user: MousaUser } | null {
 
 function clearSession() {
   try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(STORAGE_KEY);
+    deleteCookie(COOKIE_TOKEN);
+    deleteCookie(COOKIE_USER);
   } catch {}
 }
