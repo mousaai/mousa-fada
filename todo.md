@@ -963,5 +963,11 @@
 - [x] حفظ checkpoint 57ce891a ونشر
 
 ## الإصدار 44.0 — تغيير الجلسة من localStorage إلى cookies
-- [ ] تعديل useMousaAuth لاستخدام cookies
+- [x] تعديل useMousaAuth لاستخدام cookies
+- [x] حفظ checkpoint 5d854878 ونشر
+
+## الإصدار 45.0 — Shared Session Cookie على .mousa.ai
+- [x] تعديل useMousaAuth لقراءة shared cookie من .mousa.ai فقط
+- [x] إلغاء token بالكامل
+- [x] تجهيز وثيقة تقنية لمطور mousa.ai
 - [ ] حفظ checkpoint ونشر

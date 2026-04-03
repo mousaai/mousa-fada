@@ -4,11 +4,8 @@ const MOUSA_API_URL = "https://www.mousa.ai";
 const THIS_PLATFORM = "fada";
 const PLATFORM_API_KEY = "USAA";
 
-// أسماء الـ cookies
-const COOKIE_TOKEN = "fada_auth_token";
-const COOKIE_USER = "fada_user_session";
-// مدة صلاحية الـ cookie: 23 ساعة
-const COOKIE_MAX_AGE = 23 * 60 * 60;
+// اسم الـ shared cookie الذي يضبطه mousa.ai على .mousa.ai
+const SHARED_COOKIE = "mousa_session";
 
 export interface MousaUser {
   userId: number;
@@ -22,7 +19,6 @@ export interface MousaUser {
 interface AuthState {
   user: MousaUser | null;
   loading: boolean;
-  error: string | null;
   token: string | null;
 }
 
@@ -39,7 +35,6 @@ export function useMousaAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
-    error: null,
     token: null,
   });
 
@@ -49,53 +44,39 @@ export function useMousaAuth() {
 
   async function initAuth() {
     try {
-      // أولاً: تحقق من cookie محفوظ
-      const savedSession = loadSavedSession();
-      if (savedSession) {
-        setState({ user: savedSession.user, loading: false, error: null, token: savedSession.token });
-        refreshBalanceInBackground(savedSession.token, savedSession.user);
-        return;
-      }
+      // قراءة الـ shared session cookie من .mousa.ai
+      const sessionCookie = getCookie(SHARED_COOKIE);
 
-      // ثانياً: تحقق من token في الـ URL (قادم من mousa.ai)
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get("token");
-
-      if (token) {
+      if (sessionCookie) {
         try {
-          const user = await verifyToken(token);
-          saveSession(token, user);
-          const cleanUrl = window.location.pathname + window.location.hash;
-          window.history.replaceState({}, document.title, cleanUrl);
-          setState({ user, loading: false, error: null, token });
+          const user = await verifySession(sessionCookie);
+          setState({ user, loading: false, token: sessionCookie });
           return;
         } catch {
-          // إذا فشل التحقق من الـ token، اعمل كزائر
+          // إذا فشل التحقق، يدخل كزائر
         }
       }
 
-      // ثالثاً: بدون token — يدخل كزائر بدون قيود
-      setState({ user: GUEST_USER, loading: false, error: null, token: null });
+      // لا يوجد cookie — يدخل كزائر بدون قيود
+      setState({ user: GUEST_USER, loading: false, token: null });
     } catch {
-      setState({ user: GUEST_USER, loading: false, error: null, token: null });
+      setState({ user: GUEST_USER, loading: false, token: null });
     }
   }
 
-  async function verifyToken(token: string): Promise<MousaUser> {
-    const response = await fetch(`${MOUSA_API_URL}/api/platform/verify-token`, {
+  async function verifySession(session: string): Promise<MousaUser> {
+    const response = await fetch(`${MOUSA_API_URL}/api/platform/verify-session`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${PLATFORM_API_KEY}`,
         "X-Platform-ID": THIS_PLATFORM,
       },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ session }),
     });
 
     if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      if (data.code === "TOKEN_EXPIRED") throw new Error("TOKEN_EXPIRED");
-      throw new Error(data.error || "فشل التحقق من الهوية");
+      throw new Error("فشل التحقق من الجلسة");
     }
 
     const data = await response.json();
@@ -137,17 +118,13 @@ export function useMousaAuth() {
       user: prev.user ? { ...prev.user, creditBalance: data.newBalance } : null,
     }));
 
-    if (state.token && state.user) {
-      saveSession(state.token, { ...state.user, creditBalance: data.newBalance });
-    }
-
     return { newBalance: data.newBalance };
   }
 
   async function refreshBalance(): Promise<number> {
     if (!state.user || !state.token || state.user.openId === "guest") return 0;
     try {
-      const user = await verifyToken(state.token);
+      const user = await verifySession(state.token);
       setState(prev => ({
         ...prev,
         user: prev.user ? { ...prev.user, creditBalance: user.creditBalance } : null,
@@ -158,20 +135,10 @@ export function useMousaAuth() {
     }
   }
 
-  async function refreshBalanceInBackground(token: string, currentUser: MousaUser) {
-    try {
-      const user = await verifyToken(token);
-      setState(prev => ({
-        ...prev,
-        user: prev.user ? { ...prev.user, creditBalance: user.creditBalance } : null,
-      }));
-      saveSession(token, { ...currentUser, creditBalance: user.creditBalance });
-    } catch {}
-  }
-
   function logout() {
-    clearSession();
-    setState({ user: GUEST_USER, loading: false, error: null, token: null });
+    // حذف الـ cookie المحلي فقط — mousa.ai يتحكم في الـ shared cookie
+    deleteCookie(SHARED_COOKIE);
+    setState({ user: GUEST_USER, loading: false, token: null });
   }
 
   return { ...state, deductCredits, refreshBalance, logout };
@@ -179,49 +146,11 @@ export function useMousaAuth() {
 
 // ===== Cookie Helpers =====
 
-function setCookie(name: string, value: string, maxAge: number) {
-  const secure = location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
-}
-
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }
 
 function deleteCookie(name: string) {
-  document.cookie = `${name}=; Max-Age=0; Path=/`;
-}
-
-function saveSession(token: string, user: MousaUser) {
-  try {
-    setCookie(COOKIE_TOKEN, token, COOKIE_MAX_AGE);
-    setCookie(COOKIE_USER, JSON.stringify({ user, savedAt: Date.now() }), COOKIE_MAX_AGE);
-  } catch {}
-}
-
-function loadSavedSession(): { token: string; user: MousaUser } | null {
-  try {
-    const token = getCookie(COOKIE_TOKEN);
-    const sessionStr = getCookie(COOKIE_USER);
-    if (!token || !sessionStr) return null;
-
-    const session = JSON.parse(sessionStr);
-    // الجلسة صالحة لمدة 23 ساعة
-    if (Date.now() - session.savedAt > 23 * 60 * 60 * 1000) {
-      clearSession();
-      return null;
-    }
-
-    return { token, user: session.user };
-  } catch {
-    return null;
-  }
-}
-
-function clearSession() {
-  try {
-    deleteCookie(COOKIE_TOKEN);
-    deleteCookie(COOKIE_USER);
-  } catch {}
+  document.cookie = `${name}=; Max-Age=0; Path=/; Domain=.mousa.ai`;
 }
