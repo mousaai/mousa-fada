@@ -9,9 +9,16 @@ export const ENV = {
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
-  // Manus Forge (احتياطي فقط)
+  // Manus Forge (غير مستخدم — محتفظ لتجنب أخطاء TypeScript في ملفات _core غير المستخدمة)
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  // S3 Storage (مستقل — بدون Manus)
+  s3Endpoint: process.env.S3_ENDPOINT ?? "",
+  s3Bucket: process.env.S3_BUCKET ?? "",
+  s3AccessKey: process.env.S3_ACCESS_KEY ?? "",
+  s3SecretKey: process.env.S3_SECRET_KEY ?? "",
+  s3Region: process.env.S3_REGION ?? "auto",
+  s3PublicUrl: process.env.S3_PUBLIC_URL ?? "",
   // Google Gemini مباشرة عبر OpenAI-compatible API
   // إذا وُجد MY_GOOGLE_AI_KEY يستخدمه بدلاً من OPENAI_API_KEY الافتراضي
   openAiBaseUrl: process.env.OPENAI_BASE_URL ?? "",

@@ -970,4 +970,11 @@
 - [x] تعديل useMousaAuth لقراءة shared cookie من .mousa.ai فقط
 - [x] إلغاء token بالكامل
 - [x] تجهيز وثيقة تقنية لمطور mousa.ai
-- [ ] حفظ checkpoint ونشر
+- [x] حفظ checkpoint 7a05cd1e ونشر
+
+## الإصدار 46.0 — إزالة كل اعتماد على Manus كوسيط
+- [ ] استبدال invokeLLM بـ OpenAI مباشر
+- [ ] استبدال generateImage بـ OpenAI DALL-E مباشر
+- [ ] استبدال storagePut/storageGet بـ S3/R2 مباشر
+- [ ] التأكد من أن DATABASE_URL مستقل
+- [ ] حفظ checkpoint وتجهيز ZIP
