@@ -7,6 +7,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { notifyMousaPricing } from "../mousa";
+import { registerSSORoutes } from "./sso";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -93,6 +94,9 @@ async function startServer() {
       return res.status(500).send("Proxy error");
     }
   });
+  // ===== SSO Routes — دخول موحد مع mousa.ai =====
+  registerSSORoutes(app);
+
   // tRPC API
   app.use(
     "/api/trpc",

@@ -1022,3 +1022,12 @@
 - [x] تحديث google-ai-key.test.ts للتحقق من المفتاح الجديد
 - [x] 240 اختبار ناجح (جميع الاختبارات)
 - [x] النموذج المدعوم: gemini-2.5-flash (الوحيد المتاح للمستخدمين الجدد في هذا المفتاح)
+
+## الإصدار 49.0 — نظام SSO مع mousa.ai (دخول بدون تسجيل مزدوج)
+- [x] بناء /api/sso/token endpoint للدخول التلقائي عبر redirect
+- [x] بناء /api/sso/verify endpoint للواجهة الأمامية (POST)
+- [x] بناء /api/sso/status endpoint لفحص حالة الجلسة
+- [x] تحديث useMousaAuth.ts لمعالجة ?token= من URL تلقائياً
+- [x] إزالة التوكن من URL بعد التحقق (window.history.replaceState)
+- [x] الوصول مفتوح للجميع بدون نوافذ تسجيل إجبارية
+- [x] كتابة اختبارات sso.test.ts (248 اختبار ناجح)

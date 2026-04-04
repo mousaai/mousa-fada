@@ -56,11 +56,32 @@ export function useMousaAuth() {
 
   async function initAuth() {
     try {
-      // 1. محاولة قراءة الـ shared session cookie من .mousa.ai
+      // ===== المسار 1: ?token= في URL من mousa.ai =====
+      // عندما يضغط المستخدم على بطاقة fada في mousa.ai
+      const urlParams = new URLSearchParams(window.location.search);
+      const mousaToken = urlParams.get("token");
+
+      if (mousaToken) {
+        try {
+          const user = await verifyViaSSOEndpoint(mousaToken);
+          if (user) {
+            // إزالة الـ token من URL بدون reload
+            urlParams.delete("token");
+            const cleanSearch = urlParams.toString();
+            const cleanUrl = window.location.pathname + (cleanSearch ? "?" + cleanSearch : "");
+            window.history.replaceState({}, "", cleanUrl);
+            setState({ user, loading: false, token: mousaToken });
+            return;
+          }
+        } catch {
+          // فشل SSO — نكمل بالطرق الأخرى
+        }
+      }
+
+      // ===== المسار 2: cookie app_session_id من .mousa.ai =====
       const sessionCookie = getCookie(SHARED_COOKIE);
 
       if (sessionCookie) {
-        // محاولة التحقق عبر verify-session API
         try {
           const user = await verifySession(sessionCookie);
           setState({ user, loading: false, token: sessionCookie });
@@ -70,7 +91,7 @@ export function useMousaAuth() {
         }
       }
 
-      // 2. محاولة التحقق عبر السيرفر (يقرأ app_session_id مباشرة)
+      // ===== المسار 3: جلسة محلية عبر /api/sso/status =====
       try {
         const user = await verifyViaServer();
         if (user) {
@@ -81,33 +102,91 @@ export function useMousaAuth() {
         // السيرفر لم يتعرف على الجلسة
       }
 
-      // 3. لا يوجد جلسة صالحة من mousa.ai
-      // المستخدم يحصل على 200 نقطة مجانية — لا قيود على الدخول
+      // ===== المسار 4: زائر مجاني — لا قيود على الدخول =====
       setState({ user: buildFreeUser(), loading: false, token: null });
     } catch {
-      // في أي خطأ غير متوقع — نفتح المنصة بالكريدت المجاني
       setState({ user: buildFreeUser(), loading: false, token: null });
     }
   }
 
-  // FIX FADA-001: استخدام السيرفر كـ fallback لجلب بيانات المستخدم
+  /**
+   * إرسال token لـ /api/sso/verify لإنشاء جلسة محلية تلقائياً
+   */
+  async function verifyViaSSOEndpoint(token: string): Promise<MousaUser | null> {
+    const response = await fetch("/api/sso/verify", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json() as {
+      success: boolean;
+      user?: {
+        openId: string;
+        name: string;
+        email: string;
+        creditBalance: number;
+        userId: number;
+      };
+    };
+    if (!data.success || !data.user) return null;
+    return {
+      userId: data.user.userId,
+      openId: data.user.openId,
+      name: data.user.name,
+      email: data.user.email,
+      creditBalance: data.user.creditBalance,
+      platform: "fada",
+      isFreeMode: false,
+    };
+  }
+
+  // التحقق عبر /api/sso/status (جلسة محلية) أو mousa.getBalance (fallback)
   async function verifyViaServer(): Promise<MousaUser | null> {
     try {
+      // أولاً: /api/sso/status — أسرع وأدق
+      const statusRes = await fetch("/api/sso/status", { credentials: "include" });
+      if (statusRes.ok) {
+        const statusData = await statusRes.json() as {
+          authenticated: boolean;
+          user?: {
+            openId: string;
+            name: string | null;
+            email: string | null;
+            mousaUserId: number | null;
+            mousaBalance: number | null;
+          };
+        };
+        if (statusData.authenticated && statusData.user) {
+          const u = statusData.user;
+          return {
+            userId: u.mousaUserId ?? 0,
+            openId: u.openId,
+            name: u.name ?? "مستخدم",
+            email: u.email ?? "",
+            creditBalance: u.mousaBalance ?? 0,
+            platform: "fada",
+            isFreeMode: !u.mousaUserId,
+          };
+        }
+      }
+
+      // ثانياً: fallback عبر mousa.getBalance
       const response = await fetch("/api/trpc/mousa.getBalance?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) return null;
-      const data = await response.json();
+      const data = await response.json() as any;
       const result = data?.[0]?.result?.data?.json;
       if (result && result.requiresMousa && result.balance !== null) {
-        // المستخدم مسجّل من mousa.ai — نجلب بياناته
         const meResponse = await fetch("/api/trpc/auth.me?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
         if (meResponse.ok) {
-          const meData = await meResponse.json();
+          const meData = await meResponse.json() as any;
           const me = meData?.[0]?.result?.data?.json;
           if (me) {
             return {
