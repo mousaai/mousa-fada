@@ -236,16 +236,20 @@ const normalizeResponseFormat = ({
  * يستخدم Google Gemini مباشرة عبر OPENAI_BASE_URL
  * ⚠️ Manus Forge محذوف تماماً — لا fallback إلى Manus في أي حال
  */
+const GEMINI_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+
 const resolveApiUrl = () => {
-  if (ENV.openAiBaseUrl && ENV.openAiBaseUrl.trim().length > 0) {
-    return `${ENV.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`;
-  }
-  throw new Error("لم يتم ضبط OPENAI_BASE_URL. يرجى إضافة MY_GOOGLE_AI_KEY في متغيرات البيئة.");
+  const baseUrl = ENV.openAiBaseUrl && ENV.openAiBaseUrl.trim().length > 0
+    ? ENV.openAiBaseUrl
+    : GEMINI_DEFAULT_BASE_URL;
+  return `${baseUrl.replace(/\/$/, "")}/chat/completions`;
 };
 
 const resolveApiKey = () => {
+  // الأولوية: MY_GOOGLE_AI_KEY ثم OPENAI_API_KEY ثم GOOGLE_AI_API_KEY
   if (ENV.openAiApiKey && ENV.openAiApiKey.trim().length > 0) return ENV.openAiApiKey;
-  throw new Error("لم يتم ضبط OPENAI_API_KEY / MY_GOOGLE_AI_KEY.");
+  if (ENV.googleAiApiKey && ENV.googleAiApiKey.trim().length > 0) return ENV.googleAiApiKey;
+  throw new Error("لم يتم ضبط MY_GOOGLE_AI_KEY أو OPENAI_API_KEY. يرجى إضافة المفتاح في متغيرات البيئة.");
 };
 
 const assertApiKey = () => {

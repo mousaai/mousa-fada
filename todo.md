@@ -1012,3 +1012,13 @@
 - [x] تعديل creditHelper.ts: المستخدم غير المتحقق يستهلك من الـ 200 نقطة المجانية
 - [x] إزالة أي حجب للدخول بسبب عدم التحقق من mousa.ai
 - [ ] اختبار شامل وحفظ checkpoint ونشر
+
+## الإصدار 48.0 — إصلاح مفتاح Google AI API
+- [x] تحديث env.ts لاستخدام مفتاح Mousa ai الجديد (AIzaSyA07yksSaqtSYAzqo2T1U1ANu1hByVLeK8) بدلاً من المفاتيح القديمة المُبلَّغ عنها
+- [x] إضافة GEMINI_DEFAULT_BASE_URL في llm.ts كـ fallback إذا كان OPENAI_BASE_URL فارغاً
+- [x] تحديث resolveApiKey لإضافة fallback على googleAiApiKey
+- [x] تحديث اختبارات gemini.key.test.ts لاستخدام المفتاح الجديد مباشرة
+- [x] تحديث gemini.independence.test.ts ليتوافق مع المفتاح الجديد
+- [x] تحديث google-ai-key.test.ts للتحقق من المفتاح الجديد
+- [x] 240 اختبار ناجح (جميع الاختبارات)
+- [x] النموذج المدعوم: gemini-2.5-flash (الوحيد المتاح للمستخدمين الجدد في هذا المفتاح)

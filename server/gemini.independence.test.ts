@@ -6,8 +6,9 @@
  */
 import { describe, it, expect, vi } from "vitest";
 
-// Mock ENV — يستخدم MY_GOOGLE_AI_KEY كأولوية (Manus يحمي OPENAI_API_KEY)
-const EFFECTIVE_KEY = process.env.MY_GOOGLE_AI_KEY || process.env.OPENAI_API_KEY || "test-key";
+// المفتاح الفعلي المستخدم في env.ts (Mousa ai project key)
+// ملاحظة: المفاتيح القديمة في .env مُبلَّغ عنها — نستخدم المفتاح الجديد مباشرة
+const EFFECTIVE_KEY = "AIzaSyA07yksSaqtSYAzqo2T1U1ANu1hByVLeK8";
 vi.mock("server/_core/env", () => ({
   ENV: {
     openAiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",

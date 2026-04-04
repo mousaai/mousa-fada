@@ -1,6 +1,8 @@
-// MY_GOOGLE_AI_KEY: مفتاح Google AI الجديد من My First Project (106380466667)
-// له الأولوية على جميع المفاتيح الافتراضية المحمية في النظام
-const MY_GOOGLE_AI_KEY = process.env.MY_GOOGLE_AI_KEY || "";
+// مفتاح Google AI المعتمد من مشروع Mousa ai
+// النموذج المدعوم: gemini-2.5-flash فقط (الوحيد المتاح للمستخدمين الجدد)
+// ملاحظة: المفاتيح القديمة في .env مُبلَغ عنها ومحجوبة من Google
+const MOUSA_AI_GEMINI_KEY = "AIzaSyA07yksSaqtSYAzqo2T1U1ANu1hByVLeK8";
+const MY_GOOGLE_AI_KEY = MOUSA_AI_GEMINI_KEY;
 
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
@@ -23,6 +25,7 @@ export const ENV = {
   // إذا وُجد MY_GOOGLE_AI_KEY يستخدمه بدلاً من OPENAI_API_KEY الافتراضي
   openAiBaseUrl: process.env.OPENAI_BASE_URL ?? "",
   openAiApiKey: MY_GOOGLE_AI_KEY || (process.env.OPENAI_API_KEY ?? ""),
+  // gemini-2.5-flash هو النموذج الوحيد المتاح للمستخدمين الجدد في هذا المفتاح
   openAiModel: process.env.OPENAI_MODEL ?? "gemini-2.5-flash",
   // Google AI Studio API Key (لتوليد الصور عبر Imagen 4 + Gemini Image)
   googleAiApiKey: MY_GOOGLE_AI_KEY || process.env.GOOGLE_AI_API_KEY || "",
