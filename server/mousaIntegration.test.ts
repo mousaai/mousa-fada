@@ -56,11 +56,12 @@ describe("checkAndDeductCredits — وضع التطوير (بدون mousaUserId)
     expect(result.baseCost).toBeGreaterThan(0);
   });
 
-  it("يُرجع newBalance=9999 في وضع التطوير", async () => {
+  it("يسمح للزائر بدون خصم كريدت (موسىيد غير محدد)", async () => {
     const { checkAndDeductCredits } = await import("./creditHelper");
     const result = await checkAndDeductCredits(1, undefined, "analyzeRoom");
     expect(result.allowed).toBe(true);
-    expect(result.newBalance).toBe(9999);
+    // الزائر غير المسجّل — لا يوجد رصيد لعرضه
+    expect(result.newBalance).toBeUndefined();
   });
 });
 

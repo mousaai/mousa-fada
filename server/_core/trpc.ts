@@ -28,12 +28,17 @@ const requireUser = t.middleware(async opts => {
 export const protectedProcedure = t.procedure.use(requireUser);
 
 /**
- * mousaProcedure: procedure مستقلة — لا تعتمد على Mousa.ai
- * المستخدم المسجّل يحصل على وصول كامل، الزوار يحصلون على guest mode
+ * mousaProcedure: المنصة مفتوحة للجميع
+ * - الزائر: يحصل على وصول كامل بدون خصم كريدت
+ * - المسجّل: يُخصم الكريدت من رصيده في mousa.ai عند استخدام خدمات AI
+ *
+ * ctx.isGuest = true  → زائر غير مسجّل
+ * ctx.mousaUserId     → رقم المستخدم في mousa.ai (null للزوار)
  */
 export const mousaProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
+
     const guestUser = {
       id: 0, openId: "guest", name: "زائر", email: "",
       role: "user" as const,
@@ -43,11 +48,20 @@ export const mousaProcedure = t.procedure.use(
       loginMethod: "guest",
       createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date()
     };
+
+    const effectiveUser = ctx.user ?? guestUser;
+    const isGuest = !ctx.user;
+
+    // mousaUserId: رقم المستخدم في mousa.ai — مستخرج من JWT الجلسة
+    // null للزوار → creditHelper سيسمح بالعملية بدون خصم
+    const mousaUserId = isGuest ? null : ((ctx.user as any)?.mousaUserId ?? null);
+
     return next({
       ctx: {
         ...ctx,
-        user: ctx.user ?? guestUser,
-        mousaUserId: ctx.user?.id ?? null,
+        user: effectiveUser,
+        isGuest,
+        mousaUserId,
       },
     });
   }),

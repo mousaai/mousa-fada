@@ -1,9 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -20,11 +23,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Coins, LayoutDashboard, LogIn, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
-import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Page 1", path: "/" },
@@ -45,41 +48,17 @@ export default function DashboardLayout({
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const { loading, user } = useAuth();
-  const [, navigate] = useLocation();
+  const { loading } = useAuth();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
   if (loading) {
-    return <DashboardLayoutSkeleton />
+    return <DashboardLayoutSkeleton />;
   }
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
-            </p>
-          </div>
-          <Button
-            onClick={() => window.location.href = `https://www.mousa.ai/api/platform/login-redirect?platform=fada&return_url=${encodeURIComponent(window.location.href)}`}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            تسجيل الدخول عبر mousa.ai
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // المنصة مفتوحة للجميع — لا نحجب الزوار
   return (
     <SidebarProvider
       style={
@@ -113,6 +92,13 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
+  // جلب رصيد الكريدت للمستخدم المسجّل فقط
+  const { data: balanceData } = trpc.mousa.getBalance.useQuery(undefined, {
+    enabled: !!user,
+    refetchInterval: 60_000, // تحديث كل دقيقة
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
     if (isCollapsed) {
       setIsResizing(false);
@@ -122,7 +108,6 @@ function DashboardLayoutContent({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-
       const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
       const newWidth = e.clientX - sidebarLeft;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
@@ -148,6 +133,10 @@ function DashboardLayoutContent({
       document.body.style.userSelect = "";
     };
   }, [isResizing, setSidebarWidth]);
+
+  const handleLogin = () => {
+    window.location.href = `https://www.mousa.ai/api/platform/login-redirect?platform=fada&return_url=${encodeURIComponent(window.location.href)}`;
+  };
 
   return (
     <>
@@ -200,34 +189,94 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
+            {user ? (
+              /* ===== مستخدم مسجّل ===== */
+              <div className="flex flex-col gap-2">
+                {/* رصيد الكريدت */}
+                {balanceData?.balance !== null && balanceData?.balance !== undefined && (
+                  <div className="group-data-[collapsible=icon]:hidden flex items-center justify-between px-1 py-1.5 rounded-lg bg-accent/30">
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs text-muted-foreground">رصيدك</span>
+                    </div>
+                    <Badge
+                      variant={balanceData.balance < 20 ? "destructive" : "secondary"}
+                      className="text-xs h-5 px-1.5"
+                    >
+                      {balanceData.balance.toLocaleString("ar-SA")}
+                    </Badge>
                   </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                )}
+                {/* معلومات المستخدم */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <Avatar className="h-9 w-9 border shrink-0">
+                        <AvatarFallback className="text-xs font-medium">
+                          {user.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                        <p className="text-sm font-medium truncate leading-none">
+                          {user.name || "-"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate mt-1.5">
+                          {user.email || "-"}
+                        </p>
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    {balanceData?.balance !== null && balanceData?.balance !== undefined && (
+                      <>
+                        <div className="flex items-center justify-between px-2 py-1.5">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Coins className="h-3 w-3 text-amber-500" />
+                            رصيد الكريدت
+                          </span>
+                          <span className="text-xs font-semibold">
+                            {balanceData.balance.toLocaleString("ar-SA")}
+                          </span>
+                        </div>
+                        {balanceData.balance < 20 && (
+                          <DropdownMenuItem
+                            onClick={() => window.open(balanceData.upgradeUrl ?? "https://www.mousa.ai", "_blank")}
+                            className="cursor-pointer text-amber-600 focus:text-amber-600 text-xs"
+                          >
+                            <Coins className="mr-2 h-3.5 w-3.5" />
+                            شراء كريدت إضافي
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem
+                      onClick={logout}
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>تسجيل الخروج</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              /* ===== زائر غير مسجّل ===== */
+              <div className="flex flex-col gap-2 group-data-[collapsible=icon]:items-center">
+                <Button
+                  onClick={handleLogin}
+                  size="sm"
+                  variant="outline"
+                  className="w-full group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 gap-2 text-xs"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <LogIn className="h-3.5 w-3.5 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">تسجيل الدخول</span>
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center group-data-[collapsible=icon]:hidden leading-tight">
+                  سجّل الدخول عبر mousa.ai لحفظ مشاريعك وخصم الكريدت
+                </p>
+              </div>
+            )}
           </SidebarFooter>
         </Sidebar>
         <div
@@ -253,6 +302,18 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            {/* زر تسجيل الدخول في الموبايل للزوار */}
+            {!user && (
+              <Button
+                onClick={handleLogin}
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs h-8"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                دخول
+              </Button>
+            )}
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

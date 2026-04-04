@@ -22,6 +22,7 @@ export interface CreditCheckResult {
   newBalance?: number;
   upgradeUrl?: string;
   error?: string;
+  isGuest?: boolean;
 }
 
 export async function checkAndDeductCredits(
@@ -32,17 +33,18 @@ export async function checkAndDeductCredits(
 ): Promise<CreditCheckResult> {
   const baseCost = CREDIT_COSTS[operation];
 
-  // إذا لم يكن هناك mousaUserId، نسمح بالعملية (وضع التطوير)
+  // ===== الزائر: وصول مجاني بدون خصم كريدت =====
   if (!mousaUserId) {
-    await logUsage(userId, 0, operation, baseCost, true);
+    await logUsage(userId, 0, operation, 0, true); // تسجيل بدون خصم (للإحصاء)
     return {
       allowed: true,
       baseCost,
-      finalCost: baseCost,
+      finalCost: 0, // الزائر لا يدفع
       sessionCount: 1,
       multiplier: 1,
-      newBalance: 9999,
+      newBalance: undefined,
       upgradeUrl: MOUSA_UPGRADE_URL,
+      isGuest: true,
     };
   }
 

@@ -3313,7 +3313,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       }),
 
     // التحقق من الرصيد قبل تنفيذ عملية AI
-    checkBalance: protectedProcedure
+    checkBalance: mousaProcedure
       .input(z.object({
         operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
       }))
@@ -3341,7 +3341,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       }),
 
     // خصم الكريدت بعد نجاح عملية AI
-    deductCredits: protectedProcedure
+    deductCredits: mousaProcedure
       .input(z.object({
         operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
         description: z.string().optional(),
@@ -3400,7 +3400,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       }),
 
     // جلب الرصيد الحالي للمستخدم
-    getBalance: protectedProcedure
+    getBalance: mousaProcedure
       .query(async ({ ctx }) => {
         try {
           const mousaUserId = ctx.user.mousaUserId;
