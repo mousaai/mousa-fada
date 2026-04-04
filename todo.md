@@ -1005,3 +1005,10 @@
 - [x] إضافة دعم حقول mousaUserId/mousaBalance/mousaLastSync في upsertUser
 - [x] إضافة fallback verifyViaServer في useMousaAuth.ts
 - [x] كتابة اختبارات FADA-001 (7 اختبارات تمرّ)
+
+## الإصدار 47.0 — إزالة قيود الدخول + 200 نقطة مجانية
+- [x] تعديل GUEST_USER ليحمل 200 كريدت مجاني
+- [x] تعديل useMousaAuth: عند فشل التحقق من mousa.ai يُعطى المستخدم 200 نقطة مجانية
+- [x] تعديل creditHelper.ts: المستخدم غير المتحقق يستهلك من الـ 200 نقطة المجانية
+- [x] إزالة أي حجب للدخول بسبب عدم التحقق من mousa.ai
+- [ ] اختبار شامل وحفظ checkpoint ونشر

@@ -3073,10 +3073,6 @@ export default function SmartCapture() {
               {/* رأس القسم */}
               <button
                 onClick={() => {
-                  if (!useReference && !currentUser) {
-                    toast.error("يجب تسجيل الدخول أولاً لاستخدام ميزة تقليد النمط");
-                    return;
-                  }
                   setUseReference(!useReference);
                 }}
                 className="w-full flex items-center justify-between px-4 py-3.5"

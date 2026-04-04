@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from "react";
-import { useMousaAuth, type MousaUser } from "../hooks/useMousaAuth";
+import { useMousaAuth, type MousaUser, FREE_CREDITS } from "../hooks/useMousaAuth";
 
 export type { MousaUser };
 
@@ -12,11 +12,12 @@ interface AuthContextType {
 
 const GUEST_USER: MousaUser = {
   userId: 0,
-  openId: "guest",
-  name: "زائر",
+  openId: "free",
+  name: "مستخدم مجاني",
   email: "",
-  creditBalance: 0,
+  creditBalance: FREE_CREDITS, // 200 نقطة مجانية لحين معالجة الدخول
   platform: "fada",
+  isFreeMode: true,
 };
 
 const AuthContext = createContext<AuthContextType>({

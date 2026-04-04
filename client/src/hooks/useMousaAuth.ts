@@ -5,9 +5,12 @@ const THIS_PLATFORM = "fada";
 const PLATFORM_API_KEY = "USAA";
 
 // FIX FADA-001: mousa.ai يضبط cookie باسم app_session_id على domain .mousa.ai
-// fada.mousa.ai هو subdomain → يستقبل هذا الـ cookie تلقائياً
-// كان خطأً سابقاً: 'mousa_session' (غير موجود) → user = GUEST_USER → canAfford = false → BLOCKED
 const SHARED_COOKIE = "app_session_id";
+
+// الكريدت المجاني الممنوح عند تعذّر التحقق من mousa.ai
+export const FREE_CREDITS = 200;
+// مفتاح localStorage لتتبع الكريدت المجاني المستهلك
+const FREE_CREDITS_KEY = "fada_free_credits_used";
 
 export interface MousaUser {
   userId: number;
@@ -16,6 +19,7 @@ export interface MousaUser {
   email: string;
   creditBalance: number;
   platform: string;
+  isFreeMode?: boolean; // true = يستخدم الـ 200 نقطة المجانية
 }
 
 interface AuthState {
@@ -24,14 +28,20 @@ interface AuthState {
   token: string | null;
 }
 
-const GUEST_USER: MousaUser = {
-  userId: 0,
-  openId: "guest",
-  name: "زائر",
-  email: "",
-  creditBalance: 0,
-  platform: "fada",
-};
+// المستخدم المجاني: يحصل على 200 نقطة مجانية لحين ربط حسابه
+function buildFreeUser(): MousaUser {
+  const used = getFreeCreditsUsed();
+  const remaining = Math.max(0, FREE_CREDITS - used);
+  return {
+    userId: 0,
+    openId: "free",
+    name: "مستخدم مجاني",
+    email: "",
+    creditBalance: remaining,
+    platform: "fada",
+    isFreeMode: true,
+  };
+}
 
 export function useMousaAuth() {
   const [state, setState] = useState<AuthState>({
@@ -46,53 +56,43 @@ export function useMousaAuth() {
 
   async function initAuth() {
     try {
-      // قراءة الـ shared session cookie من .mousa.ai (app_session_id)
+      // 1. محاولة قراءة الـ shared session cookie من .mousa.ai
       const sessionCookie = getCookie(SHARED_COOKIE);
 
       if (sessionCookie) {
+        // محاولة التحقق عبر verify-session API
         try {
           const user = await verifySession(sessionCookie);
           setState({ user, loading: false, token: sessionCookie });
           return;
         } catch {
-          // إذا فشل verify-session، نحاول trpc.auth.me كـ fallback
-          // (يعمل لأن السيرفر يقرأ app_session_id مباشرة)
-          try {
-            const user = await verifyViaServer();
-            if (user) {
-              setState({ user, loading: false, token: sessionCookie });
-              return;
-            }
-          } catch {
-            // fallback فشل أيضاً
-          }
-        }
-      } else {
-        // لا يوجد app_session_id — قد يكون المستخدم مسجّلاً عبر Manus OAuth
-        // نحاول السيرفر مباشرة
-        try {
-          const user = await verifyViaServer();
-          if (user) {
-            setState({ user, loading: false, token: null });
-            return;
-          }
-        } catch {
-          // لا يوجد جلسة
+          // فشل verify-session — نحاول السيرفر كـ fallback
         }
       }
 
-      // لا يوجد cookie ولا جلسة — يدخل كزائر بدون قيود
-      setState({ user: GUEST_USER, loading: false, token: null });
+      // 2. محاولة التحقق عبر السيرفر (يقرأ app_session_id مباشرة)
+      try {
+        const user = await verifyViaServer();
+        if (user) {
+          setState({ user, loading: false, token: sessionCookie });
+          return;
+        }
+      } catch {
+        // السيرفر لم يتعرف على الجلسة
+      }
+
+      // 3. لا يوجد جلسة صالحة من mousa.ai
+      // المستخدم يحصل على 200 نقطة مجانية — لا قيود على الدخول
+      setState({ user: buildFreeUser(), loading: false, token: null });
     } catch {
-      setState({ user: GUEST_USER, loading: false, token: null });
+      // في أي خطأ غير متوقع — نفتح المنصة بالكريدت المجاني
+      setState({ user: buildFreeUser(), loading: false, token: null });
     }
   }
 
   // FIX FADA-001: استخدام السيرفر كـ fallback لجلب بيانات المستخدم
-  // السيرفر يقرأ app_session_id مباشرة من cookie header
   async function verifyViaServer(): Promise<MousaUser | null> {
     try {
-      // استخدام /api/trpc/mousa.getBalance للتحقق من الجلسة والرصيد
       const response = await fetch("/api/trpc/mousa.getBalance?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -101,8 +101,7 @@ export function useMousaAuth() {
       const data = await response.json();
       const result = data?.[0]?.result?.data?.json;
       if (result && result.requiresMousa && result.balance !== null) {
-        // المستخدم مسجّل من mousa.ai
-        // نجلب بيانات المستخدم من trpc.auth.me
+        // المستخدم مسجّل من mousa.ai — نجلب بياناته
         const meResponse = await fetch("/api/trpc/auth.me?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -118,17 +117,18 @@ export function useMousaAuth() {
               email: me.email ?? "",
               creditBalance: result.balance ?? 0,
               platform: "fada",
+              isFreeMode: false,
             };
           }
         }
-        // إذا لم نجد بيانات المستخدم، نُنشئ مستخدماً مؤقتاً بالرصيد الصحيح
         return {
-          userId: 1, // موجود في mousa.ai
+          userId: 1,
           openId: "mousa_user",
           name: "مستخدم",
           email: "",
           creditBalance: result.balance ?? 0,
           platform: "fada",
+          isFreeMode: false,
         };
       }
       return null;
@@ -148,14 +148,11 @@ export function useMousaAuth() {
       body: JSON.stringify({ session }),
     });
 
-    if (!response.ok) {
-      throw new Error("فشل التحقق من الجلسة");
-    }
+    if (!response.ok) throw new Error("فشل التحقق من الجلسة");
 
     const data = await response.json();
-    if (!data.authenticated) {
-      throw new Error("الجلسة غير صالحة");
-    }
+    if (!data.authenticated) throw new Error("الجلسة غير صالحة");
+
     return {
       userId: data.userId,
       openId: data.openId,
@@ -163,12 +160,26 @@ export function useMousaAuth() {
       email: data.email,
       creditBalance: data.creditBalance,
       platform: data.platform ?? THIS_PLATFORM,
+      isFreeMode: false,
     };
   }
 
   async function deductCredits(amount: number, description?: string): Promise<{ newBalance: number }> {
-    if (!state.user || state.user.openId === "guest") throw new Error("المستخدم غير مسجّل الدخول");
+    if (!state.user) throw new Error("المستخدم غير مسجّل");
 
+    // المستخدم في الوضع المجاني — خصم من الـ 200 نقطة المحلية
+    if (state.user.isFreeMode) {
+      const used = getFreeCreditsUsed() + amount;
+      setFreeCreditsUsed(used);
+      const remaining = Math.max(0, FREE_CREDITS - used);
+      setState(prev => ({
+        ...prev,
+        user: prev.user ? { ...prev.user, creditBalance: remaining } : null,
+      }));
+      return { newBalance: remaining };
+    }
+
+    // المستخدم المسجّل — خصم عبر mousa.ai API
     const response = await fetch(`${MOUSA_API_URL}/api/platform/deduct-credits`, {
       method: "POST",
       headers: {
@@ -198,9 +209,19 @@ export function useMousaAuth() {
   }
 
   async function refreshBalance(): Promise<number> {
-    if (!state.user || state.user.openId === "guest") return 0;
+    if (!state.user) return 0;
+
+    // الوضع المجاني — الرصيد محلي
+    if (state.user.isFreeMode) {
+      const remaining = Math.max(0, FREE_CREDITS - getFreeCreditsUsed());
+      setState(prev => ({
+        ...prev,
+        user: prev.user ? { ...prev.user, creditBalance: remaining } : null,
+      }));
+      return remaining;
+    }
+
     try {
-      // محاولة تحديث الرصيد عبر السيرفر أولاً
       const serverUser = await verifyViaServer();
       if (serverUser) {
         setState(prev => ({
@@ -209,7 +230,6 @@ export function useMousaAuth() {
         }));
         return serverUser.creditBalance;
       }
-      // fallback: verify-session
       if (state.token) {
         const user = await verifySession(state.token);
         setState(prev => ({
@@ -225,12 +245,29 @@ export function useMousaAuth() {
   }
 
   function logout() {
-    // حذف الـ cookie المحلي فقط — mousa.ai يتحكم في الـ shared cookie
     deleteCookie(SHARED_COOKIE);
-    setState({ user: GUEST_USER, loading: false, token: null });
+    setState({ user: buildFreeUser(), loading: false, token: null });
   }
 
   return { ...state, deductCredits, refreshBalance, logout };
+}
+
+// ===== Free Credits Helpers (localStorage) =====
+
+function getFreeCreditsUsed(): number {
+  try {
+    return parseInt(localStorage.getItem(FREE_CREDITS_KEY) ?? "0", 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setFreeCreditsUsed(amount: number) {
+  try {
+    localStorage.setItem(FREE_CREDITS_KEY, String(amount));
+  } catch {
+    // تجاهل
+  }
 }
 
 // ===== Cookie Helpers =====

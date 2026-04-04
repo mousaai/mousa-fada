@@ -47,13 +47,16 @@ describe("FADA-001 Fix: SHARED_COOKIE name", () => {
   });
 });
 
-// ===== الاختبار الثالث: checkAndDeductCredits مع زائر =====
+// ===== الاختبار الثالث: checkAndDeductCredits مع زائر / وضع مجاني =====
 describe("FADA-001 Fix: creditHelper guest access", () => {
-  it("Guest (mousaUserId=null) should be allowed without credit check", async () => {
+  it("Guest (mousaUserId=null) should be allowed in free mode with 200 credits", async () => {
     const result = await checkAndDeductCredits(0, null, "analyzePhoto");
     expect(result.allowed).toBe(true);
     expect(result.isGuest).toBe(true);
-    expect(result.finalCost).toBe(0);
+    expect(result.isFreeMode).toBe(true);
+    // في الوضع المجاني، finalCost = baseCost (يُخصم محلياً من الـ 200 نقطة)
+    expect(result.finalCost).toBe(result.baseCost);
+    expect(result.baseCost).toBeGreaterThan(0);
   });
 });
 

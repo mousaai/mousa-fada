@@ -81,8 +81,21 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
             </button>
           </div>
 
+          {/* شريط الوضع المجاني */}
+          {user?.isFreeMode && (
+            <div className="px-4 pt-3 pb-1">
+              <div className="flex items-start gap-2 p-2.5 bg-blue-50 rounded-xl text-blue-700 text-xs border border-blue-100">
+                <span className="text-base flex-shrink-0">🎁</span>
+                <div>
+                  <p className="font-bold">أنت تستخدم 200 نقطة مجانية</p>
+                  <p className="opacity-80 mt-0.5">سجّل دخولك من mousa.ai للحصول على رصيد كامل</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* اسم المستخدم */}
-          {user?.name && (
+          {user?.name && !user?.isFreeMode && (
             <div className="px-4 pt-3 pb-1 text-sm text-gray-500 text-right">
               مرحباً، <span className="font-semibold text-gray-700">{user.name}</span>
             </div>
@@ -197,13 +210,13 @@ export function useMousaCredit() {
 
   return {
     balance: user?.creditBalance ?? null,
-    // FIX FADA-001: requiresMousa = user.userId > 0 (ليس !!user)
-    // GUEST_USER لديه userId=0 → لا يحتاج mousa.ai → لن يُحجب
-    // المستخدم المسجّل لديه userId > 0 → يحتاج mousa.ai → يُتحقق من الرصيد
-    requiresMousa: (user?.userId ?? 0) > 0,
+    // المستخدم المجاني (isFreeMode) والمستخدم المسجّل (userId > 0) كلاهما يخضعان لفحص الرصيد
+    // الفرق فقط: المجاني رصيده محلي (200 نقطة)، والمسجّل رصيده من mousa.ai
+    requiresMousa: !!(user), // كل مستخدم يخضع لفحص الرصيد
     upgradeUrl: "https://www.mousa.ai/pricing",
     deduct,
     canAfford,
     isDeducting: false,
+    isFreeMode: user?.isFreeMode ?? false,
   };
 }

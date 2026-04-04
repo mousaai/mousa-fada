@@ -6,12 +6,19 @@
  * 1. فحص الرصيد قبل العملية (check-balance)
  * 2. تنفيذ العملية
  * 3. خصم الكريدت بعد النجاح (deduct-credits)
+ *
+ * الوضع المجاني (FREE MODE):
+ * - المستخدمون الذين لا يمكن التحقق من حساباتهم في mousa.ai
+ * - يحصلون على 200 نقطة مجانية لحين معالجة الدخول
+ * - الخصم يتم من الرصيد المحلي (لا يُرسل لـ mousa.ai)
  */
 
 import { getDb } from "./db";
 import { aiUsageLogs } from "../drizzle/schema";
 import { CREDIT_COSTS, MOUSA_UPGRADE_URL, type CreditOperation } from "./mousa";
 import { checkBalance, deductCredits } from "./_core/mousaAuth";
+
+export const FREE_CREDITS_LIMIT = 200; // النقاط المجانية الممنوحة عند تعذّر التحقق
 
 export interface CreditCheckResult {
   allowed: boolean;
@@ -23,6 +30,7 @@ export interface CreditCheckResult {
   upgradeUrl?: string;
   error?: string;
   isGuest?: boolean;
+  isFreeMode?: boolean; // true = يستخدم الـ 200 نقطة المجانية
 }
 
 export async function checkAndDeductCredits(
@@ -33,18 +41,20 @@ export async function checkAndDeductCredits(
 ): Promise<CreditCheckResult> {
   const baseCost = CREDIT_COSTS[operation];
 
-  // ===== الزائر: وصول مجاني بدون خصم كريدت =====
+  // ===== المستخدم غير المتحقق: وضع مجاني بـ 200 نقطة =====
+  // هذا يشمل: الزوار + المستخدمين الذين تعذّر التحقق من حساباتهم في mousa.ai
   if (!mousaUserId) {
-    await logUsage(userId, 0, operation, 0, true); // تسجيل بدون خصم (للإحصاء)
+    await logUsage(userId, 0, operation, baseCost, true); // تسجيل للإحصاء
     return {
       allowed: true,
       baseCost,
-      finalCost: 0, // الزائر لا يدفع
+      finalCost: baseCost, // يُخصم من الـ 200 نقطة المجانية (محلياً في الواجهة)
       sessionCount: 1,
       multiplier: 1,
-      newBalance: undefined,
+      newBalance: undefined, // الرصيد يُدار محلياً في useMousaAuth
       upgradeUrl: MOUSA_UPGRADE_URL,
       isGuest: true,
+      isFreeMode: true,
     };
   }
 
