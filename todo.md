@@ -990,3 +990,18 @@
 - [ ] إزالة نظام JWT المحلي (localAuth.ts) بعد اكتمال التكامل
 - [x] اختبار شامل للتكامل
 - [ ] حفظ checkpoint نهائي
+
+## FADA-001: إصلاح فشل التحليل الذكي (من تقرير mousa.ai)
+- [ ] إصلاح verifyMousaSession لاستخراج userId من JWT payload وتمريره في context
+- [ ] تحديث context.ts لتحديث mousaUserId في قاعدة البيانات عند كل جلسة
+- [ ] إصلاح checkAndDeductCredits: عند فشل checkBalance تسمح بالعملية (لا تمنعها)
+- [ ] إضافة تسجيل أخطاء واضح في analyzeAndGenerateIdeas
+- [ ] اختبار التدفق الكامل للمستخدم المسجّل
+
+## إصلاح FADA-001: فشل التحليل للمستخدمين المسجّلين
+- [x] تغيير SHARED_COOKIE من 'mousa_session' إلى 'app_session_id' في useMousaAuth.ts
+- [x] إصلاح requiresMousa = user.userId > 0 (بدلاً من !!user) في CreditBadge.tsx
+- [x] تعديل context.ts لإنشاء مستخدم تلقائياً وجلب mousaUserId من mousa.ai API
+- [x] إضافة دعم حقول mousaUserId/mousaBalance/mousaLastSync في upsertUser
+- [x] إضافة fallback verifyViaServer في useMousaAuth.ts
+- [x] كتابة اختبارات FADA-001 (7 اختبارات تمرّ)

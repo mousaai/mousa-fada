@@ -57,7 +57,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     }
     if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
     if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
-    else if (user.openId === ENV.ownerOpenId) { values.role = 'admin'; updateSet.role = 'admin'; }
+    // FIX FADA-001: دعم حقول mousa.ai integration
+    if (user.mousaUserId !== undefined) { values.mousaUserId = user.mousaUserId; updateSet.mousaUserId = user.mousaUserId; }
+    if (user.mousaBalance !== undefined) { values.mousaBalance = user.mousaBalance; updateSet.mousaBalance = user.mousaBalance; }
+    if (user.mousaLastSync !== undefined) { values.mousaLastSync = user.mousaLastSync; updateSet.mousaLastSync = user.mousaLastSync; }
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
     await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });

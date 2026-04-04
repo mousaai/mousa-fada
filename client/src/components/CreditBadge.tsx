@@ -197,7 +197,10 @@ export function useMousaCredit() {
 
   return {
     balance: user?.creditBalance ?? null,
-    requiresMousa: !!user,
+    // FIX FADA-001: requiresMousa = user.userId > 0 (ليس !!user)
+    // GUEST_USER لديه userId=0 → لا يحتاج mousa.ai → لن يُحجب
+    // المستخدم المسجّل لديه userId > 0 → يحتاج mousa.ai → يُتحقق من الرصيد
+    requiresMousa: (user?.userId ?? 0) > 0,
     upgradeUrl: "https://www.mousa.ai/pricing",
     deduct,
     canAfford,
