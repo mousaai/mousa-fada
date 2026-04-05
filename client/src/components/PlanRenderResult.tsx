@@ -63,12 +63,16 @@ async function generateRenderPDF(imageUrl: string, data: DesignData, style: stri
   const H = 297;
 
   // Helper: render an HTML string to a canvas and add to PDF
+  // Ensure Tajawal font is loaded for proper Arabic rendering
+  await document.fonts.ready;
   async function addHtmlPage(html: string, isFirst = false) {
     const container = document.createElement("div");
     container.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:794px;background:#faf6f0;font-family:'Tajawal','Arial',sans-serif;direction:rtl;`;
     container.innerHTML = html;
     document.body.appendChild(container);
     try {
+      // Small delay to ensure fonts render in the container
+      await new Promise(resolve => setTimeout(resolve, 300));
       const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#faf6f0", logging: false });
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
       if (!isFirst) doc.addPage();

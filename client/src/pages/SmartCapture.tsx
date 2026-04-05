@@ -699,330 +699,203 @@ function ShopTheLookPanel({
   );
 }
 
-// ===== PDF Export: دفتر التصميم الاحترافي =====
+// ===== PDF Export: دفتر التصميم الاحترافي (html2canvas approach for proper Arabic) =====
 async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   const { jsPDF } = await import("jspdf");
-  const autoTable = (await import("jspdf-autotable")).default;
+  const html2canvas = (await import("html2canvas")).default;
+
+  // Ensure fonts are loaded
+  await document.fonts.ready;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const W = 210; const H = 297;
-  const gold = [201, 168, 76] as [number, number, number];
-  const darkBrown = [92, 61, 17] as [number, number, number];
-  const lightBg = [250, 246, 240] as [number, number, number];
-  const white = [255, 255, 255] as [number, number, number];
-  const emerald = [16, 124, 90] as [number, number, number];
+  const W = 210;
+  const H = 297;
+
+  const gold = "#C9A84C";
+  const darkBrown = "#5C3D11";
+  const lightBg = "#faf6f0";
+  const white = "#ffffff";
+  const emerald = "#107C5A";
+  const today = new Date().toLocaleDateString("ar-AE");
+
+  // Helper: render HTML page to canvas and add to PDF
+  async function addHtmlPage(html: string, isFirst = false) {
+    const container = document.createElement("div");
+    container.style.cssText = `position:fixed;top:-9999px;left:-9999px;width:794px;min-height:1123px;background:${lightBg};font-family:'Tajawal','Arial',sans-serif;direction:rtl;`;
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: lightBg,
+        logging: false,
+        width: 794,
+        height: 1123,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      if (!isFirst) doc.addPage();
+      doc.addImage(imgData, "JPEG", 0, 0, W, H);
+    } finally {
+      document.body.removeChild(container);
+    }
+  }
 
   // ===== صفحة 1: الغلاف =====
-  doc.setFillColor(...lightBg);
-  doc.rect(0, 0, W, H, "F");
+  const paletteSwatches = idea.palette.map(c => `
+    <div style="display:inline-block;text-align:center;margin:0 5px;">
+      <div style="width:52px;height:30px;background:${c.hex};border-radius:6px;border:1px solid #d4b87a;"></div>
+      <div style="font-size:9px;color:${darkBrown};margin-top:3px;">${c.name}</div>
+    </div>`).join("");
 
-  // شريط ذهبي علوي
-  doc.setFillColor(...gold);
-  doc.rect(0, 0, W, 18, "F");
-  doc.setFillColor(...darkBrown);
-  doc.rect(0, 18, W, 2, "F");
+  const imgTag = idea.imageUrl
+    ? `<img src="${idea.imageUrl}" style="width:100%;height:320px;object-fit:cover;border-radius:8px;border:3px solid ${gold};display:block;margin-bottom:14px;" crossorigin="anonymous" />`
+    : `<div style="width:100%;height:320px;background:linear-gradient(135deg,${gold},${darkBrown});border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;"><span style="color:white;font-size:18px;font-weight:bold;">صورة التصميم</span></div>`;
 
-  // شعار وعنوان
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...white);
-  doc.text("م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي", W / 2, 11, { align: "center" });
+  await addHtmlPage(`
+    <div style="background:${lightBg};min-height:1123px;padding:0;">
+      <div style="background:${gold};padding:12px 20px;text-align:center;">
+        <span style="color:${white};font-size:13px;font-weight:bold;">م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
+      </div>
+      <div style="background:${darkBrown};height:3px;"></div>
+      <div style="padding:18px 24px;">
+        ${imgTag}
+        <h1 style="font-size:24px;font-weight:bold;color:${darkBrown};text-align:center;margin:0 0 6px;">${idea.title}</h1>
+        <p style="font-size:12px;color:${gold};text-align:center;margin:0 0 10px;">${idea.styleLabel} • ${idea.scenarioLabel || ""} • ${spaceType || ""}</p>
+        <hr style="border:none;border-top:1px solid ${gold};margin:0 40px 14px;" />
+        <p style="font-size:11px;color:#503c1e;text-align:center;line-height:1.7;margin:0 0 16px;">${idea.description}</p>
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:bold;color:${darkBrown};margin-bottom:8px;">لوحة الألوان</div>
+          <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;">${paletteSwatches}</div>
+        </div>
+        <div style="background:${gold};border-radius:8px;padding:12px 20px;text-align:center;margin-top:14px;">
+          <div style="color:${white};font-size:15px;font-weight:bold;">التكلفة التقديرية: ${idea.estimatedCost}</div>
+          ${idea.timeline ? `<div style="color:${white};font-size:10px;margin-top:3px;">المدة الزمنية: ${idea.timeline}</div>` : ""}
+        </div>
+        <div style="background:${white};border-radius:8px;padding:10px 16px;margin-top:10px;border:1px solid #e8d9c0;">
+          <div style="font-size:10px;font-weight:bold;color:${darkBrown};margin-bottom:6px;">المواد والتشطيبات المقترحة</div>
+          <div style="column-count:2;column-gap:16px;">
+            ${idea.materials.slice(0, 8).map(m => `<div style="font-size:9px;color:#503c1e;padding:2px 0;border-bottom:1px solid #f0e8d8;">• ${m}</div>`).join("")}
+          </div>
+        </div>
+      </div>
+      <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
+        <span style="color:${white};font-size:8px;">م. سارة — دفتر التصميم الاحترافي — ${today} | fada.mousa.ai</span>
+      </div>
+    </div>`, true);
 
-  // صورة التصميم
-  if (idea.imageUrl) {
-    try {
-      const imgData = idea.imageUrl;
-      doc.addImage(imgData, "JPEG", 10, 28, W - 20, 90, undefined, "FAST");
-      // إطار ذهبي
-      doc.setDrawColor(...gold);
-      doc.setLineWidth(0.8);
-      doc.rect(10, 28, W - 20, 90);
-    } catch { /* skip image if error */ }
-  } else {
-    // مستطيل بديل
-    doc.setFillColor(...gold);
-    doc.rect(10, 28, W - 20, 90, "F");
-    doc.setFontSize(16);
-    doc.setTextColor(...white);
-    doc.text("صورة التصميم", W / 2, 75, { align: "center" });
-  }
+  // ===== صفحة 2: المزايا والأثاث =====
+  const highlightsHtml = idea.highlights.map(h => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #e8f5ee;">
+      <div style="width:7px;height:7px;background:${emerald};border-radius:50%;flex-shrink:0;margin-top:3px;"></div>
+      <span style="font-size:10px;color:#503c1e;">${h}</span>
+    </div>`).join("");
 
-  // عنوان الفكرة
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkBrown);
-  doc.text(idea.title, W / 2, 132, { align: "center" });
+  await addHtmlPage(`
+    <div style="background:${lightBg};min-height:1123px;padding:0;">
+      <div style="background:${gold};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:${white};font-size:11px;font-weight:bold;">م. سارة | مزايا التصميم</span>
+        <span style="color:${white};font-size:11px;font-weight:bold;">${idea.title}</span>
+      </div>
+      <div style="padding:18px 24px;">
+        <h2 style="font-size:16px;font-weight:bold;color:${darkBrown};text-align:center;margin:0 0 5px;">مزايا ومميزات التصميم</h2>
+        <hr style="border:none;border-top:1px solid ${gold};margin:0 0 12px;" />
+        <div style="column-count:2;column-gap:20px;margin-bottom:20px;">${highlightsHtml}</div>
 
-  // النمط والسيناريو
-  doc.setFontSize(11);
-  doc.setTextColor(gold[0], gold[1], gold[2]);
-  doc.text(`${idea.styleLabel}  •  ${idea.scenarioLabel || ""}  •  ${spaceType || ""}`, W / 2, 141, { align: "center" });
+        ${idea.replacementCosts && idea.replacementCosts.length > 0 ? `
+        <h2 style="font-size:16px;font-weight:bold;color:${darkBrown};text-align:center;margin:0 0 5px;">تكاليف الاستبدال التفصيلية</h2>
+        <hr style="border:none;border-top:1px solid ${gold};margin:0 0 12px;" />
+        <table style="width:100%;border-collapse:collapse;font-size:9px;">
+          <thead>
+            <tr style="background:${darkBrown};">
+              <th style="padding:6px 8px;color:${white};text-align:right;">البند</th>
+              <th style="padding:6px 8px;color:${white};text-align:center;">التقدير الحالي</th>
+              <th style="padding:6px 8px;color:${white};text-align:center;">تكلفة الاستبدال</th>
+              <th style="padding:6px 8px;color:${white};text-align:right;">ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${idea.replacementCosts.map((r, i) => `
+            <tr style="background:${i % 2 === 0 ? white : "#f5f0e8"};">
+              <td style="padding:5px 8px;border-bottom:1px solid #e8d9c0;">${r.item}</td>
+              <td style="padding:5px 8px;border-bottom:1px solid #e8d9c0;text-align:center;">${r.currentEstimate}</td>
+              <td style="padding:5px 8px;border-bottom:1px solid #e8d9c0;text-align:center;">${r.replacementCost}</td>
+              <td style="padding:5px 8px;border-bottom:1px solid #e8d9c0;font-size:8px;">${r.notes}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>` : ""}
 
-  // خط فاصل
-  doc.setDrawColor(...gold);
-  doc.setLineWidth(0.5);
-  doc.line(30, 146, W - 30, 146);
+        <div style="background:${white};border-radius:8px;padding:12px 16px;margin-top:16px;border:1px solid #e8d9c0;">
+          <div style="font-size:11px;font-weight:bold;color:${darkBrown};margin-bottom:8px;">توصيات التنفيذ</div>
+          ${[
+            `النمط المختار: ${idea.styleLabel} — يتطلب مقاولاً متخصصاً في هذا النمط`,
+            `الميزانية التقديرية: ${idea.estimatedCost} — يُنصح بتخصيص 10-15% احتياطياً للطوارئ`,
+            `الجدول الزمني: ${idea.timeline || "يُحدد بعد الاتفاق مع المقاول"}`,
+            "يُنصح بالحصول على 3 عروض أسعار من مقاولين معتمدين قبل البدء",
+            "م. سارة تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
+          ].map(r => `<div style="font-size:9px;color:#503c1e;padding:3px 0;border-bottom:1px solid #f0e8d8;">• ${r}</div>`).join("")}
+        </div>
+      </div>
+      <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
+        <span style="color:${white};font-size:8px;">م. سارة — مزايا التصميم — ${today} | fada.mousa.ai</span>
+      </div>
+    </div>`);
 
-  // الوصف
-  doc.setFontSize(10);
-  doc.setTextColor(80, 60, 30);
-  doc.setFont("helvetica", "normal");
-  const descLines = doc.splitTextToSize(idea.description, W - 40);
-  doc.text(descLines, W / 2, 153, { align: "center" });
-
-  // لوحة الألوان
-  const paletteY = 170;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkBrown);
-  doc.text("لوحة الألوان", W / 2, paletteY, { align: "center" });
-  const swatchW = 28; const swatchH = 12;
-  const totalPaletteW = idea.palette.length * (swatchW + 4) - 4;
-  const startX = (W - totalPaletteW) / 2;
-  idea.palette.forEach((c, i) => {
-    const x = startX + i * (swatchW + 4);
-    const hex = c.hex.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    doc.setFillColor(r, g, b);
-    doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "F");
-    doc.setDrawColor(200, 180, 140);
-    doc.setLineWidth(0.3);
-    doc.roundedRect(x, paletteY + 3, swatchW, swatchH, 2, 2, "S");
-    doc.setFontSize(7);
-    doc.setTextColor(80, 60, 30);
-    doc.text(c.name, x + swatchW / 2, paletteY + 18, { align: "center" });
-  });
-
-  // التكلفة الإجمالية
-  doc.setFillColor(...gold);
-  doc.roundedRect(20, 195, W - 40, 20, 4, 4, "F");
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...white);
-  doc.text(`التكلفة التقديرية: ${idea.estimatedCost}`, W / 2, 208, { align: "center" });
-  if (idea.timeline) {
-    doc.setFontSize(9);
-    doc.text(`المدة الزمنية: ${idea.timeline}`, W / 2, 214, { align: "center" });
-  }
-
-  // المواد
-  const matY = 222;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkBrown);
-  doc.text("المواد والتشطيبات المقترحة", 15, matY);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(80, 60, 30);
-  idea.materials.forEach((m, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    doc.text(`• ${m}`, 15 + col * 95, matY + 6 + row * 6);
-  });
-
-  // مزايا التصميم
-  const hlY = matY + 8 + Math.ceil(idea.materials.length / 2) * 6 + 4;
-  if (hlY < 265 && idea.highlights.length > 0) {
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...darkBrown);
-    doc.text("مزايا التصميم", 15, hlY);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(80, 60, 30);
-    idea.highlights.slice(0, 4).forEach((h, i) => {
-      doc.text(`✓ ${h}`, 15, hlY + 6 + i * 5.5);
-    });
-  }
-
-  // تذييل الصفحة الأولى
-  doc.setFillColor(...gold);
-  doc.rect(0, H - 12, W, 12, "F");
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...white);
-  const today = new Date().toLocaleDateString("ar-AE");
-  doc.text(`م. سارة — دفتر التصميم الاحترافي — ${today}`, W / 2, H - 4, { align: "center" });
-
-  // ===== صفحة 2: جدول الكميات BOQ =====
+  // ===== صفحة 3: BOQ =====
   if (idea.boq && idea.boq.categories.length > 0) {
-    doc.addPage();
-    doc.setFillColor(...lightBg);
-    doc.rect(0, 0, W, H, "F");
+    const boqTablesHtml = idea.boq.categories.map(cat => {
+      const rows = cat.items.map((item, i) => `
+        <tr style="background:${i % 2 === 0 ? white : "#f5f0e8"};">
+          <td style="padding:4px 8px;border-bottom:1px solid #e8d9c0;font-size:9px;">${item.name}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e8d9c0;font-size:9px;text-align:center;">${item.unit}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e8d9c0;font-size:9px;text-align:center;">${item.qty}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e8d9c0;font-size:9px;text-align:center;">${item.unitPriceMin.toLocaleString()} – ${item.unitPriceMax.toLocaleString()}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e8d9c0;font-size:9px;font-weight:bold;text-align:center;">${item.totalMin.toLocaleString()} – ${item.totalMax.toLocaleString()}</td>
+        </tr>`).join("");
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="background:${darkBrown};padding:6px 10px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:${white};font-size:10px;font-weight:bold;">${cat.icon || ""} ${cat.category}</span>
+            <span style="color:${gold};font-size:9px;font-weight:bold;">${cat.subtotalMin.toLocaleString()} – ${cat.subtotalMax.toLocaleString()} د.إ</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#e8f5ee;">
+                <th style="padding:5px 8px;font-size:9px;color:${darkBrown};text-align:right;">البند</th>
+                <th style="padding:5px 8px;font-size:9px;color:${darkBrown};text-align:center;">الوحدة</th>
+                <th style="padding:5px 8px;font-size:9px;color:${darkBrown};text-align:center;">الكمية</th>
+                <th style="padding:5px 8px;font-size:9px;color:${darkBrown};text-align:center;">سعر الوحدة (د.إ)</th>
+                <th style="padding:5px 8px;font-size:9px;color:${darkBrown};text-align:center;">الإجمالي (د.إ)</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }).join("");
 
-    // رأس الصفحة
-    doc.setFillColor(...gold);
-    doc.rect(0, 0, W, 18, "F");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...white);
-    doc.text("جدول الكميات والمواصفات (BOQ)", W / 2, 11, { align: "center" });
-
-    // معلومات الفضاء
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...darkBrown);
-    doc.text(`الفضاء: ${spaceType || "غير محدد"}  |  المساحة: ${idea.boq.area} م²  |  المحيط: ${idea.boq.perimeter} م`, W / 2, 24, { align: "center" });
-
-    let yPos = 30;
-
-    idea.boq.categories.forEach((cat) => {
-      if (yPos > H - 40) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); yPos = 15; }
-
-      // عنوان الفئة
-      doc.setFillColor(darkBrown[0], darkBrown[1], darkBrown[2]);
-      doc.rect(10, yPos, W - 20, 7, "F");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...white);
-      doc.text(`${cat.icon || ""} ${cat.category}`, 14, yPos + 5);
-      const catTotal = `${cat.subtotalMin.toLocaleString()} – ${cat.subtotalMax.toLocaleString()} د.إ`;
-      doc.text(catTotal, W - 14, yPos + 5, { align: "right" });
-      yPos += 9;
-
-      // بنود الجدول
-      const tableData = cat.items.map(item => [
-        item.name,
-        item.unit,
-        item.qty.toString(),
-        `${item.unitPriceMin.toLocaleString()} – ${item.unitPriceMax.toLocaleString()}`,
-        `${item.totalMin.toLocaleString()} – ${item.totalMax.toLocaleString()}`,
-      ]);
-
-      autoTable(doc, {
-        startY: yPos,
-        head: [["البند", "الوحدة", "الكمية", "سعر الوحدة (د.إ)", "الإجمالي (د.إ)"]],
-        body: tableData,
-        theme: "grid",
-        styles: { fontSize: 7.5, cellPadding: 2, halign: "right", font: "helvetica" },
-        headStyles: { fillColor: gold, textColor: white, fontStyle: "bold", fontSize: 8 },
-        alternateRowStyles: { fillColor: [250, 246, 240] },
-        columnStyles: {
-          0: { cellWidth: 65, halign: "right" },
-          1: { cellWidth: 18, halign: "center" },
-          2: { cellWidth: 18, halign: "center" },
-          3: { cellWidth: 40, halign: "center" },
-          4: { cellWidth: 40, halign: "center" },
-        },
-        margin: { left: 10, right: 10 },
-      });
-      yPos = (doc as any).lastAutoTable.finalY + 6;
-    });
-
-    // الإجمالي الكلي
-    if (yPos > H - 30) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); yPos = 20; }
-    doc.setFillColor(...emerald);
-    doc.roundedRect(10, yPos, W - 20, 16, 3, 3, "F");
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...white);
-    doc.text("الإجمالي الكلي التقديري", 20, yPos + 10);
-    doc.text(`${idea.boq.grandTotalMin.toLocaleString()} – ${idea.boq.grandTotalMax.toLocaleString()} د.إ`, W - 20, yPos + 10, { align: "right" });
-
-    // إخلاء المسؤولية
-    yPos += 22;
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(120, 100, 70);
-    const disclaimer = idea.boq.disclaimer || "الأسعار تقديرية وفق أسعار السوق الخليجي. تختلف الأسعار الفعلية حسب الموردين والمقاولين والمواصفات النهائية.";
-    const discLines = doc.splitTextToSize(disclaimer, W - 30);
-    doc.text(discLines, W / 2, yPos, { align: "center" });
-
-    // تذييل
-    doc.setFillColor(...gold);
-    doc.rect(0, H - 12, W, 12, "F");
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...white);
-    doc.text(`م. سارة — جدول الكميات — ${today}`, W / 2, H - 4, { align: "center" });
+    await addHtmlPage(`
+      <div style="background:${lightBg};min-height:1123px;padding:0;">
+        <div style="background:${gold};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:${white};font-size:11px;font-weight:bold;">م. سارة | جدول الكميات BOQ</span>
+          <span style="color:${white};font-size:11px;font-weight:bold;">${idea.title}</span>
+        </div>
+        <div style="padding:16px 24px;">
+          <h2 style="font-size:16px;font-weight:bold;color:${darkBrown};text-align:center;margin:0 0 4px;">جدول الكميات والمواصفات (BOQ)</h2>
+          <p style="font-size:9px;color:#888;text-align:center;margin:0 0 12px;">الفضاء: ${spaceType || "غير محدد"} | المساحة: ${idea.boq.area} م² | المحيط: ${idea.boq.perimeter} م</p>
+          ${boqTablesHtml}
+          <div style="background:${emerald};border-radius:8px;padding:12px 20px;text-align:center;margin-top:14px;">
+            <div style="color:${white};font-size:14px;font-weight:bold;">الإجمالي الكلي التقديري</div>
+            <div style="color:${white};font-size:12px;margin-top:4px;">${idea.boq.grandTotalMin.toLocaleString()} – ${idea.boq.grandTotalMax.toLocaleString()} د.إ</div>
+          </div>
+          ${idea.boq.disclaimer ? `<p style="font-size:8px;color:#888;text-align:center;margin-top:10px;">${idea.boq.disclaimer}</p>` : ""}
+        </div>
+        <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
+          <span style="color:${white};font-size:8px;">م. سارة — جدول الكميات — ${today} | fada.mousa.ai</span>
+        </div>
+      </div>`);
   }
-
-  // ===== صفحة 3: المواصفات التفصيلية =====
-  doc.addPage();
-  doc.setFillColor(...lightBg);
-  doc.rect(0, 0, W, H, "F");
-  doc.setFillColor(...gold);
-  doc.rect(0, 0, W, 18, "F");
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...white);
-  doc.text("المواصفات التفصيلية والتوصيات", W / 2, 11, { align: "center" });
-
-  let specY = 25;
-
-  // مزايا التصميم الكاملة
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkBrown);
-  doc.text("مزايا ومميزات التصميم", 15, specY);
-  specY += 7;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(80, 60, 30);
-  idea.highlights.forEach((h) => {
-    if (specY > H - 30) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
-    const lines = doc.splitTextToSize(`✓  ${h}`, W - 30);
-    doc.text(lines, 15, specY);
-    specY += lines.length * 5.5;
-  });
-
-  specY += 5;
-
-  // تكاليف الاستبدال
-  if (idea.replacementCosts && idea.replacementCosts.length > 0) {
-    if (specY > H - 40) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...darkBrown);
-    doc.text("تكاليف الاستبدال التفصيلية", 15, specY);
-    specY += 7;
-    autoTable(doc, {
-      startY: specY,
-      head: [["البند", "التقدير الحالي", "تكلفة الاستبدال", "ملاحظات"]],
-      body: idea.replacementCosts.map(r => [r.item, r.currentEstimate, r.replacementCost, r.notes]),
-      theme: "striped",
-      styles: { fontSize: 8, cellPadding: 2.5, halign: "right" },
-      headStyles: { fillColor: darkBrown, textColor: white, fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [250, 246, 240] },
-      margin: { left: 10, right: 10 },
-    });
-    specY = (doc as any).lastAutoTable.finalY + 8;
-  }
-
-  // توصيات التنفيذ
-  if (specY > H - 50) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...darkBrown);
-  doc.text("توصيات التنفيذ", 15, specY);
-  specY += 7;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(80, 60, 30);
-  const recommendations = [
-    `النمط المختار: ${idea.styleLabel} — يتطلب مقاولاً متخصصاً في هذا النمط`,
-    `الميزانية التقديرية: ${idea.estimatedCost} — يُنصح بتخصيص 10-15% احتياطياً للطوارئ`,
-    `الجدول الزمني: ${idea.timeline || "يُحدد بعد الاتفاق مع المقاول"} — يشمل التوريد والتركيب والتشطيب`,
-    "يُنصح بالحصول على 3 عروض أسعار من مقاولين معتمدين قبل البدء",
-    "التأكد من جودة المواد ومطابقتها للمواصفات المذكورة قبل الشراء",
-    "م. سارة تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
-  ];
-  recommendations.forEach((rec) => {
-    if (specY > H - 20) { doc.addPage(); doc.setFillColor(...lightBg); doc.rect(0, 0, W, H, "F"); specY = 15; }
-    const lines = doc.splitTextToSize(`• ${rec}`, W - 30);
-    doc.text(lines, 15, specY);
-    specY += lines.length * 5.5 + 1;
-  });
-
-  // تذييل الصفحة الأخيرة
-  doc.setFillColor(...gold);
-  doc.rect(0, H - 12, W, 12, "F");
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...white);
-  doc.text(`م. سارة — المواصفات التفصيلية — ${today}`, W / 2, H - 4, { align: "center" });
 
   // حفظ الملف
   const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}_${Date.now()}.pdf`;
