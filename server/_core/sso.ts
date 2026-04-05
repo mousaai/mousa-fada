@@ -15,7 +15,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 import * as db from "../db";
-import { verifyMousaToken } from "../mousa";
+import { verifyMousaToken, checkMousaBalance, getMousaUserByOpenId } from "../mousa";
 import { ENV } from "./env";
 
 const MOUSA_BASE_URL = "https://www.mousa.ai";
@@ -175,6 +175,46 @@ export function registerSSORoutes(app: Express) {
         return res.json({ authenticated: false });
       }
 
+      // جلب الرصيد الحقيقي من mousa.ai
+      let liveBalance = user.mousaBalance ?? 0;
+      let resolvedMousaUserId = user.mousaUserId;
+
+      // إذا لم يكن مربوطاً بعد — نحاول الربط تلقائياً
+      if (!resolvedMousaUserId) {
+        try {
+          const mousaData = await getMousaUserByOpenId(user.openId);
+          if (mousaData?.userId) {
+            resolvedMousaUserId = mousaData.userId;
+            liveBalance = mousaData.balance;
+            db.upsertUser({
+              openId: user.openId,
+              mousaUserId: mousaData.userId,
+              mousaBalance: mousaData.balance,
+              mousaLastSync: new Date(),
+            } as any).catch(() => {});
+            console.log(`[SSO] ✅ Auto-linked ${user.openId} to mousa userId=${mousaData.userId}, balance=${mousaData.balance}`);
+          }
+        } catch {
+          // فشل الربط — ليس خطأ حرج
+        }
+      }
+
+      // إذا كان مربوطاً — جلب الرصيد الحقيقي
+      if (resolvedMousaUserId) {
+        try {
+          const balanceData = await checkMousaBalance(resolvedMousaUserId);
+          liveBalance = balanceData.balance;
+          db.upsertUser({
+            openId: user.openId,
+            mousaBalance: liveBalance,
+            mousaLastSync: new Date(),
+          } as any).catch(() => {});
+          console.log(`[SSO] ✅ Balance refreshed for ${user.openId}: ${liveBalance}`);
+        } catch (err) {
+          console.warn(`[SSO] Could not fetch live balance for userId=${resolvedMousaUserId}:`, err);
+        }
+      }
+
       return res.json({
         authenticated: true,
         user: {
@@ -182,7 +222,7 @@ export function registerSSORoutes(app: Express) {
           name: user.name,
           email: user.email,
           mousaUserId: user.mousaUserId,
-          mousaBalance: user.mousaBalance,
+          mousaBalance: liveBalance,
         },
       });
     } catch {
