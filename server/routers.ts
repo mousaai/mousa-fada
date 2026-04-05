@@ -11,6 +11,7 @@ import { buildBestPracticeSystemPrompt, buildIdeaImagePrompt, getBestStylesForSp
 import { saveGeneratedIdea, getPreviousIdeasForImage, buildUsedStylesNote, buildRefinementNote, getIdeaById } from "./ideaMemoryHelper";
 import { storagePut } from "./storage";
 import { consolidateResults, type PlanAnalysisResult } from "./multiRunAnalysis";
+import { pdfToImages } from "./pdfToImages";
 import { registerUser, loginUser, verifyPassword, hashPassword } from "./_core/localAuth";
 import { TRPCError } from "@trpc/server";
 import {
@@ -3749,36 +3750,50 @@ PHOTOGRAPHY QUALITY:
       designStyle: z.string().default("modern"),
     }))
     .mutation(async ({ input }) => {
-      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.`;
+      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.
 
-      // دعم PDF: إذا كان الملف PDF، ارفعه لـ S3 ثم أرسله كـ file_url
+تعليمات خاصة للـ PDF متعدد الصفحات:
+- افحصي كل صفحات الـ PDF بعناية
+- ابحثي عن صفحات تحمل عناوين مثل: GROUND FLOOR PLAN, FIRST FLOOR PLAN, SECOND FLOOR PLAN, ROOF FLOOR PLAN, مخطط الدور الأرضي, مخطط الدور الأول, مخطط الدور الثاني
+- كل صفحة تحمل مخطط طابق = طابق مستقل يجب إضافته
+- إذا وجدتِ GROUND FLOOR + FIRST FLOOR = floors: 2
+- إذا وجدتِ GROUND + FIRST + SECOND = floors: 3
+- لا تعتمدي على صفحة واحدة فقط — افحصي الكل`;
+
+      // دعم PDF: تحويل PDF إلى صور PNG ثم إرسالها كـ image_url
+      // (Gemini يرفض data: URLs في file_url — يجب رفع الصور أولاً)
       const isPdf = input.imageUrl.startsWith("data:application/pdf") || input.imageUrl.toLowerCase().includes(".pdf");
-      let contentPart: ImageContent | FileContent;
+      
+      let pdfImageParts: ImageContent[] = [];
+      let singleImagePart: ImageContent | null = null;
+      
       if (isPdf) {
         const base64Data = input.imageUrl.replace(/^data:application\/pdf;base64,/, "");
-        const buffer = Buffer.from(base64Data, "base64");
-        const key = `plans/pdf-${nanoid()}.pdf`;
-        const { url: pdfUrl } = await storagePut(key, buffer, "application/pdf");
-        contentPart = {
-          type: "file_url" as const,
-          file_url: { url: pdfUrl, mime_type: "application/pdf" as const },
-        } as FileContent;
+        if (!base64Data || base64Data.length < 100) {
+          throw new Error("الملف المرفوع غير صالح أو فارغ. يرجى رفع ملف PDF صحيح.");
+        }
+        // تحويل PDF إلى صور PNG ورفعها على Supabase
+        const pages = await pdfToImages(base64Data, 8);
+        if (pages.length === 0) {
+          throw new Error("لم نتمكن من قراءة صفحات PDF. يرجى التأكد من أن الملف صحيح.");
+        }
+        pdfImageParts = pages.map(p => ({
+          type: "image_url" as const,
+          image_url: { url: p.imageUrl, detail: "high" as const },
+        }));
+        console.log(`[analyzePlan] تحويل PDF: ${pages.length} صفحة → صور PNG`);
       } else {
-        contentPart = {
+        singleImagePart = {
           type: "image_url" as const,
           image_url: { url: input.imageUrl, detail: "high" as const },
-        } as ImageContent;
+        };
       }
 
-      const messages: Message[] = [
-        { role: "system", content: systemPrompt },
+      const userContentParts: (ImageContent | TextContent)[] = [
+        ...(isPdf ? pdfImageParts : (singleImagePart ? [singleImagePart] : [])),
         {
-          role: "user",
-          content: [
-            contentPart,
-            {
-              type: "text" as const,
-              text: `أنتِ مهندسة معمارية متخصصة بقراءة المخططات. حلّلي هذا المخطط المعماري بدقة عالية جداً.
+          type: "text" as const,
+          text: `أنتِ مهندسة معمارية متخصصة بقراءة المخططات. حلّلي هذا المخطط المعماري بدقة عالية جداً.
 نوع المشروع: ${input.projectType}
 نمط التصميم المطلوب: ${input.designStyle}
 
@@ -3798,6 +3813,12 @@ PHOTOGRAPHY QUALITY:
 3. استخدمي هذه الأنواع فقط: bedroom, living, kitchen, bathroom, dining, office, corridor, entrance, storage, balcony, majlis, prayer, elevator, staircase, laundry, garage, outdoor, hall, closet, room
 4. قدّري الارتفاع من الكوتات في المخطط — إذا لم تجدي كوتات، قدّري: غرف عادية=3م، مداخل فاخرة=4-5م، double height=5-6م
 5. لا تتركي أي حقل null — ضعي تقديراً منطقياً دائماً
+
+تعليمات مهمة جداً لـ PDF:
+- إذا كان الملف PDF متعدد الصفحات، افحصي كل الصفحات
+- ابحثي عن صفحات المخططات المعمارية (FLOOR PLAN) وتجاهلي صفحات الوثائق الإدارية
+- عدّي الطوابق من عناوين الصفحات: GROUND FLOOR = 1 طابق، + FIRST FLOOR = 2 طوابق، + SECOND = 3 طوابق
+- استخرجي الغرف من كل طابق وحدده في حقل floor
 
 أعيدي JSON بهذا الشكل بالضبط (لا تضيفي أي نص خارج JSON):
 {
@@ -3861,9 +3882,12 @@ PHOTOGRAPHY QUALITY:
     "توصية مهنية من م. سارة"
   ]
 }`,
-            } as TextContent,
-          ],
-        },
+          } as TextContent,
+      ];
+
+      const messages: Message[] = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContentParts },
       ];
 
       // ===== Multi-Run 3x لرفع الدقة إلى 97-99% =====
