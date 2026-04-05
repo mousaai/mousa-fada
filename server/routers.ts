@@ -426,7 +426,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "UNAUTHORIZED", message: error.message ?? "بيانات الدخول غير صحيحة" });
         }
       }),
-    changePassword: protectedProcedure
+    changePassword: mousaProcedure
       .input(z.object({
         currentPassword: z.string(),
         newPassword: z.string().min(8),
@@ -462,9 +462,9 @@ export const appRouter = router({
 
   // ===== المشاريع =====
   projects: router({
-    list: protectedProcedure.query(async ({ ctx }) => getUserProjects(ctx.user.id)),
+    list: mousaProcedure.query(async ({ ctx }) => getUserProjects(ctx.user.id)),
 
-    get: protectedProcedure
+    get: mousaProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
         const project = await getProjectById(input.id, ctx.user.id);
@@ -494,7 +494,7 @@ export const appRouter = router({
         });
       }),
 
-    update: protectedProcedure
+    update: mousaProcedure
       .input(z.object({
         id: z.number(),
         name: z.string().optional(),
@@ -514,7 +514,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    delete: protectedProcedure
+    delete: mousaProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await deleteProject(input.id, ctx.user.id);
@@ -566,7 +566,7 @@ export const appRouter = router({
         return allAnalyses[0];
       }),
 
-    analyzeFloorPlan: protectedProcedure
+    analyzeFloorPlan: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         imageUrl: z.string(),
@@ -583,7 +583,7 @@ export const appRouter = router({
         return result;
       }),
     // تحليل المخطط المتقدم مع توليد أفكار تصميم لكل غرفة
-    analyzeFloorPlanAdvanced: protectedProcedure
+    analyzeFloorPlanAdvanced: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         imageUrl: z.string(),
@@ -612,7 +612,7 @@ export const appRouter = router({
         }
       }),
     // توليد فكرة تصميم لغرفة واحدة
-    generateRoomDesign: protectedProcedure
+    generateRoomDesign: mousaProcedure
       .input(z.object({
         room: z.object({
           name: z.string(),
@@ -631,11 +631,11 @@ export const appRouter = router({
         return await generateRoomDesignIdea(input.room, input.overallStyle);
       }),
 
-    getByProject: protectedProcedure
+    getByProject: mousaProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ ctx, input }) => getProjectAnalyses(input.projectId, ctx.user.id)),
 
-    getById: protectedProcedure
+    getById: mousaProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
         const analysis = await getAnalysisById(input.id, ctx.user.id);
@@ -643,13 +643,13 @@ export const appRouter = router({
         return analysis;
       }),
 
-    recent: protectedProcedure.query(async ({ ctx }) => getUserAnalyses(ctx.user.id)),
+    recent: mousaProcedure.query(async ({ ctx }) => getUserAnalyses(ctx.user.id)),
   }),
 
   // ===== عناصر التصميم =====
   designElements: router({
     // تصميم عنصر بهوية بصرية موحدة
-    designWithIdentity: protectedProcedure
+    designWithIdentity: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         elementType: z.enum(["flooring", "walls", "ceiling", "windows", "doors", "lighting", "furniture", "perspective"]),
@@ -766,7 +766,7 @@ ${existingContext}
         return { element, design: result };
       }),
 
-    design: protectedProcedure
+    design: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         elementType: z.enum(["flooring", "walls", "ceiling", "windows", "doors", "lighting", "furniture", "perspective"]),
@@ -805,18 +805,18 @@ ${existingContext}
         return { element, design: result };
       }),
 
-    getByProject: protectedProcedure
+    getByProject: mousaProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ ctx, input }) => getProjectDesignElements(input.projectId, ctx.user.id)),
 
-    markComplete: protectedProcedure
+    markComplete: mousaProcedure
       .input(z.object({ id: z.number(), isCompleted: z.boolean() }))
       .mutation(async ({ ctx, input }) => {
         await updateDesignElement(input.id, ctx.user.id, { isCompleted: input.isCompleted });
         return { success: true };
       }),
 
-    delete: protectedProcedure
+    delete: mousaProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await deleteDesignElement(input.id, ctx.user.id);
@@ -826,7 +826,7 @@ ${existingContext}
 
   // ===== المناظير =====
   perspectives: router({
-    generate: protectedProcedure
+    generate: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         roomName: z.string(),
@@ -850,14 +850,14 @@ ${existingContext}
         return perspective;
       }),
 
-    getByProject: protectedProcedure
+    getByProject: mousaProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ ctx, input }) => getProjectPerspectives(input.projectId, ctx.user.id)),
   }),
 
   // ===== المحادثة الذكية =====
   chat: router({
-    send: protectedProcedure
+    send: mousaProcedure
       .input(z.object({
         sessionId: z.number().optional(),
         projectId: z.number().optional(),
@@ -899,16 +899,16 @@ ${existingContext}
         return { sessionId: session?.id, reply, messages: currentMessages };
       }),
 
-    getSession: protectedProcedure
+    getSession: mousaProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => getChatSession(input.id, ctx.user.id)),
 
-    getSessions: protectedProcedure.query(async ({ ctx }) => getUserChatSessions(ctx.user.id)),
+    getSessions: mousaProcedure.query(async ({ ctx }) => getUserChatSessions(ctx.user.id)),
   }),
 
   // ===== لوحة الإلهام =====
   moodboard: router({
-    generate: protectedProcedure
+    generate: mousaProcedure
       .input(z.object({
         designStyle: z.string(),
         spaceType: z.string(),
@@ -986,7 +986,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
         return result;
       }),
 
-    getByProject: protectedProcedure
+    getByProject: mousaProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ ctx, input }) => getProjectMoodBoards(input.projectId, ctx.user.id)),
   }),
@@ -1047,7 +1047,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       .input(z.object({ scanId: z.string() }))
       .query(async ({ input }) => getArScanByScanId(input.scanId)),
 
-    getUserScans: protectedProcedure
+    getUserScans: mousaProcedure
       .query(async ({ ctx }) => getUserArScans(ctx.user.id)),
   }),
 
@@ -1057,13 +1057,13 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       .input(z.object({ category: z.string().optional(), quality: z.string().optional() }))
       .query(async ({ input }) => getMarketPrices(input.category, input.quality)),
 
-    seedPrices: protectedProcedure
+    seedPrices: mousaProcedure
       .mutation(async () => { await seedMarketPrices(); return { success: true }; }),
   }),
 
   // ===== التقارير =====
   reports: router({
-    generate: protectedProcedure
+    generate: mousaProcedure
       .input(z.object({
         projectId: z.number(),
         reportType: z.enum(["full", "boq", "design_only", "cost_only"]).default("full"),
@@ -1082,14 +1082,14 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
         return { reportId: report?.id, projectId: input.projectId, status: "generating" };
       }),
 
-    getByProject: protectedProcedure
+    getByProject: mousaProcedure
       .input(z.object({ projectId: z.number() }))
       .query(async ({ ctx, input }) => getProjectReports(input.projectId, ctx.user.id)),
   }),
 
   // ===== حساب التكاليف =====
   costs: router({
-    calculate: protectedProcedure
+    calculate: mousaProcedure
       .input(z.object({
         area: z.number(),
         designStyle: z.string(),
@@ -2892,7 +2892,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
   // ===== مراجع التصميم (صور الإلهام) =====
   designReference: router({
     // تحليل صورة إلهام وحفظها كمرجع
-    analyze: protectedProcedure
+    analyze: mousaProcedure
       .input(z.object({
         imageUrl: z.string(),   // URL الصورة (مرفوعة على S3 أو رابط خارجي)
         imageKey: z.string().optional(),
@@ -2976,14 +2976,14 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       }),
 
     // جلب مراجع التصميم المحفوظة للمستخدم
-    list: protectedProcedure
+    list: mousaProcedure
       .query(async ({ ctx }) => {
         const { getUserDesignReferences } = await import("./db");
         return getUserDesignReferences(ctx.user.id);
       }),
 
     // حذف مرجع
-    delete: protectedProcedure
+    delete: mousaProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
         const { deleteDesignReference } = await import("./db");

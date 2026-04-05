@@ -89,10 +89,6 @@ export default function MoodBoard() {
   });
 
   const handleGenerate = () => {
-    if (!isAuthenticated) {
-      window.location.href = "https://www.mousa.ai";
-      return;
-    }
     setIsGenerating(true);
     generateMoodBoardMutation.mutate({
       designStyle: selectedStyle,

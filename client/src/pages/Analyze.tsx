@@ -95,10 +95,6 @@ export default function AnalyzePage() {
   }, [handleFileSelect]);
 
   const handleAnalyze = async () => {
-    if (!isAuthenticated) {
-      window.location.href = "https://www.mousa.ai";
-      return;
-    }
     if (!imageFile || !imagePreview) {
       toast.error("يرجى رفع صورة أولاً");
       return;
@@ -325,17 +321,7 @@ export default function AnalyzePage() {
                 )}
               </Button>
 
-              {!isAuthenticated && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                  <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
-                    يجب تسجيل الدخول لحفظ نتائج التحليل ومشاريعك.{" "}
-                    <button onClick={() => window.location.href = "https://www.mousa.ai"} className="font-bold underline">
-                      سجّل الدخول الآن
-                    </button>
-                  </p>
-                </div>
-              )}
+              
             </div>
           </div>
         ) : (

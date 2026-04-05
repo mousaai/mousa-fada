@@ -203,9 +203,7 @@ export default function SarahChat() {
           </div>
           <h2 className="text-2xl font-bold mb-2">م. سارة</h2>
           <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للتحدث مع م. سارة</p>
-          <a href="https://www.mousa.ai">
-            <Button className="btn-gold w-full">تسجيل الدخول</Button>
-          </a>
+          <Button className="btn-gold w-full">تسجيل الدخول</Button>
         </Card>
       </div>
     );

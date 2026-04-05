@@ -77,9 +77,7 @@ export default function ARScan() {
           <Smartphone className="w-12 h-12 mx-auto text-gold mb-4" />
           <h2 className="text-xl font-bold mb-2">مسح AR</h2>
           <p className="text-muted-foreground mb-4">يرجى تسجيل الدخول للوصول لهذه الميزة</p>
-          <a href="https://www.mousa.ai">
-            <Button className="btn-gold w-full">تسجيل الدخول</Button>
-          </a>
+          <Button className="btn-gold w-full">تسجيل الدخول</Button>
         </Card>
       </div>
     );

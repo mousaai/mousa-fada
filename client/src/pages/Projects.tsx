@@ -114,23 +114,7 @@ export default function ProjectsPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 p-4" dir={dir}>
-        <div className="w-20 h-20 rounded-2xl gold-gradient flex items-center justify-center shadow-lg mb-2">
-          <FolderOpen className="w-10 h-10 text-white" />
-        </div>
-        <h2 className="text-2xl font-black text-stone-800">مشاريعي</h2>
-        <p className="text-stone-500 text-center max-w-sm">يجب تسجيل الدخول للوصول إلى مشاريعك المحفوظة</p>
-        <Button
-          onClick={() => window.location.href = "https://www.mousa.ai"}
-          className="gold-gradient text-white px-8 py-3 rounded-xl font-bold shadow-lg"
-        >
-          تسجيل الدخول
-        </Button>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-background font-['Tajawal',sans-serif]" dir={dir}>

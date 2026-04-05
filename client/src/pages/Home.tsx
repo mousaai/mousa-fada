@@ -185,25 +185,16 @@ export default function Home() {
       {/* Top Bar */}
       <header className="flex items-center justify-between px-5 pt-safe pt-4 pb-3">
         <div>
-          {isAuthenticated ? (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center text-white font-bold text-sm">
                 {user?.name?.[0] || "م"}
               </div>
               <div>
                 <p className="text-xs text-[#8B6914]/70">{t("home.welcome")}</p>
-                <p className="text-sm font-bold text-[#5C3D11]">{user?.name?.split(" ")[0] || t("auth.profile")}</p>
+                <p className="text-sm font-bold text-[#5C3D11]">{user?.name?.split(" ")[0] || "زائر"}</p>
               </div>
               <CreditBadge />
             </div>
-          ) : (
-            <button
-              onClick={() => window.location.href = "https://www.mousa.ai"}
-              className="px-4 py-2 rounded-full bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold active:scale-95 transition-transform"
-            >
-              {t("home.login")}
-            </button>
-          )}
         </div>
         <div className="text-center">
           <p className="text-lg font-black text-[#5C3D11]">{t("app.name")}</p>
@@ -232,13 +223,7 @@ export default function Home() {
 
         {/* BIG Camera Button */}
         <button
-          onClick={() => {
-            if (!isAuthenticated) {
-              window.location.href = "https://www.mousa.ai";
-              return;
-            }
-            navigate("/smart-capture");
-          }}
+          onClick={() => navigate("/smart-capture")}
           className="relative w-40 h-40 rounded-full bg-gradient-to-br from-[#C9A84C] via-[#A07820] to-[#8B6914] shadow-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-all duration-200"
           style={{ boxShadow: "0 8px 40px rgba(201,168,76,0.5)" }}
         >
@@ -308,7 +293,7 @@ export default function Home() {
         </div>
 
         {/* Recent Projects Preview (if authenticated) */}
-        {isAuthenticated && <RecentProjectsStrip />}
+        <RecentProjectsStrip />
       </main>
 
       {/* Bottom Navigation */}
@@ -318,7 +303,7 @@ export default function Home() {
             { icon: Camera, label: t("nav.analyze"), action: () => setShowQuickAnalysis(true) },
             { icon: Sparkles, label: t("nav.studio"), action: () => navigate("/design-studio") },
             { icon: MessageCircle, label: t("nav.sarah"), action: () => navigate("/sarah-chat") },
-            { icon: FolderOpen, label: t("nav.projects"), action: () => navigate(isAuthenticated ? "/projects" : "/") },
+            { icon: FolderOpen, label: t("nav.projects"), action: () => navigate("/projects") },
           ].map(({ icon: Icon, label, action }) => (
             <button
               key={label}
