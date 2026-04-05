@@ -1,14 +1,14 @@
 /**
- * Image generation helper — نظام توليد الصور متعدد المستويات
- * الأولوية (بالترتيب):
- *   1. imagen-4.0-generate-001 (أعلى جودة — Google Imagen 4)
- *   2. gemini-3-pro-image-preview (Gemini 3 Pro للصور — جودة عالية)
- *   3. gemini-2.5-flash-image (Gemini 2.5 Flash للصور — سريع ويدعم التعديل)
- *   4. gemini-3.1-flash-image-preview (Gemini 3.1 Flash للصور)
- * ⚠️ Manus Forge محذوف تماماً
- * ✅ نظام retry ذكي مع exponential backoff لكل نموذج
+ * توليد الصور — Google AI مباشر (بدون أي وسيط)
+ *
+ * الأولوية:
+ *   1. Imagen 4 Fast (5-10 ثوانٍ) — للصور الجديدة فقط
+ *   2. Imagen 4 Standard (10-20 ثانية) — للصور الجديدة فقط
+ *   3. Gemini 2.5 Flash Image (15-25 ثانية) — يدعم التعديل
+ *   4. Gemini 3 Pro Image (20-35 ثانية) — fallback
+ *
+ * التخزين: Google Cloud Storage (bucket عام) — بدون Manus
  */
-import { storagePut } from "server/storage";
 import { ENV } from "./env";
 
 export type GenerateImageOptions = {
@@ -26,19 +26,50 @@ export type GenerateImageResponse = {
   modelUsed?: string;
 };
 
-// ─── Retry Helper ────────────────────────────────────────────────────────────
-/**
- * ينفذ دالة مع إعادة المحاولة عند فشل rate-limit (429) أو خطأ مؤقت (503/500)
- * exponential backoff: 2s → 5s → 12s
- */
+// ─── حفظ الصورة في Google Cloud Storage (bucket عام) ─────────────────────────
+async function saveImageToStorage(
+  base64Data: string,
+  mimeType: string
+): Promise<string> {
+  const ext = mimeType.includes("jpeg") || mimeType.includes("jpg") ? "jpg" : "png";
+  const fileName = `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const buffer = Buffer.from(base64Data, "base64");
+
+  // استخدام Google Cloud Storage JSON API مباشرة
+  const bucketName = process.env.GCS_BUCKET || "sarah-design-images";
+  const projectId = process.env.GCS_PROJECT_ID || "gen-lang-client-0515782995";
+  const apiKey = ENV.googleAiApiKey;
+
+  try {
+    // رفع الملف إلى GCS باستخدام API Key
+    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(fileName)}&key=${apiKey}`;
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": mimeType },
+      body: buffer,
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (uploadResponse.ok) {
+      const data = await uploadResponse.json() as { name: string };
+      return `https://storage.googleapis.com/${bucketName}/${encodeURIComponent(data.name || fileName)}`;
+    }
+  } catch {
+    // fallback: data URL مؤقت
+  }
+
+  // Fallback: إرجاع data URL مؤقت (يعمل في المتصفح مباشرة)
+  return `data:${mimeType};base64,${base64Data}`;
+}
+
+// ─── Retry Helper ─────────────────────────────────────────────────────────────
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
-  maxAttempts = 3
+  maxAttempts = 2
 ): Promise<T> {
-  // في بيئة الاختبار، نتجنب الانتظار الفعلي
   const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
-  const delays = isTest ? [0, 0, 0] : [2000, 5000, 12000];
+  const delays = isTest ? [0, 0] : [3000, 8000];
   let lastError: Error = new Error("Unknown error");
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -55,239 +86,166 @@ async function withRetry<T>(
         msg.includes("Service Unavailable") ||
         msg.includes("RESOURCE_EXHAUSTED");
 
-      if (!isRetryable || attempt === maxAttempts) {
-        throw lastError;
-      }
+      if (!isRetryable || attempt === maxAttempts) throw lastError;
 
-      const delay = delays[attempt - 1] ?? 10000;
-      console.log(
-        `[${label}] محاولة ${attempt}/${maxAttempts} فشلت (${msg.substring(0, 60)}). إعادة المحاولة بعد ${delay / 1000}s...`
-      );
+      const delay = delays[attempt - 1] ?? 5000;
+      console.log(`[${label}] retry ${attempt}/${maxAttempts} after ${delay / 1000}s...`);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw lastError;
 }
 
-// ─── Imagen 4 ────────────────────────────────────────────────────────────────
-async function generateImageViaImagen4(
-  options: GenerateImageOptions
+// ─── Imagen 4 (predict API) ───────────────────────────────────────────────────
+async function generateViaImagen4(
+  prompt: string,
+  model = "imagen-4.0-fast-generate-001"
 ): Promise<GenerateImageResponse> {
   const apiKey = ENV.googleAiApiKey;
-  const model = "imagen-4.0-generate-001";
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
+  if (!apiKey) throw new Error("MOUSA_GOOGLE_AI_KEY غير مضبوط");
 
-  const requestBody = {
-    instances: [{ prompt: options.prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio: "4:3",
-      safetyFilterLevel: "block_some",
-      personGeneration: "allow_adult",
-    },
-  };
-
-  const response = await fetch(apiUrl, {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`;
+  const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio: "4:3",
+        safetyFilterLevel: "block_some",
+        personGeneration: "allow_adult",
+      },
+    }),
+    signal: AbortSignal.timeout(45000),
   });
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Imagen 4 generation failed (${response.status} ${response.statusText})${detail ? `: ${detail.substring(0, 200)}` : ""}`
-    );
+    throw new Error(`Imagen (${model}) ${response.status}: ${detail.substring(0, 150)}`);
   }
 
-  const result = (await response.json()) as {
+  const result = await response.json() as {
     predictions?: Array<{ bytesBase64Encoded?: string; mimeType?: string }>;
   };
 
   const prediction = result.predictions?.[0];
   if (!prediction?.bytesBase64Encoded) {
-    throw new Error("Imagen 4 did not return an image in the response");
+    throw new Error(`Imagen (${model}) لم يُرجع صورة`);
   }
 
-  const buffer = Buffer.from(prediction.bytesBase64Encoded, "base64");
   const mimeType = prediction.mimeType || "image/png";
-  const ext = mimeType.includes("jpeg") ? "jpg" : "png";
-
-  const { url } = await storagePut(
-    `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,
-    buffer,
-    mimeType
-  );
-
-  return { url, modelUsed: "Imagen 4" };
+  const imageUrl = await saveImageToStorage(prediction.bytesBase64Encoded, mimeType);
+  return { url: imageUrl, modelUsed: model };
 }
 
-// ─── Gemini Image ─────────────────────────────────────────────────────────────
-async function generateImageViaGemini(
+// ─── Gemini Image (generateContent API) ───────────────────────────────────────
+async function generateViaGemini(
   options: GenerateImageOptions,
-  model: string = "gemini-2.5-flash-image"
+  model = "gemini-2.5-flash-image"
 ): Promise<GenerateImageResponse> {
   const apiKey = ENV.googleAiApiKey;
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  if (!apiKey) throw new Error("MOUSA_GOOGLE_AI_KEY غير مضبوط");
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  // بناء الـ parts
   const parts: Array<Record<string, unknown>> = [{ text: options.prompt }];
 
-  if (options.originalImages && options.originalImages.length > 0) {
+  if (options.originalImages?.length) {
     for (const img of options.originalImages) {
       if (img.b64Json) {
-        parts.push({
-          inline_data: {
-            mime_type: img.mimeType || "image/jpeg",
-            data: img.b64Json,
-          },
-        });
+        parts.push({ inline_data: { mime_type: img.mimeType || "image/jpeg", data: img.b64Json } });
       } else if (img.url) {
         try {
-          const imgResponse = await fetch(img.url);
-          if (imgResponse.ok) {
-            const arrayBuffer = await imgResponse.arrayBuffer();
-            const base64 = Buffer.from(arrayBuffer).toString("base64");
-            const contentType =
-              imgResponse.headers.get("content-type") ||
-              img.mimeType ||
-              "image/jpeg";
-            parts.push({
-              inline_data: { mime_type: contentType, data: base64 },
-            });
+          const imgRes = await fetch(img.url, { signal: AbortSignal.timeout(15000) });
+          if (imgRes.ok) {
+            const buf = await imgRes.arrayBuffer();
+            const b64 = Buffer.from(buf).toString("base64");
+            const ct = imgRes.headers.get("content-type") || img.mimeType || "image/jpeg";
+            parts.push({ inline_data: { mime_type: ct, data: b64 } });
           }
-        } catch {
-          // تجاهل الصورة إذا فشل التحميل
-        }
+        } catch { /* تجاهل */ }
       }
     }
   }
 
-  const requestBody = {
-    contents: [{ parts }],
-    generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-  };
-
-  const response = await fetch(apiUrl, {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+    }),
+    signal: AbortSignal.timeout(60000),
   });
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Gemini (${model}) image generation failed (${response.status} ${response.statusText})${detail ? `: ${detail.substring(0, 200)}` : ""}`
-    );
+    throw new Error(`Gemini (${model}) ${response.status}: ${detail.substring(0, 150)}`);
   }
 
-  const result = (await response.json()) as {
+  const result = await response.json() as {
     candidates?: Array<{
-      content?: {
-        parts?: Array<{
-          text?: string;
-          inlineData?: { data: string; mimeType: string };
-        }>;
-      };
+      content?: { parts?: Array<{ inlineData?: { data: string; mimeType: string } }> };
     }>;
   };
 
-  const candidate = result.candidates?.[0];
-  const imagePart = candidate?.content?.parts?.find((p) => p.inlineData);
+  const imgPart = result.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+  if (!imgPart?.inlineData) throw new Error(`Gemini (${model}) لم يُرجع صورة`);
 
-  if (!imagePart?.inlineData) {
-    throw new Error(`Gemini (${model}) did not return an image in the response`);
-  }
-
-  const buffer = Buffer.from(imagePart.inlineData.data, "base64");
-  const mimeType = imagePart.inlineData.mimeType || "image/png";
-  const ext = mimeType.includes("jpeg") ? "jpg" : "png";
-
-  const { url } = await storagePut(
-    `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`,
-    buffer,
-    mimeType
-  );
-
-  return { url, modelUsed: model };
+  const mimeType = imgPart.inlineData.mimeType || "image/png";
+  const imageUrl = await saveImageToStorage(imgPart.inlineData.data, mimeType);
+  return { url: imageUrl, modelUsed: model };
 }
 
-// ─── Main Export ──────────────────────────────────────────────────────────────
+// ─── الدالة الرئيسية ───────────────────────────────────────────────────────────
 /**
- * الدالة الرئيسية — نظام توليد متعدد المستويات مع retry ذكي
- * كل نموذج يحاول 3 مرات مع exponential backoff قبل الانتقال للتالي
+ * توليد صورة — Google AI مباشر بدون أي وسيط
+ *
+ * الوقت المتوقع:
+ *   - Imagen 4 Fast: 5-10 ثوانٍ (للصور الجديدة)
+ *   - Imagen 4 Standard: 10-20 ثانية (للصور الجديدة)
+ *   - Gemini 2.5 Flash Image: 15-25 ثانية (مع التعديل)
+ *   - Gemini 3 Pro Image: 20-35 ثانية (fallback)
  */
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  const googleKey = ENV.googleAiApiKey;
-  const hasOriginalImages =
-    options.originalImages && options.originalImages.length > 0;
+  const hasOriginalImages = !!(options.originalImages?.length);
 
-  if (!googleKey || googleKey.trim().length === 0) {
-    throw new Error(
-      "GOOGLE_AI_API_KEY غير مضبوط. يرجى إضافة MY_GOOGLE_AI_KEY في متغيرات البيئة."
-    );
-  }
-
-  // المستوى الأول: Imagen 4 (للصور الجديدة فقط) — 3 محاولات
+  // للصور الجديدة: Imagen 4 أولاً (الأسرع)
   if (!hasOriginalImages) {
     try {
-      console.log("[generateImage] Trying Imagen 4 (highest quality)...");
-      return await withRetry(
-        () => generateImageViaImagen4(options),
-        "Imagen 4"
-      );
+      console.log("[generateImage] Imagen 4 Fast (5-10s)...");
+      return await withRetry(() => generateViaImagen4(options.prompt, "imagen-4.0-fast-generate-001"), "Imagen4Fast");
     } catch (err) {
-      console.warn(
-        "[generateImage] Imagen 4 failed after retries:",
-        (err as Error).message?.substring(0, 120)
-      );
+      console.warn("[generateImage] Imagen4Fast failed:", (err as Error).message?.substring(0, 80));
+    }
+
+    try {
+      console.log("[generateImage] Imagen 4 Standard (10-20s)...");
+      return await withRetry(() => generateViaImagen4(options.prompt, "imagen-4.0-generate-001"), "Imagen4");
+    } catch (err) {
+      console.warn("[generateImage] Imagen4 failed:", (err as Error).message?.substring(0, 80));
     }
   }
 
-  // المستوى الثاني: Gemini 3 Pro Image — 3 محاولات
+  // Gemini 2.5 Flash Image (يدعم التعديل)
   try {
-    console.log("[generateImage] Trying Gemini 3 Pro Image...");
-    return await withRetry(
-      () => generateImageViaGemini(options, "gemini-3-pro-image-preview"),
-      "Gemini 3 Pro Image"
-    );
+    console.log("[generateImage] Gemini 2.5 Flash Image (15-25s)...");
+    return await withRetry(() => generateViaGemini(options, "gemini-2.5-flash-image"), "Gemini2.5Flash");
   } catch (err) {
-    console.warn(
-      "[generateImage] Gemini 3 Pro Image failed after retries:",
-      (err as Error).message?.substring(0, 120)
-    );
+    console.warn("[generateImage] Gemini2.5Flash failed:", (err as Error).message?.substring(0, 80));
   }
 
-  // المستوى الثالث: Gemini 2.5 Flash Image — 3 محاولات
+  // Gemini 3 Pro Image
   try {
-    console.log("[generateImage] Trying Gemini 2.5 Flash Image...");
-    return await withRetry(
-      () => generateImageViaGemini(options, "gemini-2.5-flash-image"),
-      "Gemini 2.5 Flash Image"
-    );
+    console.log("[generateImage] Gemini 3 Pro Image (20-35s)...");
+    return await withRetry(() => generateViaGemini(options, "gemini-3-pro-image-preview"), "Gemini3Pro");
   } catch (err) {
-    console.warn(
-      "[generateImage] Gemini 2.5 Flash Image failed after retries:",
-      (err as Error).message?.substring(0, 120)
-    );
+    console.warn("[generateImage] Gemini3Pro failed:", (err as Error).message?.substring(0, 80));
   }
 
-  // المستوى الرابع: Gemini 3.1 Flash Image Preview — 3 محاولات
-  try {
-    console.log("[generateImage] Trying Gemini 3.1 Flash Image Preview...");
-    return await withRetry(
-      () => generateImageViaGemini(options, "gemini-3.1-flash-image-preview"),
-      "Gemini 3.1 Flash Image"
-    );
-  } catch (err) {
-    console.warn(
-      "[generateImage] Gemini 3.1 Flash Image failed after retries:",
-      (err as Error).message?.substring(0, 120)
-    );
-  }
-
-  throw new Error(
-    "فشل توليد الصورة: جميع نماذج Google (Imagen 4, Gemini 3 Pro, Gemini 2.5 Flash, Gemini 3.1 Flash) غير متاحة حالياً بعد 3 محاولات لكل منها. يرجى المحاولة بعد دقيقة."
-  );
+  throw new Error("فشل توليد الصورة — يرجى المحاولة بعد دقيقة.");
 }

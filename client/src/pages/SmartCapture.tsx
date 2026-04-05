@@ -1060,6 +1060,19 @@ function IdeaCard({
   const [isRefining, setIsRefining] = useState(false);
   const refineImageRef = useRef<HTMLDivElement>(null);
 
+  // مؤشر الوقت أثناء توليد الصورة
+  const [imgElapsed, setImgElapsed] = useState(0);
+  const imgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (idea.isGeneratingImage) {
+      setImgElapsed(0);
+      imgTimerRef.current = setInterval(() => setImgElapsed(s => s + 1), 1000);
+    } else {
+      if (imgTimerRef.current) clearInterval(imgTimerRef.current);
+    }
+    return () => { if (imgTimerRef.current) clearInterval(imgTimerRef.current); };
+  }, [idea.isGeneratingImage]);
+
   // حالة تصدير PDF
   const [isExportingPDF, setIsExportingPDF] = useState(false);
 
@@ -1184,6 +1197,7 @@ function IdeaCard({
               <Wand2 className="w-7 h-7 text-[#C9A84C] animate-pulse" />
             </div>
             <p className="text-sm text-[#8B6914] font-medium">{t("smart.generating")}</p>
+            <p className="text-xs text-[#C9A84C] font-mono">{imgElapsed}s / ~10-25s</p>
             <p className="text-[10px] text-[#8B6914]/60">تحافظ على موقع الأبواب والسلالم</p>
             <div className="flex gap-1">
               {[0, 1, 2].map(i => (

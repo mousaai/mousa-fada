@@ -3,7 +3,7 @@
  * يعرض 3+ أفكار تصميمية مع صور تصورية، أثاث، ألوان، وتكاليف
  * الفلاتر (نمط/ميزانية/ألوان) تغير التصاميم فوراً
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronRight, Sparkles, RefreshCw, Wand2, DollarSign,
@@ -80,6 +80,18 @@ function IdeaCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showFurniture, setShowFurniture] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (idea.isGeneratingImage) {
+      setElapsedSeconds(0);
+      timerRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [idea.isGeneratingImage]);
 
   return (
     <div className="bg-white rounded-3xl border border-[#e8d9c0] shadow-sm overflow-hidden">
@@ -97,6 +109,7 @@ function IdeaCard({
               <Wand2 className="w-7 h-7 text-[#C9A84C] animate-pulse" />
             </div>
             <p className="text-sm text-[#8B6914] font-medium">جاري توليد الصورة...</p>
+            <p className="text-xs text-[#C9A84C] font-mono">{elapsedSeconds}s / ~10-25s</p>
             <div className="flex gap-1">
               {[0, 1, 2].map(i => (
                 <div
@@ -350,14 +363,13 @@ export default function DesignIdeas() {
     const enhancedPrompt = idea.imagePrompt
       ? `${idea.imagePrompt}, photorealistic render, cinematic lighting, 8K quality, architectural digest style, no people`
       : undefined;
-    generateVizMutation.mutate({
+    (generateVizMutation.mutate as (input: Parameters<typeof generateVizMutation.mutate>[0] & { ideaId: string }) => void)({
       imageUrl: referenceImage || "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800",
       designStyle: idea.style,
       palette: idea.palette,
       materials: enhancedPrompt || idea.materials.join(", "),
-    } as Parameters<typeof generateVizMutation.mutate>[0] & { ideaId: string });
-    // Store ideaId for tracking (passed via variables in onSuccess)
-    (generateVizMutation as unknown as { _currentIdeaId: string })._currentIdeaId = ideaId;
+      ideaId,
+    });
   }, [ideas, referenceImage]);
 
   const toggleStyle = (styleId: StyleId) => {
