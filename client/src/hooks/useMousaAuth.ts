@@ -7,9 +7,8 @@ const PLATFORM_API_KEY = "USAA";
 // FIX FADA-001: mousa.ai يضبط cookie باسم app_session_id على domain .mousa.ai
 const SHARED_COOKIE = "app_session_id";
 
-// الكريدت المجاني الممنوح عند تعذّر التحقق من mousa.ai
-export const FREE_CREDITS = 200;
-// مفتاح localStorage لتتبع الكريدت المجاني المستهلك
+// ✅ وضع مجاني بالكامل — نظام الكريدت موقف مؤقتاً
+export const FREE_CREDITS = 999999;
 const FREE_CREDITS_KEY = "fada_free_credits_used";
 
 export interface MousaUser {
@@ -28,16 +27,14 @@ interface AuthState {
   token: string | null;
 }
 
-// المستخدم المجاني: يحصل على 200 نقطة مجانية لحين ربط حسابه
+// المستخدم المجاني — رصيد غير محدود
 function buildFreeUser(): MousaUser {
-  const used = getFreeCreditsUsed();
-  const remaining = Math.max(0, FREE_CREDITS - used);
   return {
     userId: 0,
     openId: "free",
-    name: "مستخدم مجاني",
+    name: "مستخدم",
     email: "",
-    creditBalance: remaining,
+    creditBalance: 999999,
     platform: "fada",
     isFreeMode: true,
   };
@@ -243,84 +240,14 @@ export function useMousaAuth() {
     };
   }
 
-  async function deductCredits(amount: number, description?: string): Promise<{ newBalance: number }> {
-    if (!state.user) throw new Error("المستخدم غير مسجّل");
-
-    // المستخدم في الوضع المجاني — خصم من الـ 200 نقطة المحلية
-    if (state.user.isFreeMode) {
-      const used = getFreeCreditsUsed() + amount;
-      setFreeCreditsUsed(used);
-      const remaining = Math.max(0, FREE_CREDITS - used);
-      setState(prev => ({
-        ...prev,
-        user: prev.user ? { ...prev.user, creditBalance: remaining } : null,
-      }));
-      return { newBalance: remaining };
-    }
-
-    // المستخدم المسجّل — خصم عبر mousa.ai API
-    const response = await fetch(`${MOUSA_API_URL}/api/platform/deduct-credits`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${PLATFORM_API_KEY}`,
-        "X-Platform-ID": THIS_PLATFORM,
-      },
-      body: JSON.stringify({
-        userId: state.user.userId,
-        amount,
-        description: description || `استخدام منصة ${THIS_PLATFORM}`,
-      }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error((data as any).error || "فشل خصم الكريدت");
-    }
-
-    const data = await response.json();
-    setState(prev => ({
-      ...prev,
-      user: prev.user ? { ...prev.user, creditBalance: (data as any).newBalance } : null,
-    }));
-
-    return { newBalance: (data as any).newBalance };
+  async function deductCredits(_amount: number, _description?: string): Promise<{ newBalance: number }> {
+    // ✅ وضع مجاني — لا خصم للكريدت
+    return { newBalance: 999999 };
   }
 
   async function refreshBalance(): Promise<number> {
-    if (!state.user) return 0;
-
-    // الوضع المجاني — الرصيد محلي
-    if (state.user.isFreeMode) {
-      const remaining = Math.max(0, FREE_CREDITS - getFreeCreditsUsed());
-      setState(prev => ({
-        ...prev,
-        user: prev.user ? { ...prev.user, creditBalance: remaining } : null,
-      }));
-      return remaining;
-    }
-
-    try {
-      const serverUser = await verifyViaServer();
-      if (serverUser) {
-        setState(prev => ({
-          ...prev,
-          user: prev.user ? { ...prev.user, creditBalance: serverUser.creditBalance } : null,
-        }));
-        return serverUser.creditBalance;
-      }
-      if (state.token) {
-        const user = await verifySession(state.token);
-        setState(prev => ({
-          ...prev,
-          user: prev.user ? { ...prev.user, creditBalance: user.creditBalance } : null,
-        }));
-        return user.creditBalance;
-      }
-    } catch {
-      // تجاهل الخطأ
-    }
-    return state.user?.creditBalance ?? 0;
+    // ✅ وضع مجاني — الرصيد غير محدود
+    return 999999;
   }
 
   function logout() {

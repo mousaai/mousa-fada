@@ -2658,12 +2658,7 @@ export default function VoiceDesigner() {
             <button
               onClick={async () => {
                 // التحقق من الرصيد قبل توليد الرندر
-                if (requiresMousa && !canAfford("generate3D")) {
-                  toast.error(`رصيدك غير كافٍ (${balance ?? 0} كريدت). توليد الرندر 3D يكلف 30 كريدت.`, {
-                    action: upgradeUrl ? { label: "شراء كريدت", onClick: () => window.open(upgradeUrl, "_blank") } : undefined,
-                  });
-                  return;
-                }
+                // ✅ وضع مجاني — لا تحقق من الرصيد
                 setIs3DLoading(true);
                 setRender3DUrl(null);
                 try {

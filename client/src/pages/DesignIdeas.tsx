@@ -327,12 +327,7 @@ export default function DesignIdeas() {
       toast.error("اختر نمطاً واحداً على الأقل");
       return;
     }
-    if (requiresMousa && !canAfford("generateIdeas")) {
-      toast.error(`رصيدك غير كافٍ (${balance ?? 0} كريدت). توليد الأفكار يكلف 20 كريدت.`, {
-        action: upgradeUrl ? { label: "شراء كريدت", onClick: () => window.open(upgradeUrl, "_blank") } : undefined,
-      });
-      return;
-    }
+    // ✅ وضع مجاني — لا تحقق من الرصيد
     setIsLoading(true);
     setIdeas([]);
     generateIdeasMutation.mutate({

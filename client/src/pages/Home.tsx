@@ -167,37 +167,7 @@ export default function Home() {
   const { t, dir, isRtl } = useLanguage();
   const [showQuickAnalysis, setShowQuickAnalysis] = useState(false);
 
-  // إشعار رصيد منخفض تلقائياً عند تحميل الصفحة
-  useEffect(() => {
-    const balance = user?.creditBalance ?? 0;
-    if (!user?.isFreeMode && balance > 0 && balance < 50) {
-      const warnKey = `low_balance_warned_${Math.floor(balance / 10)}`;
-      if (!sessionStorage.getItem(warnKey)) {
-        sessionStorage.setItem(warnKey, "1");
-        setTimeout(() => {
-          if (balance < 20) {
-            toast.error(`رصيدك حرج جداً — ${balance} نقطة فقط!`, {
-              description: "اضغط هنا لشحن رصيدك",
-              action: {
-                label: "شحن الآن ↗",
-                onClick: () => window.open("https://www.mousa.ai/pricing", "_blank"),
-              },
-              duration: 8000,
-            });
-          } else {
-            toast.warning(`رصيدك منخفض — ${balance} نقطة`, {
-              description: "يُنصح بشحن رصيدك قبل نفاده",
-              action: {
-                label: "شحن الآن ↗",
-                onClick: () => window.open("https://www.mousa.ai/pricing", "_blank"),
-              },
-              duration: 6000,
-            });
-          }
-        }, 2000);
-      }
-    }
-  }, [user?.creditBalance, user?.isFreeMode]);
+  // ✅ وضع مجاني — لا إشعارات رصيد منخفض
 
   if (loading) {
     return (

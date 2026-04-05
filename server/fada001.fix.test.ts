@@ -54,9 +54,8 @@ describe("FADA-001 Fix: creditHelper guest access", () => {
     expect(result.allowed).toBe(true);
     expect(result.isGuest).toBe(true);
     expect(result.isFreeMode).toBe(true);
-    // في الوضع المجاني، finalCost = baseCost (يُخصم محلياً من الـ 200 نقطة)
-    expect(result.finalCost).toBe(result.baseCost);
-    expect(result.baseCost).toBeGreaterThan(0);
+    // ✅ وضع مجاني بالكامل — لا خصم للكريدت
+    expect(result.finalCost).toBe(0);
   });
 });
 
