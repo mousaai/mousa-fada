@@ -136,7 +136,7 @@ export async function generatePDFReport(project: ProjectData): Promise<void> {
 
   // اسم المنصة
   addArabicText("م. سارة", pageWidth - margin, 25, { align: "right", fontSize: 28, color: [255, 255, 255], bold: true });
-  addArabicText("خبيرة التصميم الداخلي والمعماري", pageWidth - margin, 38, { align: "right", fontSize: 13, color: [255, 240, 200] });
+  addArabicText("خبيرة التصميم المعماري والبيئي", pageWidth - margin, 38, { align: "right", fontSize: 13, color: [255, 240, 200] });
   addArabicText("بالذكاء الاصطناعي", pageWidth - margin, 47, { align: "right", fontSize: 11, color: [255, 240, 200] });
 
   // عنوان التقرير
@@ -196,7 +196,7 @@ export async function generatePDFReport(project: ProjectData): Promise<void> {
   doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
   doc.rect(0, 0, pageWidth, 18, "F");
   addArabicText("تحليل الفضاء والتوصيات", pageWidth - margin, 12, { align: "right", fontSize: 13, color: [255, 255, 255], bold: true });
-  addArabicText("م. سارة | خبيرة التصميم الداخلي", margin + 5, 12, { align: "left", fontSize: 9, color: [255, 240, 200] });
+  addArabicText("م. سارة | خبيرة التصميم المعماري والبيئي", margin + 5, 12, { align: "left", fontSize: 9, color: [255, 240, 200] });
 
   let currentY = 30;
 
@@ -410,7 +410,7 @@ export async function generatePDFReport(project: ProjectData): Promise<void> {
   doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
   doc.roundedRect(margin, currentY, pageWidth - margin * 2, 45, 4, 4, "F");
   addArabicText("م. سارة", pageWidth / 2, currentY + 15, { align: "center", fontSize: 18, color: [255, 255, 255], bold: true });
-  addArabicText("خبيرة التصميم الداخلي والمعماري بالذكاء الاصطناعي", pageWidth / 2, currentY + 25, { align: "center", fontSize: 10, color: [255, 240, 200] });
+  addArabicText("خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي", pageWidth / 2, currentY + 25, { align: "center", fontSize: 10, color: [255, 240, 200] });
   addArabicText("هذا التقرير مولّد بالذكاء الاصطناعي ويُعدّ مرجعاً تقديرياً", pageWidth / 2, currentY + 35, { align: "center", fontSize: 8, color: [255, 235, 180] });
 
   // فوتر كل الصفحات

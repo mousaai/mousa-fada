@@ -190,7 +190,7 @@ export const translations: Record<Language, Translations> = {
   ar: {
     // App & Navigation
     "app.name": "م. سارة",
-    "app.tagline": "خبيرة التصميم المعمارية",
+    "app.tagline": "خبيرة التصميم المعماري والبيئي",
     "app.subtitle": "صمّم أي فضاء بلمسة واحدة",
     "nav.analyze": "تحليل",
     "nav.studio": "استوديو",
@@ -347,8 +347,8 @@ export const translations: Record<Language, Translations> = {
     "common.experimental": "تجريبي",
     // Sarah AI
     "sarah.title": "م. سارة",
-    "sarah.subtitle": "مساعدتك في التصميم الداخلي",
-    "sarah.greeting": "مرحباً! أنا م. سارة، خبيرة التصميم الداخلي. كيف يمكنني مساعدتك؟",
+    "sarah.subtitle": "خبيرتك في التصميم المعماري والبيئي",
+    "sarah.greeting": "مرحباً! أنا م. سارة، خبيرتك في التصميم الداخلي، الواجهات، اللاندسكيب والزراعة التجميلية، المسابح، والتصميم الحضري. كيف يمكنني مساعدتك؟",
     "sarah.placeholder": "اسألي م. سارة عن التصميم...",
     "sarah.send": "إرسال",
     "sarah.thinking": "م. سارة تفكر...",
@@ -357,7 +357,7 @@ export const translations: Record<Language, Translations> = {
   en: {
     // App & Navigation
     "app.name": "Eng. Sarah",
-    "app.tagline": "Architectural Design Expert",
+    "app.tagline": "Architectural & Environmental Design Expert",
     "app.subtitle": "Design any space with one touch",
     "nav.analyze": "Analyze",
     "nav.studio": "Studio",
@@ -514,8 +514,8 @@ export const translations: Record<Language, Translations> = {
     "common.experimental": "Experimental",
     // Sarah AI
     "sarah.title": "Eng. Sarah",
-    "sarah.subtitle": "Your interior design assistant",
-    "sarah.greeting": "Hello! I'm Eng. Sarah, your interior design expert. How can I help you?",
+    "sarah.subtitle": "Your architectural & environmental design expert",
+    "sarah.greeting": "Hello! I'm Eng. Sarah, your expert in interior design, facades, landscape & ornamental planting, pools, and urban design. How can I help you?",
     "sarah.placeholder": "Ask Eng. Sarah about design...",
     "sarah.send": "Send",
     "sarah.thinking": "Eng. Sarah is thinking...",
@@ -691,7 +691,7 @@ export const translations: Record<Language, Translations> = {
   fr: {
     // App & Navigation
     "app.name": "Ing. Sarah",
-    "app.tagline": "Experte en Design Architectural",
+    "app.tagline": "Experte en Design Architectural & Environnemental",
     "app.subtitle": "Concevez n'importe quel espace en un seul toucher",
     "nav.analyze": "Analyser",
     "nav.studio": "Studio",
@@ -848,8 +848,8 @@ export const translations: Record<Language, Translations> = {
     "common.experimental": "Expérimental",
     // Sarah AI
     "sarah.title": "Ing. Sarah",
-    "sarah.subtitle": "Votre assistante en design d'intérieur",
-    "sarah.greeting": "Bonjour! Je suis Ing. Sarah, votre experte en design d'intérieur. Comment puis-je vous aider?",
+    "sarah.subtitle": "Votre experte en design architectural et environnemental",
+    "sarah.greeting": "Bonjour! Je suis Ing. Sarah, votre experte en design d'intérieur, façades, paysagisme, piscines et design urbain. Comment puis-je vous aider?",
     "sarah.placeholder": "Demandez à Ing. Sarah sur le design...",
     "sarah.send": "Envoyer",
     "sarah.thinking": "Ing. Sarah réfléchit...",

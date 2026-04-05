@@ -81,7 +81,7 @@ const GLOBAL_STYLES: Record<string, { name: string; description: string; keyword
 async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType: string, area: number) {
   const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
 
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعماري العالمية المتخصصة.
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتخصصة.
 خبرتك تشمل جميع أنماط التصميم العالمية: الخليجي، الياباني، الهندي، الصيني، الأوروبي، وغيرها.
 تحللين الصور والمخططات المعمارية وتقدمين توصيات تصميم داخلي احترافية على أعلى مستوى عالمي.
 ردودك دائماً باللغة العربية الفصحى بأسلوب احترافي ومتقدم.`;
@@ -221,7 +221,7 @@ async function designElement(
     perspective: "المنظور الكامل"
   };
 
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي العالمية.
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية.
 تصممين عناصر التصميم الداخلي بأعلى المعايير العالمية.
 متخصصة في نمط ${styleInfo.name}: ${styleInfo.description}.
 ردودك باللغة العربية مع مواصفات دقيقة وعملية.`;
@@ -308,7 +308,7 @@ async function sarahChat(
   sessionType: string,
   projectContext?: string
 ) {
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي والمعماري العالمية المتميزة.
+  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتميزة.
 
 شخصيتك:
 - محترفة، ودودة، وذكية
@@ -697,7 +697,7 @@ export const appRouter = router({
         const existingContext = input.existingElements && Object.keys(input.existingElements).length > 0 ?
           `\nالعناصر المصممة مسبقاً (للتناسق معها):\n${JSON.stringify(input.existingElements, null, 2)}` : '';
 
-        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم الداخلي العالمية المتخصصة في الهوية البصرية المتكاملة.
+        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتخصصة في الهوية البصرية المتكاملة.
 مهمتك: تصميم ${elementNames[input.elementType]} بحيث يتناسق تماماً مع باقي عناصر المشروع.
 نمط التصميم: ${styleInfo.name} - ${styleInfo.keywords}
 الميزانية: ${budgetMap[input.budget]}
@@ -924,7 +924,7 @@ ${existingContext}
         };
         const spaceName = spaceNames[input.spaceType] || input.spaceType;
 
-        const prompt = `أنتِ م. سارة خبيرة التصميم الداخلي العالمية.
+        const prompt = `أنتِ م. سارة خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري).
 أنشئي لوحة إلهام تصميمية احترافية لـ:
 - نمط التصميم: ${styleInfo.name} (${styleInfo.description})
 - نوع الفضاء: ${spaceName}
@@ -951,7 +951,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودكِ دائماً باللغة العربية بصيغة JSON صحيحة." },
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودكِ دائماً باللغة العربية بصيغة JSON صحيحة." },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
@@ -1027,7 +1027,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const analysisResponse = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. حللي بيانات المسح AR وقدمي توصيات تصميمية بالعربية." },
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). حللي بيانات المسح AR وقدمي توصيات تصميمية بالعربية." },
             { role: "user", content: `بيانات المسح:المساحة الإجمالية: ${input.totalArea}م²\n${roomsDesc}\n\nقدمي JSON: {"summary": "ملخص", "recommendations": ["توصية 1", "توصية 2"], "suggestedStyle": "نمط مقترح"}` }
           ],
           response_format: { type: "json_object" }
@@ -1098,7 +1098,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       }))
       .mutation(async ({ ctx: _ctx, input }) => {
         const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
-        const prompt = `أنتِ م. سارة خبيرة التصميم الداخلي. احسبي تقدير تكلفة تصميم داخلي:
+        const prompt = `أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). احسبي تقدير تكلفة تصميم داخلي:
 - المساحة: ${input.area} متر مربع
 - نمط التصميم: ${styleInfo.name}
 - نوع الفضاء: ${input.spaceType}
@@ -1123,7 +1123,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك باللغة العربية." },
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك باللغة العربية." },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
@@ -1169,7 +1169,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي العالمية. تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري). تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
             { type: "text" as const, text: `حللي هذا الفضاء ${modeNote} بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
 {
@@ -1304,7 +1304,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
             { type: "text", text: `حللي هذا الفضاء بأسلوب ${styleName}.
 ${colorConstraint}
@@ -1357,7 +1357,7 @@ ${extraReqs}
       const messages: Array<{ role: "system" | "user"; content: string | Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }> }> = [
         {
           role: "system",
-          content: `أنتِ م. سارة، خبيرة التصميم الداخلي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
+          content: `أنتِ م. سارة، خبيرة التصميم المعماري والبيئي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
         },
         {
           role: "user",
@@ -2465,7 +2465,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
 
         const aiResponse = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم الداخلي. تنظمين قائمة الأثاث المقترح من متجر حقيقي. ردودك بالعربية بصيغة JSON فقط." },
+            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). تنظمين قائمة الأثاث المقترح من متجر حقيقي. ردودك بالعربية بصيغة JSON فقط." },
             { role: "user", content: `نوع الفضاء: ${input.spaceType}\nنمط التصميم: ${input.designStyle}\n\nالمنتجات المتاحة من متجر بنيان:\n${productsDesc}\n\nنظّمي هذه المنتجات وأضيفي تعليقاً لكل منتج يشرح لماذا يناسب هذا الفضاء والنمط. أعيدي JSON:\n{"recommendations": [{"productIndex": 0, "reason": "سبب التوصية", "category": "الأثاث/الإضاءة/الديكور", "priority": "أساسي/اختياري"}]}` }
           ],
           response_format: { type: "json_object" },
@@ -2505,7 +2505,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         const messages: Message[] = [
           {
             role: "system",
-            content: `أنتِ م. سارة خبيرة التصميم الداخلي. مهمتك تحليل صور الغرف واستخراج قطع الأثاث والديكور الموجودة فيها بدقة. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+            content: `أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). مهمتك تحليل صور الغرف واستخراج قطع الأثاث والديكور الموجودة فيها بدقة. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
           },
           {
             role: "user",
@@ -2905,7 +2905,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         const messages: Message[] = [
           {
             role: "system",
-            content: `أنتِ م. سارة، خبيرة التصميم الداخلي. مهمتك تحليل صور الفضاءات الداخلية التي يعجب بها العميل وتصفها بدقة حتى يمكن تقليدها لاحقاً في فضاء آخر. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+            content: `أنتِ م. سارة، خبيرة التصميم المعماري والبيئي. مهمتك تحليل صور الفضاءات التي يعجب بها العميل وتصفها بدقة حتى يمكن تقليدها لاحقاً في فضاء آخر. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
           },
           {
             role: "user",
@@ -3124,7 +3124,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         // توليد عنوان ووصف جديدين بالعربية
         const titleRes = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة مصممة داخلية. أجيبي بـ JSON فقط بدون أي نص إضافي." },
+            { role: "system", content: "أنتِ م. سارة مهندسة التصميم المعماري والبيئي. أجيبي بـ JSON فقط بدون أي نص إضافي." },
             { role: "user", content: `أعطيني عنواناً قصيراً (4-6 كلمات) ووصفاً موجزاً (جملة واحدة) لتصميم ${styleInfo.name} ${newColors && newColors.length > 0 ? `بألوان: ${newColors.join("، ")}` : ""} لـ ${spaceType || "غرفة"}. JSON: {"title": "...", "description": "..."}` },
           ],
           response_format: { type: "json_schema", json_schema: { name: "idea_title", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" } }, required: ["title", "description"], additionalProperties: false } } },
@@ -3209,7 +3209,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
           moroccan: "مغربي", luxury: "فاخر بريميوم", mediterranean: "متوسطي", industrial: "صناعي"
         };
         const styleName = styleMap[designStyle] || designStyle;
-        const systemPrompt = `أنتِ م. سارة، مصممة داخلية خبيرة في السوق الخليجي. أجيبي بـ JSON فقط بدون أي نص إضافي.`;
+        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي خبيرة في السوق الخليجي. أجيبي بـ JSON فقط بدون أي نص إضافي.`;
         const userPrompt = `بناءً على المسقط التالي:
 - الغرف: ${roomsDesc}
 - المساحة الإجمالية: ${totalArea.toFixed(1)}م²

@@ -726,7 +726,7 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...white);
-  doc.text("م. سارة | خبيرة التصميم الداخلي بالذكاء الاصطناعي", W / 2, 11, { align: "center" });
+  doc.text("م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي", W / 2, 11, { align: "center" });
 
   // صورة التصميم
   if (idea.imageUrl) {

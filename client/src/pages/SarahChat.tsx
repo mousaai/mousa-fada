@@ -229,7 +229,7 @@ export default function SarahChat() {
             </div>
             <div>
               <h1 className="font-bold">م. سارة</h1>
-              <p className="text-xs text-white/70">خبيرة التصميم الداخلي والمعماري</p>
+              <p className="text-xs text-white/70">خبيرة التصميم المعماري والبيئي</p>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           </div>
@@ -268,7 +268,7 @@ export default function SarahChat() {
                 <Bot className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">مرحباً! أنا م. سارة</h2>
-              <p className="text-muted-foreground">خبيرة التصميم الداخلي والمعماري بالذكاء الاصطناعي</p>
+              <p className="text-muted-foreground">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</p>
               <p className="text-sm text-muted-foreground mt-1">كيف يمكنني مساعدتك اليوم؟</p>
             </div>
 

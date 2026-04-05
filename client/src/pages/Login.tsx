@@ -93,7 +93,7 @@ export default function Login() {
             </div>
             <div className="text-right">
               <h1 className="text-2xl font-bold text-white">فضاء</h1>
-              <p className="text-xs" style={{ color: "#c9a96e" }}>م. سارة | خبيرة التصميم الداخلي</p>
+              <p className="text-xs" style={{ color: "#c9a96e" }}>م. سارة | خبيرة التصميم المعماري والبيئي</p>
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function Login() {
         </Card>
 
         <p className="text-center text-xs mt-4" style={{ color: "rgba(255,255,255,0.3)" }}>
-          منصة فضاء — تصميم داخلي بالذكاء الاصطناعي
+          منصة فضاء — تصميم معماري وبيئي بالذكاء الاصطناعي
         </p>
       </div>
     </div>

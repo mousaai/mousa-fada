@@ -97,7 +97,7 @@ async function generateRenderPDF(imageUrl: string, data: DesignData, style: stri
   await addHtmlPage(`
     <div style="background:#faf6f0;min-height:1123px;padding:0;">
       <div style="background:${goldHex};padding:14px 20px;text-align:center;">
-        <span style="color:#fff;font-size:14px;font-weight:bold;">م. سارة | خبيرة التصميم الداخلي بالذكاء الاصطناعي</span>
+        <span style="color:#fff;font-size:14px;font-weight:bold;">م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
       </div>
       <div style="background:${brownHex};height:3px;"></div>
       <div style="padding:20px 24px;">
