@@ -84,8 +84,8 @@ describe("استقلالية Gemini — الصور (نظام متعدد المس
 
     const calledUrl = fetchSpy.mock.calls[0]?.[0] as string;
     expect(calledUrl).toContain("generativelanguage.googleapis.com");
-    // يجب أن يستخدم Imagen 4
-    expect(calledUrl).toContain("imagen-4.0-generate-001");
+    // يجب أن يستخدم Imagen 4 (fast أو standard)
+    expect(calledUrl).toContain("imagen-4.0");
     expect(result.url).toBeDefined();
 
     fetchSpy.mockRestore();

@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, mousaProcedure, router } from "./_core/trpc";
 import { checkAndDeductCredits } from "./creditHelper";
-import { invokeLLM, type Message, type ImageContent, type TextContent } from "./_core/llm";
+import { invokeLLM, type Message, type ImageContent, type TextContent, type FileContent } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
 import { analyzeFloorPlanAdvanced, generateRoomDesignIdea, analyzeAndDesignFloorPlan } from "./floorPlanEngine";
 import { storagePut } from "./storage";
@@ -3612,15 +3612,31 @@ PHOTOGRAPHY QUALITY:
     .mutation(async ({ input }) => {
       const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.`;
 
+      // دعم PDF: إذا كان الملف PDF، ارفعه لـ S3 ثم أرسله كـ file_url
+      const isPdf = input.imageUrl.startsWith("data:application/pdf") || input.imageUrl.toLowerCase().includes(".pdf");
+      let contentPart: ImageContent | FileContent;
+      if (isPdf) {
+        const base64Data = input.imageUrl.replace(/^data:application\/pdf;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const key = `plans/pdf-${nanoid()}.pdf`;
+        const { url: pdfUrl } = await storagePut(key, buffer, "application/pdf");
+        contentPart = {
+          type: "file_url" as const,
+          file_url: { url: pdfUrl, mime_type: "application/pdf" as const },
+        } as FileContent;
+      } else {
+        contentPart = {
+          type: "image_url" as const,
+          image_url: { url: input.imageUrl, detail: "high" as const },
+        } as ImageContent;
+      }
+
       const messages: Message[] = [
         { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
-            {
-              type: "image_url" as const,
-              image_url: { url: input.imageUrl, detail: "high" as const },
-            } as ImageContent,
+            contentPart,
             {
               type: "text" as const,
               text: `أنتِ مهندسة معمارية متخصصة بقراءة المخططات. حلّلي هذا المخطط المعماري بدقة عالية جداً.
