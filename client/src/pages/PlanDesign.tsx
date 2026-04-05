@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, lazy, Suspense } from "react";
+const ThreeJSViewer = lazy(() => import("@/components/ThreeJSViewer"));
 import { useLocation } from "wouter";
 import {
   ChevronLeft, Upload, FileText, Sparkles, CheckCircle, AlertCircle,
@@ -216,7 +217,8 @@ export default function PlanDesign() {
   const [roomDesigns, setRoomDesigns] = useState<Record<string, RoomDesignResult>>({});
   const [designingRoom, setDesigningRoom] = useState<string | null>(null);
   const [isAllDone, setIsAllDone] = useState(false);
-  const [activeTab, setActiveTab] = useState<"rooms" | "recommendations">("rooms");
+  const [activeTab, setActiveTab] = useState<"rooms" | "recommendations" | "3d">("rooms");
+  const [show3D, setShow3D] = useState(false);
 
   const queueRef = useRef<RoomResult[]>([]);
   const utils = trpc.useUtils();
@@ -633,10 +635,16 @@ export default function PlanDesign() {
                 الغرف ({analysisResult.rooms.length})
               </button>
               <button
+                onClick={() => setActiveTab("3d")}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === "3d" ? "bg-[#C9A84C] text-white" : "bg-white border border-[#e8d9c0] text-[#8B6914]"}`}
+              >
+                🏠 3D
+              </button>
+              <button
                 onClick={() => setActiveTab("recommendations")}
                 className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === "recommendations" ? "bg-[#C9A84C] text-white" : "bg-white border border-[#e8d9c0] text-[#8B6914]"}`}
               >
-                توصيات م. سارة
+                توصيات
               </button>
             </div>
 
@@ -670,6 +678,26 @@ export default function PlanDesign() {
             )}
 
             {/* التوصيات */}
+            {/* عرض 3D */}
+            {activeTab === "3d" && (
+              <div className="rounded-2xl overflow-hidden">
+                <Suspense fallback={
+                  <div className="h-64 bg-[#F5F0E8] rounded-2xl flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-500">جاري تحميل العارض ثلاثي الأبعاد...</p>
+                    </div>
+                  </div>
+                }>
+                  <ThreeJSViewer
+                    rooms={analysisResult.rooms.map(r => ({ ...r, floor: r.floor || "ground" }))}
+                    totalArea={analysisResult.totalArea}
+                    floors={analysisResult.floors}
+                  />
+                </Suspense>
+                <p className="text-xs text-center text-[#8B6914]/60 mt-2">اسحب للتدوير • عجلة الماوس للتكبير</p>
+              </div>
+            )}
             {activeTab === "recommendations" && (
               <div className="space-y-3">
                 {(analysisResult.recommendations || []).map((rec: string, i: number) => (

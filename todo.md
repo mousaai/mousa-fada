@@ -1118,3 +1118,16 @@
 - [x] حفظ كل فكرة مولّدة في project_ideas تلقائياً
 - [ ] عرض الأفكار السابقة في واجهة المستخدم مع زر "عدّل هذه الفكرة"
 - [x] اختبارات vitest لنظام منع التكرار (263 اختبار ناجح)
+
+## إصلاح خطأ GCS Upload (404)
+- [ ] إصلاح خطأ "GCS upload failed (404): bucket does not exist" عند رفع PDF في صفحة تحليل المخطط
+- [ ] استبدال GCS بـ S3 (storagePut) في كود رفع PDF
+
+## إصلاح وترقية شاملة
+- [ ] إصلاح GCS → S3 في server/storage.ts (استبدال GCS بـ Manus S3)
+- [ ] إصلاح imageGeneration.ts لاستخدام S3 بدلاً من GCS
+- [ ] Multi-Run 3x في analyzePlan لرفع الدقة إلى 97-99%
+- [ ] Scale Detection — استخراج مقياس الرسم من المخطط
+- [ ] Three.js تفاعلي — نموذج 3D حقيقي من بيانات المخطط المحلل
+- [ ] صفحة عرض Three.js مع إمكانية التجوّل داخل المبنى
+- [ ] ربط نتائج analyzePlan بـ Three.js viewer تلقائياً

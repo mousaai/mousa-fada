@@ -7,9 +7,10 @@
  *   3. Gemini 2.5 Flash Image (15-25 ثانية) — يدعم التعديل
  *   4. Gemini 3 Pro Image (20-35 ثانية) — fallback
  *
- * التخزين: Google Cloud Storage (bucket عام) — بدون Manus
+ * التخزين: Manus Forge API المدمج (storagePut) — بدون GCS
  */
 import { ENV } from "./env";
+import { storagePut } from "../storage";
 
 export type GenerateImageOptions = {
   prompt: string;
@@ -26,7 +27,7 @@ export type GenerateImageResponse = {
   modelUsed?: string;
 };
 
-// ─── حفظ الصورة في Google Cloud Storage (bucket عام) ─────────────────────────
+// ─── حفظ الصورة في Manus Forge Storage ──────────────────────────────────────
 async function saveImageToStorage(
   base64Data: string,
   mimeType: string
@@ -35,27 +36,13 @@ async function saveImageToStorage(
   const fileName = `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
   const buffer = Buffer.from(base64Data, "base64");
 
-  // استخدام Google Cloud Storage JSON API مباشرة
-  const bucketName = process.env.GCS_BUCKET || "sarah-design-images";
-  const projectId = process.env.GCS_PROJECT_ID || "gen-lang-client-0515782995";
-  const apiKey = ENV.googleAiApiKey;
-
   try {
-    // رفع الملف إلى GCS باستخدام API Key
-    const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(fileName)}&key=${apiKey}`;
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "POST",
-      headers: { "Content-Type": mimeType },
-      body: buffer,
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (uploadResponse.ok) {
-      const data = await uploadResponse.json() as { name: string };
-      return `https://storage.googleapis.com/${bucketName}/${encodeURIComponent(data.name || fileName)}`;
+    const { url } = await storagePut(fileName, buffer, mimeType);
+    if (url && !url.startsWith("data:")) {
+      return url;
     }
-  } catch {
-    // fallback: data URL مؤقت
+  } catch (err) {
+    console.warn("[saveImageToStorage] storagePut failed, using data URL:", (err as Error).message?.substring(0, 80));
   }
 
   // Fallback: إرجاع data URL مؤقت (يعمل في المتصفح مباشرة)

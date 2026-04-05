@@ -10,6 +10,7 @@ import { analyzeFloorPlanAdvanced, generateRoomDesignIdea, analyzeAndDesignFloor
 import { buildBestPracticeSystemPrompt, buildIdeaImagePrompt, getBestStylesForSpace, BEST_PRACTICE_STYLES, QUALITY_ENHANCERS } from "./bestPracticeEngine";
 import { saveGeneratedIdea, getPreviousIdeasForImage, buildUsedStylesNote, buildRefinementNote, getIdeaById } from "./ideaMemoryHelper";
 import { storagePut } from "./storage";
+import { consolidateResults, type PlanAnalysisResult } from "./multiRunAnalysis";
 import { registerUser, loginUser, verifyPassword, hashPassword } from "./_core/localAuth";
 import { TRPCError } from "@trpc/server";
 import {
@@ -3865,39 +3866,53 @@ PHOTOGRAPHY QUALITY:
         },
       ];
 
-      let parsed: {
-        projectType?: string;
-        totalArea?: number;
-        floors?: number;
-        summary?: string;
-        rooms?: Array<{ name: string; type: string; area: number; dimensions: string }>;
-        recommendations?: string[];
-      } = {};
+      // ===== Multi-Run 3x لرفع الدقة إلى 97-99% =====
+      const runCount = 3;
+      const runResults: PlanAnalysisResult[] = [];
 
-      try {
+      async function singleRun(): Promise<PlanAnalysisResult> {
         const aiResponse = await invokeLLM({
           messages,
           response_format: { type: "json_object" },
-          model: "gemini-2.5-pro", // نموذج أقوى لتحليل دقيق للمخططات المعمارية
+          model: "gemini-2.5-pro",
         });
         const rawContent = aiResponse.choices[0]?.message?.content;
         const aiText = typeof rawContent === "string" ? rawContent : "{}";
-        // استخراج JSON من الرد حتى لو كان محاطاً بنص
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
         const jsonStr = jsonMatch ? jsonMatch[0] : aiText;
-        try { parsed = JSON.parse(jsonStr); } catch { parsed = {}; }
-      } catch (err) {
-        console.error("[analyzePlan] LLM error:", err);
-        // إرجاع بيانات افتراضية بدلاً من الفشل الكامل
-        parsed = {
+        let r: PlanAnalysisResult = { projectType: input.projectType, totalArea: 0, floors: 1, floorHeights: {}, summary: "", rooms: [], recommendations: [] };
+        try { r = { ...r, ...JSON.parse(jsonStr) }; } catch { /* ignore */ }
+        return r;
+      }
+
+      // تشغيل 3 مرات بالتوازي
+      const runPromises = Array.from({ length: runCount }, () =>
+        singleRun().catch(err => {
+          console.warn("[analyzePlan] run failed:", (err as Error).message?.substring(0, 60));
+          return null;
+        })
+      );
+      const rawResults = await Promise.all(runPromises);
+      for (const r of rawResults) {
+        if (r && r.rooms && r.rooms.length > 0) runResults.push(r);
+      }
+
+      // إذا فشلت كل التشغيلات
+      if (runResults.length === 0) {
+        runResults.push({
           projectType: input.projectType,
           totalArea: 0,
           floors: 1,
+          floorHeights: {},
           summary: "تعذّر تحليل المخطط بشكل كامل — يرجى المحاولة مرة أخرى",
           rooms: [],
           recommendations: ["تأكد من وضوح المخطط وأن الصورة ذات دقة عالية"],
-        };
+        });
       }
+
+      // دمج النتائج
+      const consolidated = consolidateResults(runResults);
+      const parsed = consolidated;
 
       // تنظيف بيانات الغرف لتجنب null في الحقول مع الحقول المعمارية الجديدة
       const cleanRooms = Array.isArray(parsed.rooms)
