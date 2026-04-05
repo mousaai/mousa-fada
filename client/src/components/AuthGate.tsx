@@ -15,7 +15,7 @@ const GUEST_USER: MousaUser = {
   openId: "free",
   name: "مستخدم مجاني",
   email: "",
-  creditBalance: FREE_CREDITS, // 200 نقطة مجانية لحين معالجة الدخول
+  creditBalance: FREE_CREDITS,
   platform: "fada",
   isFreeMode: true,
 };
@@ -31,37 +31,41 @@ export function useAuth(): AuthContextType {
   return useContext(AuthContext);
 }
 
+/**
+ * AuthGate — بوابة المصادقة
+ * 
+ * المبدأ: المنصة مفتوحة للجميع بدون قفل أو redirect إجباري.
+ * - الزوار يحصلون على 200 نقطة مجانية تلقائياً
+ * - المستخدمون من mousa.ai يُربطون تلقائياً عبر ?token= في URL
+ * - لا توجد شاشة قفل أو إجبار على تسجيل الدخول
+ */
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading, deductCredits, refreshBalance, logout } = useMousaAuth();
 
-  // شاشة تحميل قصيرة فقط
+  // شاشة تحميل بسيطة وسريعة — بدون أي redirect أو قفل
   if (loading) {
     return (
       <div style={{
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         minHeight: "100vh",
         background: "#f5f0e8",
-        fontFamily: "system-ui, sans-serif",
-        direction: "rtl",
       }}>
         <div style={{
-          width: 56,
-          height: 56,
+          width: 40,
+          height: 40,
           borderRadius: "50%",
-          border: "4px solid #c9a96e",
+          border: "3px solid #c9a96e",
           borderTopColor: "transparent",
-          animation: "spin 0.8s linear infinite",
-          marginBottom: 20,
+          animation: "spin 0.7s linear infinite",
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ color: "#8a7560", fontSize: 16, margin: 0 }}>جاري التحميل...</p>
       </div>
     );
   }
 
+  // دائماً يعرض المحتوى — إما بمستخدم حقيقي أو مستخدم مجاني
   const activeUser = user ?? GUEST_USER;
 
   return (

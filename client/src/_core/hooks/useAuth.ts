@@ -64,23 +64,9 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.isPending,
   ]);
 
-  useEffect(() => {
-    if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
-    if (state.user) return;
-    if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
-    if (window.location.pathname === "/login") return;
-
-    // توجيه لـ mousa.ai لتسجيل الدخول (يعود تلقائياً بعد الدخول)
-    window.location.href = getMousaLoginUrl(window.location.pathname);
-  }, [
-    redirectOnUnauthenticated,
-    redirectPath,
-    logoutMutation.isPending,
-    meQuery.isLoading,
-    state.user,
-  ]);
+  // المنصة مفتوحة للجميع — لا redirect إجباري
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  useEffect(() => { /* redirect disabled */ }, [redirectOnUnauthenticated, redirectPath]);
 
   return {
     ...state,
