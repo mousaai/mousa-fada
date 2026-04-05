@@ -1131,3 +1131,12 @@
 - [ ] Three.js تفاعلي — نموذج 3D حقيقي من بيانات المخطط المحلل
 - [ ] صفحة عرض Three.js مع إمكانية التجوّل داخل المبنى
 - [ ] ربط نتائج analyzePlan بـ Three.js viewer تلقائياً
+
+## الإصدار 54.0 — تكامل Supabase Storage (استقلالية كاملة)
+- [x] إنشاء bucket "sarah-files" في Supabase Storage (Public)
+- [x] إضافة SUPABASE_URL و SUPABASE_ANON_KEY كـ environment secrets
+- [x] إعادة كتابة storage.ts باستخدام @supabase/supabase-js بدلاً من Manus Forge
+- [x] تثبيت مكتبة @supabase/supabase-js
+- [x] كتابة 6 اختبارات vitest لتغطية storagePut/storageGet + fallback
+- [x] 269 اختبار ناجح (جميع الاختبارات)
+- [x] المنصة الآن مستقلة 100%: Gemini API ✅ + Imagen 4 ✅ + Supabase Storage ✅
