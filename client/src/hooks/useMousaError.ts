@@ -51,10 +51,10 @@ export function useMousaError() {
 
     if (mousaError.code === "MOUSA_REQUIRED") {
       toast.info("ميزة حصرية لمستخدمي Mousa.ai", {
-        description: "سجّل في mousa.ai للوصول لهذه الميزة",
+        description: "هذه الميزة غير متاحة حالياً",
         action: {
-          label: "mousa.ai",
-          onClick: () => window.open(mousaError.upgradeUrl || "https://www.mousa.ai", "_blank"),
+          label: "إغلاق",
+          onClick: () => {},
         },
         duration: 8000,
       });
@@ -71,7 +71,7 @@ export function useMousaError() {
         description,
         action: {
           label: "شحن الرصيد",
-          onClick: () => window.open(mousaError.upgradeUrl || "https://www.mousa.ai", "_blank"),
+          onClick: () => {},
         },
         duration: 10000,
       });
@@ -99,8 +99,8 @@ export function handleMousaErrorStatic(error: { message?: string; data?: { code?
   if (mousaError.code === "MOUSA_REQUIRED") {
     toast.info("ميزة حصرية لمستخدمي Mousa.ai", {
       action: {
-        label: "mousa.ai",
-        onClick: () => window.open("https://www.mousa.ai", "_blank"),
+        label: "إغلاق",
+        onClick: () => {},
       },
       duration: 8000,
     });
@@ -117,7 +117,7 @@ export function handleMousaErrorStatic(error: { message?: string; data?: { code?
       description,
       action: {
         label: "شحن الرصيد",
-        onClick: () => window.open(upgradeUrl || "https://www.mousa.ai", "_blank"),
+        onClick: () => {},
       },
       duration: 10000,
     });

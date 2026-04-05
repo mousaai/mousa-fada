@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { Coins, LayoutDashboard, LogIn, LogOut, PanelLeft, Users } from "lucide-react";
+import { Coins, LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -134,9 +134,7 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
-  const handleLogin = () => {
-    window.location.href = `https://www.mousa.ai/api/platform/login-redirect?platform=fada&return_url=${encodeURIComponent(window.location.href)}`;
-  };
+
 
   return (
     <>
@@ -260,23 +258,7 @@ function DashboardLayoutContent({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            ) : (
-              /* ===== زائر غير مسجّل ===== */
-              <div className="flex flex-col gap-2 group-data-[collapsible=icon]:items-center">
-                <Button
-                  onClick={handleLogin}
-                  size="sm"
-                  variant="outline"
-                  className="w-full group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:p-0 gap-2 text-xs"
-                >
-                  <LogIn className="h-3.5 w-3.5 shrink-0" />
-                  <span className="group-data-[collapsible=icon]:hidden">تسجيل الدخول</span>
-                </Button>
-                <p className="text-[10px] text-muted-foreground text-center group-data-[collapsible=icon]:hidden leading-tight">
-                  سجّل الدخول عبر mousa.ai لحفظ مشاريعك وخصم الكريدت
-                </p>
-              </div>
-            )}
+            ) : null}
           </SidebarFooter>
         </Sidebar>
         <div
@@ -302,18 +284,7 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
-            {/* زر تسجيل الدخول في الموبايل للزوار */}
-            {!user && (
-              <Button
-                onClick={handleLogin}
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-xs h-8"
-              >
-                <LogIn className="h-3.5 w-3.5" />
-                دخول
-              </Button>
-            )}
+
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>
