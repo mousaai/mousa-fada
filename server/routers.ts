@@ -11,7 +11,7 @@ import { buildBestPracticeSystemPrompt, buildIdeaImagePrompt, getBestStylesForSp
 import { saveGeneratedIdea, getPreviousIdeasForImage, buildUsedStylesNote, buildRefinementNote, getIdeaById } from "./ideaMemoryHelper";
 import { storagePut } from "./storage";
 import { consolidateResults, type PlanAnalysisResult } from "./multiRunAnalysis";
-import { pdfToImages } from "./pdfToImages";
+import { pdfToImages, uploadPdfToStorage } from "./pdfToImages";
 import { registerUser, loginUser, verifyPassword, hashPassword } from "./_core/localAuth";
 import { TRPCError } from "@trpc/server";
 import {
@@ -3760,28 +3760,26 @@ PHOTOGRAPHY QUALITY:
 - إذا وجدتِ GROUND + FIRST + SECOND = floors: 3
 - لا تعتمدي على صفحة واحدة فقط — افحصي الكل`;
 
-      // دعم PDF: تحويل PDF إلى صور PNG ثم إرسالها كـ image_url
-      // (Gemini يرفض data: URLs في file_url — يجب رفع الصور أولاً)
-      const isPdf = input.imageUrl.startsWith("data:application/pdf") || input.imageUrl.toLowerCase().includes(".pdf");
+      // دعم PDF: رفع PDF على Supabase ثم إرساله كـ file_url لـ Gemini
+      // Gemini 2.5 يدعم PDF مباشرة عبر file_url (يجب أن يكون https:// URL)
+      const isPdf = input.imageUrl.startsWith("data:application/pdf") || input.imageUrl.startsWith("data:application/octet-stream");
       
-      let pdfImageParts: ImageContent[] = [];
+      type FileContent = { type: "file_url"; file_url: { url: string; mime_type: "application/pdf" | "audio/mpeg" | "audio/wav" | "audio/mp4" | "video/mp4" } };
+      let pdfFilePart: FileContent | null = null;
       let singleImagePart: ImageContent | null = null;
       
       if (isPdf) {
-        const base64Data = input.imageUrl.replace(/^data:application\/pdf;base64,/, "");
+        const base64Data = input.imageUrl.replace(/^data:[^;]+;base64,/, "");
         if (!base64Data || base64Data.length < 100) {
           throw new Error("الملف المرفوع غير صالح أو فارغ. يرجى رفع ملف PDF صحيح.");
         }
-        // تحويل PDF إلى صور PNG ورفعها على Supabase
-        const pages = await pdfToImages(base64Data, 8);
-        if (pages.length === 0) {
-          throw new Error("لم نتمكن من قراءة صفحات PDF. يرجى التأكد من أن الملف صحيح.");
-        }
-        pdfImageParts = pages.map(p => ({
-          type: "image_url" as const,
-          image_url: { url: p.imageUrl, detail: "high" as const },
-        }));
-        console.log(`[analyzePlan] تحويل PDF: ${pages.length} صفحة → صور PNG`);
+        // رفع PDF على Supabase والحصول على URL حقيقي
+        const { pdfUrl } = await uploadPdfToStorage(base64Data);
+        pdfFilePart = {
+          type: "file_url" as const,
+          file_url: { url: pdfUrl, mime_type: "application/pdf" as const },
+        };
+        console.log(`[analyzePlan] رفع PDF على Supabase: ${pdfUrl}`);
       } else {
         singleImagePart = {
           type: "image_url" as const,
@@ -3789,8 +3787,8 @@ PHOTOGRAPHY QUALITY:
         };
       }
 
-      const userContentParts: (ImageContent | TextContent)[] = [
-        ...(isPdf ? pdfImageParts : (singleImagePart ? [singleImagePart] : [])),
+      const userContentParts: (ImageContent | TextContent | FileContent)[] = [
+        ...(isPdf && pdfFilePart ? [pdfFilePart] : (singleImagePart ? [singleImagePart] : [])),
         {
           type: "text" as const,
           text: `أنتِ مهندسة معمارية متخصصة بقراءة المخططات. حلّلي هذا المخطط المعماري بدقة عالية جداً.
@@ -4118,6 +4116,67 @@ Style: ${styleAr}. Features:
 Photorealistic, luxury residential garage.`,
       };
 
+      // ===== ULTRA-LUXURY STYLE SYSTEM =====
+      const luxuryStyleMap: Record<string, { en: string; palette: string; materials: string; ceiling: string; flooring: string; walls: string; furniture: string; lighting: string; accents: string }> = {
+        modern: {
+          en: "ultra-modern luxury contemporary",
+          palette: "warm white, greige, champagne gold, charcoal, deep navy accents",
+          materials: "Calacatta marble, brushed brass hardware, smoked glass, walnut veneer, polished chrome",
+          ceiling: "coffered ceiling with integrated LED cove lighting, floating gypsum panels, concealed lighting channels",
+          flooring: "large-format Calacatta marble slabs 120x120cm with book-matched veining, polished to mirror finish",
+          walls: "full-height fluted oak panels, Venetian plaster accent wall, integrated backlit niches",
+          furniture: "bespoke Italian furniture, curved velvet sofas, travertine coffee tables, statement sculptural pieces",
+          lighting: "Murano glass chandeliers, architectural recessed spotlights, LED strip cove lighting, floor lamps",
+          accents: "sculptural art pieces, curated books, fresh orchids, geometric brass objects, indoor plants",
+        },
+        gulf: {
+          en: "Arabian Gulf ultra-luxury palace interior",
+          palette: "ivory, warm gold, deep burgundy, royal blue, antique brass",
+          materials: "Onyx marble, hand-carved plasterwork (juss), mashrabiya screens, gold leaf, mother-of-pearl inlays",
+          ceiling: "hand-painted muqarnas ceiling with gold leaf, ornate plaster medallions, crystal chandeliers",
+          flooring: "Arabescato marble with custom geometric inlay pattern, hand-cut mosaic borders",
+          walls: "hand-carved plaster panels with Islamic geometric patterns, silk fabric wall coverings, gold-framed mirrors",
+          furniture: "custom majlis seating with hand-embroidered silk cushions, carved wood tables, brass trays",
+          lighting: "massive Swarovski crystal chandeliers, brass lantern pendants, candlelight sconces",
+          accents: "Arabic calligraphy art, oud burners, date palm arrangements, antique brass vessels, Persian rugs",
+        },
+        classic: {
+          en: "European grand classical luxury interior",
+          palette: "ivory, gold, deep green, burgundy, cream, antique white",
+          materials: "Carrara marble, gilded moldings, silk brocade, mahogany, crystal, hand-painted porcelain",
+          ceiling: "barrel-vaulted ceiling with hand-painted frescoes, gilded plaster cornices, crystal chandeliers",
+          flooring: "Versailles pattern parquet in walnut and oak, bordered with marble inlay",
+          walls: "hand-painted silk wallpaper, gilded wainscoting, oil painting gallery, ornate plaster frames",
+          furniture: "Louis XVI carved armchairs, chesterfield sofas, antique console tables, gilded mirrors",
+          lighting: "Baccarat crystal chandeliers, wall sconces with silk shades, candelabras",
+          accents: "classical sculptures, fresh flowers in crystal vases, leather-bound books, antique clocks",
+        },
+        minimal: {
+          en: "Japanese wabi-sabi minimalist ultra-luxury",
+          palette: "warm white, sand, ash grey, natural linen, matte black accents",
+          materials: "honed travertine, raw concrete, smoked oak, washi paper, handmade ceramics, natural stone",
+          ceiling: "exposed structural timber beams, white-washed plaster, minimal recessed lighting",
+          flooring: "wide-plank smoked oak herringbone, honed travertine tiles, natural fiber rugs",
+          walls: "raw plaster texture, vertical slatted oak panels, single statement artwork",
+          furniture: "Japanese-inspired low seating, organic shaped tables, handcrafted ceramics, linen upholstery",
+          lighting: "Isamu Noguchi-inspired paper pendants, warm Edison bulbs, floor lamps with linen shades",
+          accents: "single branch ikebana, wabi-sabi pottery, smooth river stones, moss arrangements",
+        },
+        luxury: {
+          en: "Quiet Luxury billionaire residence interior",
+          palette: "warm taupe, cashmere, deep forest green, cognac leather, aged brass",
+          materials: "Verde Guatemala marble, aged brass fixtures, cashmere upholstery, hand-stitched leather, shagreen",
+          ceiling: "double-height ceiling with exposed dark timber beams, plaster cove with warm LED wash",
+          flooring: "chevron pattern aged oak parquet, hand-knotted silk Persian rugs",
+          walls: "full-height aged brass shelving, hand-stitched leather panels, curated art collection",
+          furniture: "Ralph Lauren-style deep button sofas, club chairs in cognac leather, custom millwork",
+          lighting: "antiqued brass chandeliers, library reading lamps, fireplace as focal point",
+          accents: "first-edition books, equestrian art, globe, whiskey decanters, fresh eucalyptus",
+        },
+      };
+
+      const luxStyle = luxuryStyleMap[input.designStyle] || luxuryStyleMap.modern;
+
       // بناء وصف معماري دقيق من التفاصيل المستخرجة
       const ceilingH = input.ceilingHeight || 3;
       const dims = input.roomDimensions || "غير محدد";
@@ -4158,31 +4217,47 @@ Style: ${styleAr} | Project type: ${input.projectType}`;
 
       // بناء prompt مخصص لكل نوع غرفة مع السياق المعماري
       const specificPrompt = roomSpecificPrompts[input.roomType];
-      const basePrompt = specificPrompt || `Luxury ${roomTypeAr} interior design.
-Create a photorealistic interior design showing:
-- Premium flooring (marble/herringbone parquet/porcelain tiles based on room type)
-- Layered ceiling with gypsum molding and hidden LED cove lighting at ${ceilingH}m height
-- Walls with luxury finishes (paint/stone cladding/wallpaper/wood panels)
-- Appropriate high-end furniture and decor for ${roomTypeAr}
-- 3-layer lighting: ambient + accent + decorative chandeliers/pendants
-- ${styleAr === "خليجي فاخر" ? "Gulf Arabic design elements: mashrabiya patterns, geometric tiles, gold accents" : ""}`;
+
+      // ULTRA-LUXURY BASE PROMPT
+      const basePrompt = specificPrompt || `
+ULTRA-LUXURY ${roomTypeAr.toUpperCase()} INTERIOR — ${luxStyle.en.toUpperCase()} STYLE
+
+FLOORING: ${luxStyle.flooring}
+WALLS: ${luxStyle.walls}
+CEILING (${ceilingH}m HIGH): ${luxStyle.ceiling}
+FURNITURE: ${luxStyle.furniture}
+LIGHTING: ${luxStyle.lighting}
+MATERIALS: ${luxStyle.materials}
+COLOR PALETTE: ${luxStyle.palette}
+ACCENTS & DECOR: ${luxStyle.accents}
+
+ROOM SPECIFICATIONS:
+- Exact dimensions: ${dims} | Total area: ${area}m² | Ceiling height: ${ceilingH}m
+- The soaring ${ceilingH}m ceiling MUST be dramatically visible in the composition
+- Large arched or floor-to-ceiling windows flooding the space with natural light
+- Layered lighting: massive statement chandelier + recessed cove LED + accent spotlights
+- Every surface must show extraordinary craftsmanship and material quality
+- The space must feel like a 7-star hotel suite or billionaire private residence
+- Architectural details: custom millwork, hand-crafted elements, bespoke fixtures
+`;
 
       // دمج السياق المعماري مع الـ prompt الأساسي
       const prompt = `${architecturalContext}
 
 ${basePrompt}
 
-PHOTOGRAPHY REQUIREMENTS (CRITICAL):
-- Ultra-photorealistic architectural visualization, 8K resolution quality
-- Professional interior photography style: wide-angle lens, perfect exposure
-- Correct ceiling height of ${ceilingH}m MUST be visible in the perspective
-- Window positions and door locations MUST match the architectural specs exactly
-- Accurate room proportions and spatial depth
-- Natural + artificial 3-layer lighting: ambient (recessed LED) + accent (spotlights) + decorative (chandelier/pendant)
-- No text overlays, no watermarks, no people, no clutter
-- Photorealistic materials: reflective marble, wood grain texture, fabric softness
-- Cinematic composition with slight depth of field
-- Professional real estate photography quality`;
+=== PHOTOGRAPHY & RENDERING REQUIREMENTS (NON-NEGOTIABLE) ===
+SHOT TYPE: Wide-angle architectural interior photography, 16-24mm lens equivalent
+QUALITY: Hyper-photorealistic CGI render, indistinguishable from real photography, 8K resolution
+LIGHTING MOOD: Golden hour natural light streaming through large windows + warm artificial accent lighting
+DEPTH: Strong sense of spatial depth, foreground-midground-background layers clearly visible
+CEILING: The full ${ceilingH}m ceiling height MUST dominate the composition — show the grandeur
+MATERIALS: Every material must show micro-texture detail — marble veining, wood grain, fabric weave
+ATMOSPHERE: The image must evoke awe, luxury, and aspirational living
+STYLE REFERENCE: Architectural Digest cover shoot, Dezeen award-winning interior, ELLE Decor feature
+NO: people, text, watermarks, clutter, cheap materials, low ceilings, dark corners
+COMPOSITION: Rule of thirds, leading lines toward focal point, perfect symmetry or intentional asymmetry
+FINAL RESULT: A jaw-dropping interior that makes viewers say "I want to live here"`;
 
       const imageResult = await generateImage({ prompt });
 

@@ -212,6 +212,7 @@ export default function PlanDesign() {
   const [fileName, setFileName] = useState<string>("");
   const [projectType, setProjectType] = useState("residential");
   const [designStyle, setDesignStyle] = useState("modern");
+  const [globalCeilingHeight, setGlobalCeilingHeight] = useState<number>(4.5);
   const [analysisResult, setAnalysisResult] = useState<PlanAnalysisResult | null>(null);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [roomDesigns, setRoomDesigns] = useState<Record<string, RoomDesignResult>>({});
@@ -244,7 +245,7 @@ export default function PlanDesign() {
       roomDimensions: room.dimensions || "غير محدد",
       designStyle: style,
       projectType: pType,
-      ceilingHeight: room.ceilingHeight ?? 3,
+      ceilingHeight: globalCeilingHeight,
       wallsDescription: room.wallsDescription ?? "",
       doors: room.doors ?? [],
       windows: room.windows ?? [],
@@ -330,7 +331,7 @@ export default function PlanDesign() {
       roomDimensions: room.dimensions || "غير محدد",
       designStyle,
       projectType,
-      ceilingHeight: room.ceilingHeight ?? 3,
+      ceilingHeight: globalCeilingHeight,
       wallsDescription: room.wallsDescription ?? "",
       doors: room.doors ?? [],
       windows: room.windows ?? [],
@@ -531,6 +532,31 @@ export default function PlanDesign() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ارتفاع السقف */}
+            <div>
+              <p className="text-sm font-bold text-[#5C3D11] mb-1">ارتفاع السقف</p>
+              <p className="text-xs text-[#8B6914]/60 mb-3">يؤثر على نسب الفراغ وتصميم الأسقف — يُنصح بـ 4-5م للفلل الراقية</p>
+              <div className="flex gap-2 flex-wrap">
+                {[3, 3.5, 4, 4.5, 5, 6, 7].map(h => (
+                  <button
+                    key={h}
+                    onClick={() => setGlobalCeilingHeight(h)}
+                    className={`px-3 py-2 rounded-xl text-sm font-bold transition-all border-2 ${
+                      globalCeilingHeight === h
+                        ? "border-[#C9A84C] bg-[#C9A84C]/10 text-[#8B6914] shadow-sm"
+                        : "border-[#e8d9c0] bg-white text-[#8B6914]/70"
+                    }`}
+                  >
+                    {h}م
+                    {(h === 4 || h === 4.5 || h === 5) && (
+                      <span className="mr-1 text-[9px] text-[#C9A84C]">✦</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-[#C9A84C] mt-1.5">✦ مُوصى به للفلل الفاخرة</p>
             </div>
 
             <div className="bg-green-50 rounded-2xl p-3 border border-green-200 flex items-center gap-2">
