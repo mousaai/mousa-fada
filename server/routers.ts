@@ -4241,22 +4241,78 @@ ROOM SPECIFICATIONS:
 - Architectural details: custom millwork, hand-crafted elements, bespoke fixtures
 `;
 
+      // بناء وصف دقيق لموقع الأبواب والنوافذ
+      const doorPositionDesc = (input.doors || []).map((d, i) => {
+        const wallPos: Record<string, string> = { north: "back wall", south: "front wall", east: "right wall", west: "left wall" };
+        const pos = wallPos[d.wall || ""] || `${d.wall || ""} wall`;
+        const dtype = d.type === "sliding_glass" ? "floor-to-ceiling sliding glass door" : `solid door`;
+        return `DOOR ${i+1}: ${dtype} MUST appear on the ${pos}, ${d.width || 0.9}m wide, ${d.openDirection === "inward" ? "opening inward" : "opening outward"}`;
+      }).join("\n");
+
+      const windowPositionDesc = (input.windows || []).map((w, i) => {
+        const wallPos: Record<string, string> = { north: "back wall", south: "front wall", east: "right wall", west: "left wall" };
+        const pos = wallPos[w.wall || ""] || `${w.wall || ""} wall`;
+        const wtype = (w.type === "panoramic" || w.type === "floor_to_ceiling") 
+          ? `floor-to-ceiling panoramic window (${w.width || 2}m wide x ${ceilingH - 0.3}m tall, from floor level to near ceiling)`
+          : `window (${w.width || 1.2}m wide x ${w.height || 1.5}m tall, sill at 0.9m height)`;
+        return `WINDOW ${i+1}: ${wtype} MUST appear on the ${pos}`;
+      }).join("\n");
+
+      // حساب نسبة الأبعاد لتحديد شكل الغرفة
+      let roomShape = "rectangular";
+      let aspectNote = "";
+      const dimsMatch = (input.roomDimensions || "").match(/(\d+\.?\d*)\s*[x×]\s*(\d+\.?\d*)/);
+      if (dimsMatch) {
+        const w = parseFloat(dimsMatch[1]);
+        const l = parseFloat(dimsMatch[2]);
+        const ratio = Math.max(w,l) / Math.min(w,l);
+        if (ratio > 2) {
+          roomShape = "very elongated rectangular";
+          aspectNote = `The room is VERY LONG and NARROW (${Math.max(w,l)}m long × ${Math.min(w,l)}m wide). The camera must show the full length of the room with strong perspective lines leading to the far end wall.`;
+        } else if (ratio > 1.5) {
+          roomShape = "elongated rectangular";
+          aspectNote = `The room is LONGER than it is wide (${Math.max(w,l)}m × ${Math.min(w,l)}m). Show the length with perspective depth.`;
+        } else if (ratio < 1.1) {
+          roomShape = "nearly square";
+          aspectNote = `The room is nearly SQUARE (${w}m × ${l}m). Use a corner shot to show both walls equally.`;
+        } else {
+          aspectNote = `Room proportions: ${w}m × ${l}m. Show the wider dimension as the main view.`;
+        }
+      }
+
       // دمج السياق المعماري مع الـ prompt الأساسي
       const prompt = `${architecturalContext}
 
 ${basePrompt}
 
+=== STRICT ARCHITECTURAL ACCURACY REQUIREMENTS ===
+${aspectNote}
+
+CEILING HEIGHT ENFORCEMENT — THIS IS CRITICAL:
+The ceiling is EXACTLY ${ceilingH} meters high. This is ${ceilingH >= 5 ? "DRAMATICALLY TALL — like a palace or cathedral" : ceilingH >= 4 ? "VERY HIGH — like a luxury hotel lobby" : "HIGH — like an upscale apartment"}.
+- The ceiling MUST occupy the top 40-50% of the image
+- Show the full vertical height from floor to ceiling without cropping
+- The camera eye level should be at 1.2m (human standing height), looking slightly upward to emphasize height
+- Ceiling details (chandeliers, coffers, coves) must be clearly visible at full scale
+- A person standing in the room would look small relative to the ceiling — show this scale
+- FORBIDDEN: Any image where the ceiling appears lower than ${ceilingH}m. If the ceiling looks like a normal 2.7m ceiling, the image is WRONG.
+
+${doorPositionDesc ? `DOOR PLACEMENT (MANDATORY — DO NOT MOVE THESE):\n${doorPositionDesc}` : ""}
+${windowPositionDesc ? `\nWINDOW PLACEMENT (MANDATORY — DO NOT MOVE THESE):\n${windowPositionDesc}` : ""}
+
+ROOM SHAPE: This is a ${roomShape} room. ${aspectNote}
+
 === PHOTOGRAPHY & RENDERING REQUIREMENTS (NON-NEGOTIABLE) ===
-SHOT TYPE: Wide-angle architectural interior photography, 16-24mm lens equivalent
+SHOT TYPE: Wide-angle architectural interior photography, 14-18mm lens equivalent, shot from corner or doorway
 QUALITY: Hyper-photorealistic CGI render, indistinguishable from real photography, 8K resolution
 LIGHTING MOOD: Golden hour natural light streaming through large windows + warm artificial accent lighting
 DEPTH: Strong sense of spatial depth, foreground-midground-background layers clearly visible
-CEILING: The full ${ceilingH}m ceiling height MUST dominate the composition — show the grandeur
+CEILING: The full ${ceilingH}m ceiling height MUST dominate the upper half of the image — show the grandeur
 MATERIALS: Every material must show micro-texture detail — marble veining, wood grain, fabric weave
 ATMOSPHERE: The image must evoke awe, luxury, and aspirational living
 STYLE REFERENCE: Architectural Digest cover shoot, Dezeen award-winning interior, ELLE Decor feature
-NO: people, text, watermarks, clutter, cheap materials, low ceilings, dark corners
-COMPOSITION: Rule of thirds, leading lines toward focal point, perfect symmetry or intentional asymmetry
+NO: people, text, watermarks, clutter, cheap materials, cropped ceilings, dark corners
+COMPOSITION: Wide establishing shot showing the full room, rule of thirds, leading lines toward focal point
 FINAL RESULT: A jaw-dropping interior that makes viewers say "I want to live here"`;
 
       const imageResult = await generateImage({ prompt });
