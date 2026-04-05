@@ -362,3 +362,32 @@ export const webhookLogs = mysqlTable("webhookLogs", {
 });
 export type WebhookLog = typeof webhookLogs.$inferSelect;
 export type InsertWebhookLog = typeof webhookLogs.$inferInsert;
+
+// ===== جدول أفكار التصميم المولّدة (لمنع التكرار + التعديل) =====
+export const projectIdeas = mysqlTable("projectIdeas", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  // مفتاح الصورة: hash من URL الصورة لتحديد "نفس الصورة"
+  imageHash: varchar("imageHash", { length: 64 }).notNull(),
+  // معرف المشروع (اختياري)
+  projectId: int("projectId"),
+  // بيانات الفكرة
+  ideaId: varchar("ideaId", { length: 64 }).notNull(), // ID داخلي من الـ AI
+  title: varchar("title", { length: 255 }).notNull(),
+  style: varchar("style", { length: 100 }).notNull(),
+  styleLabel: varchar("styleLabel", { length: 100 }),
+  scenario: varchar("scenario", { length: 50 }), // surface/moderate/complete
+  paletteJson: json("paletteJson"), // [{name, hex}]
+  materialsJson: json("materialsJson"), // [string]
+  imagePrompt: text("imagePrompt"),
+  visualizationUrl: text("visualizationUrl"),
+  costMin: float("costMin"),
+  costMax: float("costMax"),
+  // تتبع التعديلات
+  isRefinement: boolean("isRefinement").default(false).notNull(), // هل هي تعديل على فكرة سابقة؟
+  parentIdeaId: int("parentIdeaId"), // ID الفكرة الأصلية إذا كانت تعديلاً
+  refinementRequest: text("refinementRequest"), // طلب التعديل من المستخدم
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ProjectIdea = typeof projectIdeas.$inferSelect;
+export type InsertProjectIdea = typeof projectIdeas.$inferInsert;

@@ -1097,3 +1097,24 @@
 
 ## إصلاح خطأ تحليل المخطط
 - [ ] إصلاح خطأ "The string did not match the expected pattern" عند رفع PDF للتحليل
+
+## الإصدار Best Practice Engine — رفع جودة الإخراج للمستوى العالمي
+- [ ] بناء ملف bestPracticePrompts.ts يحتوي على قاموس أفضل الممارسات العالمية لكل نمط
+- [ ] تطوير دالة buildBestPracticePrompt() تبني prompt احترافياً بناءً على أبحاث التصميم 2024-2025
+- [ ] تحديث GLOBAL_STYLES بمعلومات "best of best": أفضل مواد، أفضل ألوان، أفضل إضاءة، أفضل تفاصيل
+- [ ] تحديث generateDesignIdeas لاستخدام best practice prompts
+- [ ] تحديث generateVisualization لاستخدام best practice prompts
+- [ ] تحديث moodboard.generate لاستخدام best practice prompts
+- [ ] تحديث applyStyleToIdea لاستخدام best practice prompts
+- [ ] تحديث generateUrbanZoneDesign لاستخدام best practice prompts
+- [ ] إضافة "quality enhancers" عالمية لكل prompt (إضاءة، مواد، تفاصيل، جو)
+- [ ] اختبارات vitest للـ best practice engine
+
+## نظام منع تكرار الأفكار + التعديل على الأفكار السابقة
+- [x] جدول project_ideas في قاعدة البيانات لحفظ الأفكار المولّدة لكل مشروع
+- [x] تحديث analyzeAndGenerateIdeas لجلب الأفكار السابقة وتمريرها كـ "usedStyles" للـ AI
+- [ ] تحديث generateDesignIdeas لنفس الغرض
+- [x] procedure جديدة: refineIdea لتعديل فكرة موجودة بناءً على طلب المستخدم
+- [x] حفظ كل فكرة مولّدة في project_ideas تلقائياً
+- [ ] عرض الأفكار السابقة في واجهة المستخدم مع زر "عدّل هذه الفكرة"
+- [x] اختبارات vitest لنظام منع التكرار (263 اختبار ناجح)

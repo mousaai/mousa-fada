@@ -7,6 +7,8 @@ import { checkAndDeductCredits } from "./creditHelper";
 import { invokeLLM, type Message, type ImageContent, type TextContent, type FileContent } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
 import { analyzeFloorPlanAdvanced, generateRoomDesignIdea, analyzeAndDesignFloorPlan } from "./floorPlanEngine";
+import { buildBestPracticeSystemPrompt, buildIdeaImagePrompt, getBestStylesForSpace, BEST_PRACTICE_STYLES, QUALITY_ENHANCERS } from "./bestPracticeEngine";
+import { saveGeneratedIdea, getPreviousIdeasForImage, buildUsedStylesNote, buildRefinementNote, getIdeaById } from "./ideaMemoryHelper";
 import { storagePut } from "./storage";
 import { registerUser, loginUser, verifyPassword, hashPassword } from "./_core/localAuth";
 import { TRPCError } from "@trpc/server";
@@ -1357,7 +1359,9 @@ ${extraReqs}
       const messages: Array<{ role: "system" | "user"; content: string | Array<{ type: string; text?: string; image_url?: { url: string; detail: string } }> }> = [
         {
           role: "system",
-          content: `أنتِ م. سارة، خبيرة التصميم المعماري والبيئي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
+          content: `${buildBestPracticeSystemPrompt()}
+
+أنتِ م. سارة، خبيرة التصميم المعماري والبيئي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
         },
         {
           role: "user",
@@ -1511,7 +1515,18 @@ ${colorText}
         ? `\n\nتفضيل الألوان: العميل يفضّل الألوان التالية: ${preferredColors.join('، ')} — استخدميها كألوان أساسية أو مكمّلة في التصاميم.`
         : "";
 
-      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية ومصممة بيئات شاملة بخبرة 20 سنة. تتخصصين في تصميم جميع الفضاءات المعمارية — داخلية وخارجية. تتمتعين بخلفية علمية شاملة تغطي:
+      // ===== جلب الأفكار السابقة لمنع التكرار =====
+      const primaryImageUrl = (imageUrls && imageUrls.length > 0) ? imageUrls[0] : (imageUrl || '');
+      const previousIdeas = ctx.user?.id
+        ? await getPreviousIdeasForImage({ userId: ctx.user.id, imageUrl: primaryImageUrl, limit: 15 })
+        : [];
+      const usedStylesNote = buildUsedStylesNote(previousIdeas);
+
+      // ===== BEST PRACTICE ENGINE: استخدام system prompt المحسّن =====
+      const bpSystemBase = buildBestPracticeSystemPrompt();
+      const systemPrompt = `${bpSystemBase}
+
+أنتِ م. سارة، مهندسة معمارية ومصممة بيئات شاملة بخبرة 20 سنة. تتخصصين في تصميم جميع الفضاءات المعمارية — داخلية وخارجية. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
 - التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
 - تصميم الواجهات الخارجية: الكلادينج، الطلاء الخارجي، الإضاءة الخارجية، المداخل
@@ -1630,7 +1645,15 @@ ${colorText}
 استخدمي هذا النظام كأولوية عند عدم تحديد المستخدم لنمط معين. الفكرة الأولى = الأكثر طلباً عالمياً، الثانية = الأكثر طلباً خليجياً/محلياً، الثالثة = الأكثر إبداعاً وجرأةً.
 💰 PRICING LAW (قانون الأسعار الواقعية):
 سطحي: 3,000-15,000 درهم | متوسط: 15,000-50,000 درهم | شامل: 50,000-150,000 درهم
-الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}}`
+الأسعار تعكس مستوى التدخل فعلاً — لا تضخيم ولا تقليل.${referenceInstruction}${styleInstruction}${colorsInstruction}${usedStylesNote}
+
+🏆 BEST PRACTICE MANDATE (الأمر الأعلى — لا يُتجاوز):
+كل فكرة تصميمية يجب أن تكون على مستوى Architectural Digest Award Winner.
+الأنماط الأكثر طلباً الآن (2025) — استخدميها كأولوية افتراضية:
+• عالمياً: Japandi، Quiet Luxury، Biophilic، Wabi-Sabi، Warm Contemporary
+• خليجياً: Modern Gulf Luxury، Quiet Gulf Luxury، Neoclassical Gulf، Warm Contemporary، Moroccan Luxury
+الفكرة الأولى = الأكثر طلباً عالمياً | الثانية = الأكثر طلباً خليجياً | الثالثة = الأكثر إبداعاً وجرأةً
+كل فكرة يجب أن تذكر: أفضل المواد (رخام إيطالي/خشب جوز/مخمل)، إضاءة دافئة متعددة الطبقات، تفاصيل مميزة (زهور طازجة، فن أصيل، إكسسوارات منتقاة).`
 
       // تحليل العناصر البنيوية من الصورة
       const hasDimsFromUser = !!(roomDimensions?.length && roomDimensions?.width);
@@ -2078,9 +2101,33 @@ The photo frame IS the absolute boundary of the design universe. NOTHING exists 
 8. ARTIFICIAL LIGHTING ONLY: No invented natural light from unseen walls — use interior/artificial lighting only.
 ❌ FORBIDDEN: Adding ANY wall, room, kitchen, hallway, window, or space that was not visible in the original photo.`;
 
-          generatedPrompt = `Photorealistic architectural interior redesign. ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint}
+          // ===== BEST PRACTICE ENGINE: استخدام buildIdeaImagePrompt للحصول على أفضل prompt =====
+          const bpStyleKey = (() => {
+            // تحويل اسم النمط إلى مفتاح best practice
+            const styleKeyMap: Record<string, string> = {
+              modern: 'warm_contemporary', gulf: 'modern_gulf', minimal: 'japandi',
+              japanese: 'japandi', scandinavian: 'japandi', luxury: 'quiet_gulf_luxury',
+              classic: 'neoclassical_gulf', moroccan: 'moroccan_luxury', industrial: 'wabi_sabi',
+              bohemian: 'maximalist_eclectic', art_deco: 'maximalist_eclectic',
+              mediterranean: 'moroccan_luxury', coastal: 'biophilic',
+            };
+            return styleKeyMap[String(idea.style || 'modern')] || 'warm_contemporary';
+          })();
+          const bpStyle = BEST_PRACTICE_STYLES[bpStyleKey] || BEST_PRACTICE_STYLES.warm_contemporary;
+          const bpPalette = (idea.palette as Array<{name: string; hex: string}> || []);
+          const bpMaterials = (idea.materials as string[] || []);
+          const bpImagePromptBase = buildIdeaImagePrompt({
+            styleKey: bpStyleKey,
+            spaceType: String(spaceAnalysisData.spaceType || 'interior space'),
+            palette: bpPalette,
+            materials: bpMaterials,
+            isEdit: true,
+            originalStructure: keepElements || '',
+          });
 
-CREATIVE TRANSFORMATION — Apply ${styleName} style targeting the most desired design for this space type. This must look like the #1 most-wanted interior design for this specific room.
+          generatedPrompt = `${bpImagePromptBase} ${cameraNote} ${roomNote} ${structuralNote} ${wallConstraint}
+
+CREATIVE TRANSFORMATION — Apply ${bpStyle.visualKeywords} targeting the most desired design for this space type. This must look like the #1 most-wanted interior design for this specific room.
 
 FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
 
@@ -2133,12 +2180,7 @@ FULL CREATIVE FREEDOM — TRANSFORM BOLDLY:
 
 New color palette: ${palette}. New materials: ${mats}.
 
-QUALITY MANDATE: This image must look like it was shot for Architectural Digest, Dezeen, or AD Middle East. Photorealistic rendering with:
-- Cinematic lighting with realistic shadows, reflections, and caustics
-- Ultra-realistic material textures (marble veining, wood grain, fabric weave)
-- Depth of field with sharp foreground and soft background
-- 8K resolution quality, professional interior photography composition
-- No people, no text, no watermarks, no AI artifacts`;
+QUALITY MANDATE: This image must look like it was shot for Architectural Digest, Dezeen, or AD Middle East. ${QUALITY_ENHANCERS.imageQuality}. ${QUALITY_ENHANCERS.details}. ${QUALITY_ENHANCERS.atmosphere}. New color palette: ${palette}. New materials: ${mats}. SIGNATURE DETAILS: ${bpStyle.signatureDetails}. AVOID: ${bpStyle.avoid}.`;
           }
 
           // حساب جدول الكميات الهندسي لهذه الفكرة
@@ -2249,6 +2291,31 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
           };
         });
 
+        // ===== حفظ الأفكار في قاعدة البيانات لمنع التكرار =====
+        if (ctx.user?.id && primaryImageUrl) {
+          const resolvedIdeas = await ideas;
+          for (const idea of resolvedIdeas) {
+            try {
+              await saveGeneratedIdea({
+                userId: ctx.user.id,
+                imageUrl: primaryImageUrl,
+                idea: {
+                  id: String(idea.id || ''),
+                  title: String(idea.title || ''),
+                  style: String(idea.style || ''),
+                  styleLabel: String(idea.styleLabel || idea.style || ''),
+                  scenario: String(idea.scenario || ''),
+                  palette: idea.palette as Array<{name:string;hex:string}> || [],
+                  materials: idea.materials as string[] || [],
+                  imagePrompt: String(idea.imagePrompt || ''),
+                  costMin: Number(idea.costMin || 0),
+                  costMax: Number(idea.costMax || 0),
+                },
+              });
+            } catch { /* لا نوقف التنفيذ إذا فشل الحفظ */ }
+          }
+        }
+
         return {
           ideas,
           spaceAnalysis: parsed.spaceAnalysis || null,
@@ -2257,6 +2324,77 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       } catch {
         return { ideas: [], spaceAnalysis: null, structuralSuggestions: [] };
       }
+    }),
+
+  // ===== refineIdea: تعديل فكرة موجودة =====
+  refineIdea: mousaProcedure
+    .input(z.object({
+      ideaDbId: z.number(), // ID الفكرة في قاعدة البيانات
+      refinementRequest: z.string(), // طلب التعديل من المستخدم
+      imageUrl: z.string(), // صورة الفضاء الأصلية
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "reAnalyze");
+
+      // جلب الفكرة الأصلية
+      const originalIdea = await getIdeaById(input.ideaDbId);
+      if (!originalIdea) throw new TRPCError({ code: "NOT_FOUND", message: "الفكرة غير موجودة" });
+
+      const refinementNote = buildRefinementNote({
+        originalIdea: {
+          title: originalIdea.title,
+          style: originalIdea.style,
+          styleLabel: originalIdea.styleLabel,
+          palette: originalIdea.paletteJson as Array<{name:string;hex:string}> | null,
+          materials: originalIdea.materialsJson as string[] | null,
+          imagePrompt: originalIdea.imagePrompt,
+        },
+        refinementRequest: input.refinementRequest,
+      });
+
+      const systemPrompt = `${buildBestPracticeSystemPrompt()}
+أنتِ م. سارة، خبيرة التصميم المعماري. مهمتك تعديل فكرة تصميمية بناءً على طلب المستخدم. ردك JSON فقط.${refinementNote}`;
+
+      const userPrompt = `عدّلي الفكرة التصميمية بناءً على طلب المستخدم: "${input.refinementRequest}"
+أعطيني الفكرة المعدّلة بصيغة JSON بنفس هيكل الفكرة الأصلية مع تطبيق التعديل المطلوب.`;
+
+      const messages: Message[] = [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            { type: "image_url" as const, image_url: { url: input.imageUrl, detail: "high" as const } },
+            { type: "text" as const, text: userPrompt },
+          ],
+        },
+      ];
+
+      const response = await invokeLLM({ messages });
+      const rawContent = response?.choices?.[0]?.message?.content;
+      const raw = typeof rawContent === 'string' ? rawContent : "{}";
+      const jsonStr = raw.replace(/```json\n?|```/g, "").trim();
+      let refined: Record<string, unknown> = {};
+      try { refined = JSON.parse(jsonStr); } catch { refined = {}; }
+
+      // حفظ الفكرة المعدّلة
+      const newDbId = await saveGeneratedIdea({
+        userId: ctx.user.id,
+        imageUrl: input.imageUrl,
+        idea: {
+          title: String(refined.title || originalIdea.title + " (معدّل)"),
+          style: String(refined.style || originalIdea.style),
+          styleLabel: String(refined.styleLabel || originalIdea.styleLabel || ''),
+          palette: refined.palette as Array<{name:string;hex:string}> || (originalIdea.paletteJson as Array<{name:string;hex:string}>) || [],
+          materials: refined.materials as string[] || (originalIdea.materialsJson as string[]) || [],
+          costMin: Number(refined.costMin || originalIdea.costMin || 0),
+          costMax: Number(refined.costMax || originalIdea.costMax || 0),
+        },
+        isRefinement: true,
+        parentIdeaId: originalIdea.id,
+        refinementRequest: input.refinementRequest,
+      });
+
+      return { ...refined, dbId: newDbId, isRefinement: true, parentIdeaId: originalIdea.id };
     }),
 
   // ===== Voice Design Command =====

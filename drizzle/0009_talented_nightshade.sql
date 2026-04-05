@@ -1,0 +1,22 @@
+CREATE TABLE `projectIdeas` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`imageHash` varchar(64) NOT NULL,
+	`projectId` int,
+	`ideaId` varchar(64) NOT NULL,
+	`title` varchar(255) NOT NULL,
+	`style` varchar(100) NOT NULL,
+	`styleLabel` varchar(100),
+	`scenario` varchar(50),
+	`paletteJson` json,
+	`materialsJson` json,
+	`imagePrompt` text,
+	`visualizationUrl` text,
+	`costMin` float,
+	`costMax` float,
+	`isRefinement` boolean NOT NULL DEFAULT false,
+	`parentIdeaId` int,
+	`refinementRequest` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `projectIdeas_id` PRIMARY KEY(`id`)
+);
