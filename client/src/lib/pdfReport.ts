@@ -1,5 +1,7 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+/**
+ * PDF Report Generator — HTML-based approach for proper Arabic/English rendering
+ * Uses window.print() with a hidden iframe to render HTML with Google Fonts (Tajawal + Inter)
+ */
 
 interface ColorItem {
   hex: string;
@@ -61,369 +63,742 @@ interface ProjectData {
   createdAt?: string;
 }
 
-const STYLE_NAMES: Record<string, string> = {
-  modern: "عصري",
-  gulf: "خليجي",
-  classical: "كلاسيكي",
-  minimal: "مينيمال",
-  japanese: "ياباني",
-  moroccan: "مغربي",
-  mediterranean: "متوسطي",
-  scandinavian: "إسكندنافي",
-  industrial: "صناعي",
-  bohemian: "بوهيمي",
-  art_deco: "آرت ديكو",
-  bauhaus: "باوهاوس",
-  chinese: "صيني",
-  indian: "هندي",
-  french: "فرنسي",
-  italian: "إيطالي",
+const STYLE_NAMES_AR: Record<string, string> = {
+  modern: "عصري", gulf: "خليجي", classical: "كلاسيكي", minimal: "مينيمال",
+  japanese: "ياباني", moroccan: "مغربي", mediterranean: "متوسطي",
+  scandinavian: "إسكندنافي", industrial: "صناعي", bohemian: "بوهيمي",
+  art_deco: "آرت ديكو", bauhaus: "باوهاوس", chinese: "صيني",
+  indian: "هندي", french: "فرنسي", italian: "إيطالي",
 };
 
-const SPACE_NAMES: Record<string, string> = {
-  living_room: "غرفة المعيشة",
-  bedroom: "غرفة النوم",
-  kitchen: "المطبخ",
-  bathroom: "الحمام",
-  dining_room: "غرفة الطعام",
-  office: "المكتب",
-  kids_room: "غرفة الأطفال",
-  master_bedroom: "غرفة النوم الرئيسية",
-  entrance: "المدخل",
-  villa: "فيلا",
-  apartment: "شقة",
+const STYLE_NAMES_EN: Record<string, string> = {
+  modern: "Modern", gulf: "Gulf", classical: "Classical", minimal: "Minimal",
+  japanese: "Japanese", moroccan: "Moroccan", mediterranean: "Mediterranean",
+  scandinavian: "Scandinavian", industrial: "Industrial", bohemian: "Bohemian",
+  art_deco: "Art Deco", bauhaus: "Bauhaus", chinese: "Chinese",
+  indian: "Indian", french: "French", italian: "Italian",
 };
+
+const SPACE_NAMES_AR: Record<string, string> = {
+  living_room: "غرفة المعيشة", bedroom: "غرفة النوم", kitchen: "المطبخ",
+  bathroom: "الحمام", dining_room: "غرفة الطعام", office: "المكتب",
+  kids_room: "غرفة الأطفال", master_bedroom: "غرفة النوم الرئيسية",
+  entrance: "المدخل", villa: "فيلا", apartment: "شقة",
+};
+
+const SPACE_NAMES_EN: Record<string, string> = {
+  living_room: "Living Room", bedroom: "Bedroom", kitchen: "Kitchen",
+  bathroom: "Bathroom", dining_room: "Dining Room", office: "Office",
+  kids_room: "Kids Room", master_bedroom: "Master Bedroom",
+  entrance: "Entrance", villa: "Villa", apartment: "Apartment",
+};
+
+const COST_LABELS_AR: Record<string, string> = {
+  furniture: "الأثاث", flooring: "الأرضيات", walls: "الجدران والدهان",
+  ceiling: "الأسقف", lighting: "الإضاءة", curtains: "الستائر والمفروشات",
+  labor: "أعمال التركيب والعمالة",
+};
+
+const COST_LABELS_EN: Record<string, string> = {
+  furniture: "Furniture", flooring: "Flooring", walls: "Walls & Paint",
+  ceiling: "Ceiling", lighting: "Lighting", curtains: "Curtains & Soft Furnishings",
+  labor: "Installation & Labor",
+};
+
+function formatCurrency(amount: number): string {
+  return amount.toLocaleString("en-US");
+}
+
+function buildHTML(project: ProjectData): string {
+  const styleAr = STYLE_NAMES_AR[project.designStyle] || project.designStyle;
+  const styleEn = STYLE_NAMES_EN[project.designStyle] || project.designStyle;
+  const spaceAr = SPACE_NAMES_AR[project.spaceType || ""] || project.spaceType || "—";
+  const spaceEn = SPACE_NAMES_EN[project.spaceType || ""] || project.spaceType || "—";
+  const dateAr = new Date().toLocaleDateString("ar-SA");
+  const dateEn = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  const colorsHTML = project.colorPalette?.slice(0, 6).map(c => `
+    <div class="color-item">
+      <div class="color-swatch" style="background:${c.hex}"></div>
+      <div class="color-name">${c.name || c.hex}</div>
+      <div class="color-hex">${c.hex}</div>
+    </div>
+  `).join("") || "";
+
+  const materialsRowsAr = project.materials?.slice(0, 8).map(m => `
+    <tr>
+      <td>${m.name || "—"}</td>
+      <td>${m.type || "—"}</td>
+      <td>${m.brand || "—"}</td>
+      <td>${m.priceRange || "—"}</td>
+    </tr>
+  `).join("") || "";
+
+  const materialsRowsEn = project.materials?.slice(0, 8).map(m => `
+    <tr>
+      <td>${m.name || "—"}</td>
+      <td>${m.type || "—"}</td>
+      <td>${m.brand || "—"}</td>
+      <td>${m.priceRange || "—"}</td>
+    </tr>
+  `).join("") || "";
+
+  const furnitureRowsAr = project.furniture?.slice(0, 10).map(f => `
+    <tr>
+      <td>${f.name || "—"}</td>
+      <td>${f.quantity || 1}</td>
+      <td>${f.material || "—"}</td>
+      <td>${f.priceRange || "—"}</td>
+    </tr>
+  `).join("") || "";
+
+  const furnitureRowsEn = project.furniture?.slice(0, 10).map(f => `
+    <tr>
+      <td>${f.name || "—"}</td>
+      <td>${f.quantity || 1}</td>
+      <td>${f.material || "—"}</td>
+      <td>${f.priceRange || "—"}</td>
+    </tr>
+  `).join("") || "";
+
+  const costRowsAr = project.costEstimate?.breakdown
+    ? Object.entries(project.costEstimate.breakdown)
+        .filter(([, v]) => v && v > 0)
+        .map(([k, v]) => {
+          const total = project.totalCostMin || 1;
+          const pct = Math.round(((v as number) / total) * 100);
+          return `<tr>
+            <td>${COST_LABELS_AR[k] || k}</td>
+            <td>${formatCurrency(v as number)} ر.س</td>
+            <td>${pct}%</td>
+          </tr>`;
+        }).join("")
+    : "";
+
+  const costRowsEn = project.costEstimate?.breakdown
+    ? Object.entries(project.costEstimate.breakdown)
+        .filter(([, v]) => v && v > 0)
+        .map(([k, v]) => {
+          const total = project.totalCostMin || 1;
+          const pct = Math.round(((v as number) / total) * 100);
+          return `<tr>
+            <td>${COST_LABELS_EN[k] || k}</td>
+            <td>SAR ${formatCurrency(v as number)}</td>
+            <td>${pct}%</td>
+          </tr>`;
+        }).join("")
+    : "";
+
+  const recommendationsAr = project.analysisResult?.recommendations?.slice(0, 5).map((r, i) => `
+    <div class="rec-item"><span class="rec-num">${i + 1}</span><span>${r}</span></div>
+  `).join("") || "";
+
+  const recommendationsEn = project.analysisResult?.recommendations?.slice(0, 5).map((r, i) => `
+    <div class="rec-item"><span class="rec-num">${i + 1}</span><span>${r}</span></div>
+  `).join("") || "";
+
+  const savingTipsAr = project.costEstimate?.savingTips?.slice(0, 5).map(t => `
+    <li>${t}</li>
+  `).join("") || "";
+
+  const savingTipsEn = project.costEstimate?.savingTips?.slice(0, 5).map(t => `
+    <li>${t}</li>
+  `).join("") || "";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Design Report — ${project.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1e140a; }
+
+  /* ===== Page Layout ===== */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 0;
+    page-break-after: always;
+    position: relative;
+    background: #faf5eb;
+    overflow: hidden;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* ===== Header ===== */
+  .page-header {
+    background: #b8860b;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .page-header .ar { font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 700; }
+  .page-header .en { font-size: 11px; font-weight: 500; opacity: 0.85; }
+
+  /* ===== Cover Page ===== */
+  .cover-hero {
+    background: linear-gradient(135deg, #b8860b 0%, #8b6508 60%, #5c4205 100%);
+    padding: 40px 30px 30px;
+    text-align: center;
+    color: white;
+  }
+  .cover-hero .brand-ar { font-family: 'Tajawal', sans-serif; font-size: 36px; font-weight: 800; letter-spacing: 1px; }
+  .cover-hero .brand-en { font-size: 14px; font-weight: 500; opacity: 0.8; margin-top: 4px; }
+  .cover-hero .tagline-ar { font-family: 'Tajawal', sans-serif; font-size: 13px; opacity: 0.85; margin-top: 6px; }
+  .cover-hero .tagline-en { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+
+  .cover-body { padding: 25px 30px; }
+
+  .report-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .report-title .title-ar { font-family: 'Tajawal', sans-serif; font-size: 22px; font-weight: 700; color: #b8860b; }
+  .report-title .title-en { font-size: 14px; color: #8b6508; margin-top: 4px; font-weight: 600; }
+
+  .divider { height: 2px; background: linear-gradient(90deg, transparent, #b8860b, transparent); margin: 15px 0; }
+
+  /* ===== Info Grid ===== */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+  }
+  .info-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px 15px;
+    border-right: 3px solid #b8860b;
+  }
+  .info-card .label-ar { font-family: 'Tajawal', sans-serif; font-size: 10px; color: #8b6508; font-weight: 500; }
+  .info-card .label-en { font-size: 9px; color: #aaa; }
+  .info-card .value-ar { font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; color: #1e140a; margin-top: 3px; }
+  .info-card .value-en { font-size: 12px; font-weight: 600; color: #333; }
+
+  /* ===== Cost Banner ===== */
+  .cost-banner {
+    background: linear-gradient(135deg, #b8860b, #d4af37);
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+    color: white;
+    margin: 20px 0;
+  }
+  .cost-banner .label-ar { font-family: 'Tajawal', sans-serif; font-size: 12px; opacity: 0.9; }
+  .cost-banner .label-en { font-size: 10px; opacity: 0.75; margin-bottom: 6px; }
+  .cost-banner .amount { font-size: 22px; font-weight: 700; margin: 4px 0; }
+  .cost-banner .amount-ar { font-family: 'Tajawal', sans-serif; font-size: 14px; opacity: 0.85; }
+
+  /* ===== Section Title ===== */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 12px;
+  }
+  .section-title .bar { width: 4px; height: 22px; background: #b8860b; border-radius: 2px; }
+  .section-title .title-ar { font-family: 'Tajawal', sans-serif; font-size: 15px; font-weight: 700; color: #b8860b; }
+  .section-title .title-en { font-size: 11px; color: #8b6508; margin-top: 1px; }
+
+  /* ===== Content Area ===== */
+  .content { padding: 20px 25px; }
+
+  /* ===== Description Box ===== */
+  .desc-box {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e8d9b0;
+    margin-bottom: 15px;
+  }
+  .desc-box .text-ar { font-family: 'Tajawal', sans-serif; font-size: 11px; line-height: 1.8; color: #333; direction: rtl; text-align: right; }
+  .desc-box .text-en { font-size: 10px; line-height: 1.6; color: #555; margin-top: 8px; border-top: 1px solid #f0e8d0; padding-top: 8px; }
+
+  /* ===== Recommendations ===== */
+  .rec-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border: 1px solid #f0e8d0;
+  }
+  .rec-item .rec-num {
+    background: #b8860b;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .rec-item span:last-child { font-family: 'Tajawal', sans-serif; font-size: 10px; line-height: 1.6; direction: rtl; text-align: right; }
+  .rec-item.en span:last-child { font-family: 'Inter', sans-serif; direction: ltr; text-align: left; font-size: 10px; }
+
+  /* ===== Colors ===== */
+  .colors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 10px 0;
+  }
+  .color-item { text-align: center; }
+  .color-swatch {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    border: 2px solid #e8d9b0;
+    margin: 0 auto 4px;
+  }
+  .color-name { font-family: 'Tajawal', sans-serif; font-size: 9px; color: #333; }
+  .color-hex { font-size: 8px; color: #999; }
+
+  /* ===== Tables ===== */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10px; }
+  thead tr { background: #b8860b; color: white; }
+  thead th { padding: 8px 10px; font-weight: 600; }
+  thead th.ar { font-family: 'Tajawal', sans-serif; font-size: 11px; }
+  tbody tr:nth-child(even) { background: #fff8ee; }
+  tbody tr:nth-child(odd) { background: white; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #f0e8d0; }
+  tbody td.ar { font-family: 'Tajawal', sans-serif; font-size: 11px; }
+  tfoot tr { background: #1e140a; color: #ffd700; font-weight: 700; }
+  tfoot td { padding: 8px 10px; }
+  tfoot td.ar { font-family: 'Tajawal', sans-serif; }
+
+  /* ===== Bilingual Row ===== */
+  .bilingual-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 10px 0;
+  }
+  .lang-block { }
+  .lang-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #b8860b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #e8d9b0;
+  }
+
+  /* ===== Saving Tips ===== */
+  .tips-list { padding-right: 15px; }
+  .tips-list li { font-family: 'Tajawal', sans-serif; font-size: 10px; line-height: 1.7; color: #333; margin-bottom: 5px; direction: rtl; }
+  .tips-list.en li { font-family: 'Inter', sans-serif; direction: ltr; padding-right: 0; padding-left: 15px; }
+
+  /* ===== Footer Signature ===== */
+  .signature-box {
+    background: linear-gradient(135deg, #b8860b, #8b6508);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    color: white;
+    margin: 20px 0;
+  }
+  .signature-box .name-ar { font-family: 'Tajawal', sans-serif; font-size: 24px; font-weight: 800; }
+  .signature-box .name-en { font-size: 14px; font-weight: 600; opacity: 0.9; margin-top: 2px; }
+  .signature-box .sub-ar { font-family: 'Tajawal', sans-serif; font-size: 11px; opacity: 0.85; margin-top: 6px; }
+  .signature-box .sub-en { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+  .signature-box .disclaimer { font-size: 9px; opacity: 0.65; margin-top: 10px; }
+
+  /* ===== Page Footer ===== */
+  .page-footer {
+    background: #b8860b;
+    color: white;
+    padding: 6px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .page-footer .ar { font-family: 'Tajawal', sans-serif; }
+
+  /* ===== Print ===== */
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { page-break-after: always; }
+    .page:last-child { page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== PAGE 1: COVER ===== -->
+<div class="page">
+  <div class="cover-hero">
+    <div class="brand-ar">م. سارة | فضاء</div>
+    <div class="brand-en">Sarah AI | Fadaa Platform</div>
+    <div class="tagline-ar">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</div>
+    <div class="tagline-en">AI-Powered Architectural & Environmental Design Expert</div>
+  </div>
+
+  <div class="cover-body">
+    <div class="report-title">
+      <div class="title-ar">تقرير التصميم الاحترافي</div>
+      <div class="title-en">Professional Design Report</div>
+    </div>
+    <div class="divider"></div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="label-ar">اسم المشروع</div>
+        <div class="label-en">Project Name</div>
+        <div class="value-ar">${project.name}</div>
+        <div class="value-en">${project.name}</div>
+      </div>
+      <div class="info-card">
+        <div class="label-ar">نمط التصميم</div>
+        <div class="label-en">Design Style</div>
+        <div class="value-ar">${styleAr}</div>
+        <div class="value-en">${styleEn}</div>
+      </div>
+      <div class="info-card">
+        <div class="label-ar">نوع الفضاء</div>
+        <div class="label-en">Space Type</div>
+        <div class="value-ar">${spaceAr}</div>
+        <div class="value-en">${spaceEn}</div>
+      </div>
+      <div class="info-card">
+        <div class="label-ar">المساحة</div>
+        <div class="label-en">Area</div>
+        <div class="value-ar">${project.area ? `${project.area} م²` : "—"}</div>
+        <div class="value-en">${project.area ? `${project.area} m²` : "—"}</div>
+      </div>
+      <div class="info-card">
+        <div class="label-ar">تاريخ التقرير</div>
+        <div class="label-en">Report Date</div>
+        <div class="value-ar">${dateAr}</div>
+        <div class="value-en">${dateEn}</div>
+      </div>
+    </div>
+
+    ${project.totalCostMin && project.totalCostMax ? `
+    <div class="cost-banner">
+      <div class="label-ar">التكلفة التقديرية الإجمالية</div>
+      <div class="label-en">Total Estimated Cost</div>
+      <div class="amount">${formatCurrency(project.totalCostMin)} — ${formatCurrency(project.totalCostMax)}</div>
+      <div class="amount-ar">ريال سعودي | SAR</div>
+    </div>
+    ` : ""}
+  </div>
+
+  <div class="page-footer">
+    <span>fada.mousa.ai</span>
+    <span class="ar">م. سارة | خبيرة التصميم المعماري والبيئي</span>
+    <span>Page 1</span>
+  </div>
+</div>
+
+<!-- ===== PAGE 2: ANALYSIS & RECOMMENDATIONS ===== -->
+<div class="page">
+  <div class="page-header">
+    <span class="en">Space Analysis & Recommendations</span>
+    <span class="ar">تحليل الفضاء والتوصيات</span>
+  </div>
+
+  <div class="content">
+    ${project.analysisResult?.spaceDescription ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">وصف الفضاء</div>
+        <div class="title-en">Space Description</div>
+      </div>
+    </div>
+    <div class="desc-box">
+      <div class="text-ar">${project.analysisResult.spaceDescription}</div>
+    </div>
+    ` : ""}
+
+    ${recommendationsAr ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">توصيات م. سارة</div>
+        <div class="title-en">Sarah's Recommendations</div>
+      </div>
+    </div>
+    <div class="bilingual-section">
+      <div class="lang-block">
+        <div class="lang-label">العربية</div>
+        ${recommendationsAr}
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        ${recommendationsEn.replace(/rec-item/g, "rec-item en")}
+      </div>
+    </div>
+    ` : ""}
+
+    ${project.analysisResult?.styleDescription ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">وصف الأسلوب التصميمي</div>
+        <div class="title-en">Design Style Description</div>
+      </div>
+    </div>
+    <div class="desc-box">
+      <div class="text-ar">${project.analysisResult.styleDescription}</div>
+    </div>
+    ` : ""}
+  </div>
+
+  <div class="page-footer">
+    <span>fada.mousa.ai</span>
+    <span class="ar">م. سارة | تحليل الفضاء</span>
+    <span>Page 2</span>
+  </div>
+</div>
+
+<!-- ===== PAGE 3: COLORS & MATERIALS ===== -->
+<div class="page">
+  <div class="page-header">
+    <span class="en">Color Palette & Proposed Materials</span>
+    <span class="ar">لوحة الألوان والمواد المقترحة</span>
+  </div>
+
+  <div class="content">
+    ${colorsHTML ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">لوحة الألوان</div>
+        <div class="title-en">Color Palette</div>
+      </div>
+    </div>
+    <div class="colors-grid">${colorsHTML}</div>
+    ` : ""}
+
+    ${materialsRowsAr ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">المواد المقترحة</div>
+        <div class="title-en">Proposed Materials</div>
+      </div>
+    </div>
+    <div class="bilingual-section">
+      <div class="lang-block">
+        <div class="lang-label">العربية</div>
+        <table>
+          <thead><tr>
+            <th class="ar">المادة</th><th class="ar">النوع</th><th class="ar">الماركة</th><th class="ar">السعر</th>
+          </tr></thead>
+          <tbody>${materialsRowsAr}</tbody>
+        </table>
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        <table>
+          <thead><tr>
+            <th>Material</th><th>Type</th><th>Brand</th><th>Price</th>
+          </tr></thead>
+          <tbody>${materialsRowsEn}</tbody>
+        </table>
+      </div>
+    </div>
+    ` : ""}
+  </div>
+
+  <div class="page-footer">
+    <span>fada.mousa.ai</span>
+    <span class="ar">م. سارة | الألوان والمواد</span>
+    <span>Page 3</span>
+  </div>
+</div>
+
+<!-- ===== PAGE 4: FURNITURE & COSTS ===== -->
+<div class="page">
+  <div class="page-header">
+    <span class="en">Furniture List & Cost Breakdown (BOQ)</span>
+    <span class="ar">قائمة الأثاث وجدول التكاليف (BOQ)</span>
+  </div>
+
+  <div class="content">
+    ${furnitureRowsAr ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">قائمة الأثاث المقترح</div>
+        <div class="title-en">Proposed Furniture List</div>
+      </div>
+    </div>
+    <div class="bilingual-section">
+      <div class="lang-block">
+        <div class="lang-label">العربية</div>
+        <table>
+          <thead><tr>
+            <th class="ar">القطعة</th><th class="ar">الكمية</th><th class="ar">المادة</th><th class="ar">السعر</th>
+          </tr></thead>
+          <tbody>${furnitureRowsAr}</tbody>
+        </table>
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        <table>
+          <thead><tr>
+            <th>Item</th><th>Qty</th><th>Material</th><th>Price</th>
+          </tr></thead>
+          <tbody>${furnitureRowsEn}</tbody>
+        </table>
+      </div>
+    </div>
+    ` : ""}
+
+    ${costRowsAr ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">توزيع التكاليف التفصيلي</div>
+        <div class="title-en">Detailed Cost Breakdown</div>
+      </div>
+    </div>
+    <div class="bilingual-section">
+      <div class="lang-block">
+        <div class="lang-label">العربية</div>
+        <table>
+          <thead><tr><th class="ar">البند</th><th class="ar">التكلفة</th><th class="ar">النسبة</th></tr></thead>
+          <tbody>${costRowsAr}</tbody>
+          ${project.totalCostMin && project.totalCostMax ? `
+          <tfoot><tr>
+            <td class="ar">الإجمالي</td>
+            <td class="ar">${formatCurrency(project.totalCostMin)} — ${formatCurrency(project.totalCostMax)} ر.س</td>
+            <td>100%</td>
+          </tr></tfoot>` : ""}
+        </table>
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        <table>
+          <thead><tr><th>Item</th><th>Cost</th><th>%</th></tr></thead>
+          <tbody>${costRowsEn}</tbody>
+          ${project.totalCostMin && project.totalCostMax ? `
+          <tfoot><tr>
+            <td>Total</td>
+            <td>SAR ${formatCurrency(project.totalCostMin)} — ${formatCurrency(project.totalCostMax)}</td>
+            <td>100%</td>
+          </tr></tfoot>` : ""}
+        </table>
+      </div>
+    </div>
+    ` : ""}
+
+    ${project.costEstimate?.timeline ? `
+    <div class="desc-box" style="margin-top:15px">
+      <div class="text-ar">الجدول الزمني المقدّر: ${project.costEstimate.timeline}</div>
+      <div class="text-en">Estimated Timeline: ${project.costEstimate.timeline}</div>
+    </div>
+    ` : ""}
+  </div>
+
+  <div class="page-footer">
+    <span>fada.mousa.ai</span>
+    <span class="ar">م. سارة | الأثاث والتكاليف</span>
+    <span>Page 4</span>
+  </div>
+</div>
+
+<!-- ===== PAGE 5: CLOSING ===== -->
+<div class="page">
+  <div class="page-header">
+    <span class="en">Closing Notes & Recommendations</span>
+    <span class="ar">ملاحظات ختامية وتوصيات</span>
+  </div>
+
+  <div class="content">
+    ${savingTipsAr ? `
+    <div class="section-title">
+      <div class="bar"></div>
+      <div>
+        <div class="title-ar">نصائح لتوفير التكاليف</div>
+        <div class="title-en">Cost-Saving Tips</div>
+      </div>
+    </div>
+    <div class="bilingual-section">
+      <div class="lang-block">
+        <div class="lang-label">العربية</div>
+        <ul class="tips-list">${savingTipsAr}</ul>
+      </div>
+      <div class="lang-block">
+        <div class="lang-label">English</div>
+        <ul class="tips-list en">${savingTipsEn}</ul>
+      </div>
+    </div>
+    ` : ""}
+
+    <div class="signature-box" style="margin-top: 30px;">
+      <div class="name-ar">م. سارة | فضاء</div>
+      <div class="name-en">Sarah AI | Fadaa Platform</div>
+      <div class="sub-ar">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</div>
+      <div class="sub-en">AI-Powered Architectural & Environmental Design Expert</div>
+      <div class="disclaimer">
+        هذا التقرير مولّد بالذكاء الاصطناعي ويُعدّ مرجعاً تقديرياً — 2025-2026 ©<br>
+        This report is AI-generated and serves as an estimative reference — © 2025-2026
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>fada.mousa.ai</span>
+    <span class="ar">م. سارة | الخاتمة</span>
+    <span>Page 5</span>
+  </div>
+</div>
+
+</body>
+</html>`;
+}
 
 export async function generatePDFReport(project: ProjectData): Promise<void> {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
+  const html = buildHTML(project);
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  // Create hidden iframe for printing
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
 
-  // ألوان المنصة
-  const GOLD = [184, 134, 11] as [number, number, number];
-  const BEIGE = [245, 235, 220] as [number, number, number];
-  const DARK = [30, 20, 10] as [number, number, number];
-  const LIGHT_GOLD = [212, 175, 55] as [number, number, number];
-
-  // دالة مساعدة لرسم نص عربي (RTL simulation)
-  const addArabicText = (
-    text: string,
-    x: number,
-    y: number,
-    options: { align?: "left" | "center" | "right"; fontSize?: number; color?: [number, number, number]; bold?: boolean } = {}
-  ) => {
-    const { align = "right", fontSize = 11, color = DARK, bold = false } = options;
-    doc.setFontSize(fontSize);
-    doc.setTextColor(color[0], color[1], color[2]);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.text(text, x, y, { align });
-  };
-
-  // ===== صفحة الغلاف =====
-  // خلفية ذهبية للهيدر
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 0, pageWidth, 60, "F");
-
-  // شريط بيج
-  doc.setFillColor(BEIGE[0], BEIGE[1], BEIGE[2]);
-  doc.rect(0, 60, pageWidth, 8, "F");
-
-  // اسم المنصة
-  addArabicText("م. سارة", pageWidth - margin, 25, { align: "right", fontSize: 28, color: [255, 255, 255], bold: true });
-  addArabicText("خبيرة التصميم المعماري والبيئي", pageWidth - margin, 38, { align: "right", fontSize: 13, color: [255, 240, 200] });
-  addArabicText("بالذكاء الاصطناعي", pageWidth - margin, 47, { align: "right", fontSize: 11, color: [255, 240, 200] });
-
-  // عنوان التقرير
-  doc.setFillColor(250, 245, 235);
-  doc.rect(0, 68, pageWidth, pageHeight - 68, "F");
-
-  addArabicText("تقرير التصميم الداخلي الاحترافي", pageWidth / 2, 90, { align: "center", fontSize: 20, color: GOLD, bold: true });
-
-  // خط فاصل ذهبي
-  doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.setLineWidth(0.8);
-  doc.line(margin, 95, pageWidth - margin, 95);
-
-  // معلومات المشروع
-  const styleName = STYLE_NAMES[project.designStyle] || project.designStyle;
-  const spaceName = SPACE_NAMES[project.spaceType || ""] || project.spaceType || "—";
-
-  const infoY = 110;
-  const col1X = pageWidth - margin;
-  const col2X = pageWidth / 2 + 10;
-
-  addArabicText("معلومات المشروع", col1X, infoY, { align: "right", fontSize: 14, color: GOLD, bold: true });
-
-  const infoItems = [
-    ["اسم المشروع", project.name],
-    ["نمط التصميم", styleName],
-    ["نوع الفضاء", spaceName],
-    ["المساحة", project.area ? `${project.area} م²` : "—"],
-    ["تاريخ التقرير", new Date().toLocaleDateString("ar-SA")],
-  ];
-
-  infoItems.forEach((item, i) => {
-    const y = infoY + 12 + i * 10;
-    addArabicText(`${item[0]}:`, col1X, y, { align: "right", fontSize: 11, color: DARK });
-    addArabicText(item[1] || "—", col2X, y, { align: "right", fontSize: 11, color: [100, 80, 40] });
-  });
-
-  // التكلفة التقديرية في مربع بارز
-  if (project.totalCostMin && project.totalCostMax) {
-    doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-    doc.roundedRect(margin, 170, pageWidth - margin * 2, 30, 3, 3, "F");
-    addArabicText("التكلفة التقديرية الإجمالية", pageWidth - margin - 5, 183, { align: "right", fontSize: 12, color: [255, 255, 255] });
-    addArabicText(
-      `${project.totalCostMin.toLocaleString("ar-SA")} — ${project.totalCostMax.toLocaleString("ar-SA")} ريال سعودي`,
-      pageWidth / 2,
-      190,
-      { align: "center", fontSize: 14, color: [255, 255, 255], bold: true }
-    );
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    return;
   }
 
-  // ===== صفحة 2: التحليل والتوصيات =====
-  doc.addPage();
-  doc.setFillColor(250, 245, 235);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
+  iframeDoc.open();
+  iframeDoc.write(html);
+  iframeDoc.close();
 
-  // هيدر الصفحة
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 0, pageWidth, 18, "F");
-  addArabicText("تحليل الفضاء والتوصيات", pageWidth - margin, 12, { align: "right", fontSize: 13, color: [255, 255, 255], bold: true });
-  addArabicText("م. سارة | خبيرة التصميم المعماري والبيئي", margin + 5, 12, { align: "left", fontSize: 9, color: [255, 240, 200] });
+  // Wait for fonts to load
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-  let currentY = 30;
+  iframe.contentWindow?.print();
 
-  if (project.analysisResult) {
-    const ar = project.analysisResult;
-
-    if (ar.spaceDescription) {
-      addArabicText("وصف الفضاء", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-      currentY += 7;
-      doc.setFillColor(255, 250, 240);
-      doc.roundedRect(margin, currentY, pageWidth - margin * 2, 18, 2, 2, "F");
-      addArabicText(ar.spaceDescription.substring(0, 120), pageWidth - margin - 3, currentY + 8, { align: "right", fontSize: 9, color: DARK });
-      currentY += 25;
-    }
-
-    if (ar.recommendations && ar.recommendations.length > 0) {
-      addArabicText("توصيات م. سارة", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-      currentY += 8;
-      ar.recommendations.slice(0, 5).forEach((rec, i) => {
-        doc.setFillColor(i % 2 === 0 ? 255 : 248, i % 2 === 0 ? 250 : 244, i % 2 === 0 ? 240 : 230);
-        doc.rect(margin, currentY - 5, pageWidth - margin * 2, 9, "F");
-        addArabicText(`${i + 1}. ${rec.substring(0, 90)}`, pageWidth - margin - 3, currentY + 1, { align: "right", fontSize: 9, color: DARK });
-        currentY += 10;
-      });
-      currentY += 5;
-    }
-  }
-
-  // ===== صفحة 3: لوحة الألوان والمواد =====
-  doc.addPage();
-  doc.setFillColor(250, 245, 235);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 0, pageWidth, 18, "F");
-  addArabicText("لوحة الألوان والمواد المقترحة", pageWidth - margin, 12, { align: "right", fontSize: 13, color: [255, 255, 255], bold: true });
-
-  currentY = 30;
-
-  // لوحة الألوان
-  if (project.colorPalette && project.colorPalette.length > 0) {
-    addArabicText("لوحة الألوان", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-    currentY += 10;
-
-    const colorBoxSize = 18;
-    const colorsPerRow = 5;
-    const colorSpacing = (pageWidth - margin * 2) / colorsPerRow;
-
-    project.colorPalette.slice(0, 6).forEach((color, i) => {
-      const col = i % colorsPerRow;
-      const row = Math.floor(i / colorsPerRow);
-      const x = margin + col * colorSpacing + colorSpacing / 2 - colorBoxSize / 2;
-      const y = currentY + row * 35;
-
-      // مربع اللون
-      const hex = color.hex.replace("#", "");
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      doc.setFillColor(r, g, b);
-      doc.setDrawColor(200, 180, 150);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(x, y, colorBoxSize, colorBoxSize, 2, 2, "FD");
-
-      // اسم اللون
-      addArabicText(color.name || color.hex, x + colorBoxSize / 2, y + colorBoxSize + 5, { align: "center", fontSize: 7, color: DARK });
-      addArabicText(color.hex, x + colorBoxSize / 2, y + colorBoxSize + 10, { align: "center", fontSize: 6, color: [150, 130, 100] });
-    });
-    currentY += 55;
-  }
-
-  // المواد المقترحة
-  if (project.materials && project.materials.length > 0) {
-    addArabicText("المواد المقترحة", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-    currentY += 8;
-
-    const materialsData = project.materials.slice(0, 8).map((m) => [
-      m.priceRange || "—",
-      m.brand || "—",
-      m.type || "—",
-      m.name || "—",
-    ]);
-
-    autoTable(doc, {
-      head: [["نطاق السعر", "الماركة", "النوع", "المادة"]],
-      body: materialsData,
-      startY: currentY,
-      margin: { right: margin, left: margin },
-      styles: { font: "helvetica", fontSize: 9, halign: "right", cellPadding: 3 },
-      headStyles: { fillColor: GOLD, textColor: [255, 255, 255], fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [255, 250, 240] },
-      tableWidth: "auto",
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-  }
-
-  // ===== صفحة 4: الأثاث وجدول التكاليف =====
-  doc.addPage();
-  doc.setFillColor(250, 245, 235);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 0, pageWidth, 18, "F");
-  addArabicText("الأثاث المقترح وجدول التكاليف", pageWidth - margin, 12, { align: "right", fontSize: 13, color: [255, 255, 255], bold: true });
-
-  currentY = 30;
-
-  // الأثاث
-  if (project.furniture && project.furniture.length > 0) {
-    addArabicText("قائمة الأثاث المقترح", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-    currentY += 8;
-
-    const furnitureData = project.furniture.slice(0, 10).map((f) => [
-      f.priceRange || "—",
-      f.material || "—",
-      String(f.quantity || 1),
-      f.name || "—",
-    ]);
-
-    autoTable(doc, {
-      head: [["نطاق السعر (ر.س)", "المادة", "الكمية", "القطعة"]],
-      body: furnitureData,
-      startY: currentY,
-      margin: { right: margin, left: margin },
-      styles: { font: "helvetica", fontSize: 9, halign: "right", cellPadding: 3 },
-      headStyles: { fillColor: LIGHT_GOLD, textColor: [255, 255, 255], fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [255, 250, 240] },
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-  }
-
-  // جدول التكاليف التفصيلي
-  if (project.costEstimate?.breakdown) {
-    addArabicText("توزيع التكاليف التفصيلي", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-    currentY += 8;
-
-    const costLabels: Record<string, string> = {
-      furniture: "الأثاث",
-      flooring: "الأرضيات",
-      walls: "الجدران والدهان",
-      ceiling: "الأسقف",
-      lighting: "الإضاءة",
-      curtains: "الستائر والمفروشات",
-      labor: "أعمال التركيب والعمالة",
-    };
-
-    const breakdown = project.costEstimate.breakdown;
-    const costData = Object.entries(breakdown)
-      .filter(([, v]) => v && v > 0)
-      .map(([k, v]) => {
-        const total = project.totalCostMin || 1;
-        const pct = Math.round(((v as number) / total) * 100);
-        return [`${pct}%`, `${(v as number).toLocaleString("ar-SA")} ر.س`, costLabels[k] || k];
-      });
-
-    autoTable(doc, {
-      head: [["النسبة", "التكلفة التقديرية", "البند"]],
-      body: costData,
-      startY: currentY,
-      margin: { right: margin, left: margin },
-      styles: { font: "helvetica", fontSize: 10, halign: "right", cellPadding: 4 },
-      headStyles: { fillColor: GOLD, textColor: [255, 255, 255], fontStyle: "bold" },
-      alternateRowStyles: { fillColor: [255, 250, 240] },
-      foot: [["100%", `${(project.totalCostMin || 0).toLocaleString("ar-SA")} — ${(project.totalCostMax || 0).toLocaleString("ar-SA")} ر.س`, "الإجمالي"]],
-      footStyles: { fillColor: DARK, textColor: [255, 240, 200], fontStyle: "bold" },
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-  }
-
-  // الجدول الزمني ونصائح التوفير
-  if (project.costEstimate?.timeline) {
-    doc.setFillColor(BEIGE[0], BEIGE[1], BEIGE[2]);
-    doc.roundedRect(margin, currentY, pageWidth - margin * 2, 12, 2, 2, "F");
-    addArabicText(`الجدول الزمني المقدّر: ${project.costEstimate.timeline}`, pageWidth - margin - 3, currentY + 8, {
-      align: "right", fontSize: 10, color: DARK, bold: true,
-    });
-    currentY += 18;
-  }
-
-  // ===== صفحة 5: الخاتمة والتوقيع =====
-  doc.addPage();
-  doc.setFillColor(250, 245, 235);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  // هيدر ذهبي
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.rect(0, 0, pageWidth, 18, "F");
-  addArabicText("ملاحظات ختامية", pageWidth - margin, 12, { align: "right", fontSize: 13, color: [255, 255, 255], bold: true });
-
-  currentY = 35;
-
-  if (project.costEstimate?.savingTips && project.costEstimate.savingTips.length > 0) {
-    addArabicText("نصائح لتوفير التكاليف", pageWidth - margin, currentY, { align: "right", fontSize: 13, color: GOLD, bold: true });
-    currentY += 10;
-
-    project.costEstimate.savingTips.slice(0, 5).forEach((tip, i) => {
-      doc.setFillColor(255, 250, 240);
-      doc.roundedRect(margin, currentY - 4, pageWidth - margin * 2, 10, 1, 1, "F");
-      doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-      doc.circle(pageWidth - margin - 3, currentY + 1, 2, "F");
-      addArabicText(`${tip.substring(0, 100)}`, pageWidth - margin - 8, currentY + 2, { align: "right", fontSize: 9, color: DARK });
-      currentY += 13;
-    });
-    currentY += 10;
-  }
-
-  // توقيع م. سارة
-  doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 45, 4, 4, "F");
-  addArabicText("م. سارة", pageWidth / 2, currentY + 15, { align: "center", fontSize: 18, color: [255, 255, 255], bold: true });
-  addArabicText("خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي", pageWidth / 2, currentY + 25, { align: "center", fontSize: 10, color: [255, 240, 200] });
-  addArabicText("هذا التقرير مولّد بالذكاء الاصطناعي ويُعدّ مرجعاً تقديرياً", pageWidth / 2, currentY + 35, { align: "center", fontSize: 8, color: [255, 235, 180] });
-
-  // فوتر كل الصفحات
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFillColor(GOLD[0], GOLD[1], GOLD[2]);
-    doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
-    addArabicText(`صفحة ${i} من ${totalPages}`, pageWidth / 2, pageHeight - 3, { align: "center", fontSize: 8, color: [255, 255, 255] });
-    addArabicText("م. سارة | sarahdesign.manus.space", margin, pageHeight - 3, { align: "left", fontSize: 7, color: [255, 240, 200] });
-  }
-
-  // حفظ الملف
-  const fileName = `تقرير-${project.name}-${new Date().toLocaleDateString("ar-SA").replace(/\//g, "-")}.pdf`;
-  doc.save(fileName);
+  // Cleanup after print dialog closes
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 3000);
 }
