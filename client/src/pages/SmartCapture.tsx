@@ -985,6 +985,7 @@ function IdeaCard({
         spaceType: spaceType,
       });
       if (result.success && result.imageUrl) {
+        deductCredit("applyStyle", "تغيير نمط التصميم").catch(() => {});
         onUpdateIdea?.(idea.id, {
           imageUrl: result.imageUrl,
           title: result.newTitle,
@@ -2410,6 +2411,7 @@ export default function SmartCapture() {
   const analyzeAndGenerateMutation = trpc.analyzeAndGenerateIdeas.useMutation({
     onSuccess: async (data) => {
       // خصم الكريدت بعد نجاح التحليل
+      deduct("analyzeAndGenerate", "تحليل + توليد أفكار تصميمية").catch(() => {});
       if (data.ideas && Array.isArray(data.ideas)) {
         setIdeas(data.ideas.map((idea: Partial<DesignIdea> & { id?: string }) => ({
           id: idea.id || Math.random().toString(36).slice(2),
@@ -2456,6 +2458,8 @@ export default function SmartCapture() {
     onSuccess: (data, variables) => {
       const vars = variables as typeof variables & { ideaId?: string };
       if (data.imageUrl && vars.ideaId) {
+        // خصم كريدت توليد الصورة
+        deduct("generateVisualization", "توليد صورة تصورية").catch(() => {});
         setIdeas((prev) =>
           prev.map((idea) =>
             idea.id === vars.ideaId

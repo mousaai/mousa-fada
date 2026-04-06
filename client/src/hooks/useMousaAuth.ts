@@ -7,10 +7,6 @@ const PLATFORM_API_KEY = "USAA";
 // FIX FADA-001: mousa.ai يضبط cookie باسم app_session_id على domain .mousa.ai
 const SHARED_COOKIE = "app_session_id";
 
-// ✅ وضع مجاني بالكامل — نظام الكريدت موقف مؤقتاً
-export const FREE_CREDITS = 999999;
-const FREE_CREDITS_KEY = "fada_free_credits_used";
-
 export interface MousaUser {
   userId: number;
   openId: string;
@@ -18,7 +14,7 @@ export interface MousaUser {
   email: string;
   creditBalance: number;
   platform: string;
-  isFreeMode?: boolean; // true = يستخدم الـ 200 نقطة المجانية
+  isFreeMode?: boolean; // true = مستخدم غير مرتبط بـ mousa.ai
 }
 
 interface AuthState {
@@ -27,14 +23,14 @@ interface AuthState {
   token: string | null;
 }
 
-// المستخدم المجاني — رصيد غير محدود
-function buildFreeUser(): MousaUser {
+// المستخدم الزائر — بدون حساب mousa.ai
+function buildGuestUser(): MousaUser {
   return {
     userId: 0,
-    openId: "free",
-    name: "مستخدم",
+    openId: "guest",
+    name: "زائر",
     email: "",
-    creditBalance: 999999,
+    creditBalance: 0,
     platform: "fada",
     isFreeMode: true,
   };
@@ -54,7 +50,6 @@ export function useMousaAuth() {
   async function initAuth() {
     try {
       // ===== المسار 1: ?token= في URL من mousa.ai =====
-      // عندما يضغط المستخدم على بطاقة fada في mousa.ai
       const urlParams = new URLSearchParams(window.location.search);
       const mousaToken = urlParams.get("token");
 
@@ -62,7 +57,6 @@ export function useMousaAuth() {
         try {
           const user = await verifyViaSSOEndpoint(mousaToken);
           if (user) {
-            // إزالة الـ token من URL بدون reload
             urlParams.delete("token");
             const cleanSearch = urlParams.toString();
             const cleanUrl = window.location.pathname + (cleanSearch ? "?" + cleanSearch : "");
@@ -99,10 +93,10 @@ export function useMousaAuth() {
         // السيرفر لم يتعرف على الجلسة
       }
 
-      // ===== المسار 4: زائر مجاني — لا قيود على الدخول =====
-      setState({ user: buildFreeUser(), loading: false, token: null });
+      // ===== المسار 4: زائر بدون حساب =====
+      setState({ user: buildGuestUser(), loading: false, token: null });
     } catch {
-      setState({ user: buildFreeUser(), loading: false, token: null });
+      setState({ user: buildGuestUser(), loading: false, token: null });
     }
   }
 
@@ -240,40 +234,115 @@ export function useMousaAuth() {
     };
   }
 
-  async function deductCredits(_amount: number, _description?: string): Promise<{ newBalance: number }> {
-    // ✅ وضع مجاني — لا خصم للكريدت
-    return { newBalance: 999999 };
+  /**
+   * خصم الكريدت الفعلي عبر tRPC → mousa.deductCredits
+   * يُستدعى بعد نجاح كل عملية AI
+   */
+  async function deductCredits(amount: number, description?: string): Promise<{ newBalance: number }> {
+    if (!state.user || state.user.isFreeMode || state.user.userId === 0) {
+      // مستخدم غير مرتبط — لا خصم
+      return { newBalance: state.user?.creditBalance ?? 0 };
+    }
+
+    try {
+      // تحديد العملية من الوصف
+      const operationMap: Record<string, string> = {
+        "تحليل صورة": "analyzePhoto",
+        "تحليل + توليد": "analyzeAndGenerate",
+        "توليد صورة": "generateVisualization",
+        "توليد أفكار": "generateIdeas",
+        "إعادة تحليل": "reAnalyze",
+        "تغيير نمط": "applyStyle",
+        "تحسين التصميم": "refineDesign",
+        "تصميم صوتي": "voiceDesign",
+        "رندر 3D مسقط": "generateFloorPlan3D",
+        "رندر 3D": "generate3D",
+        "بيانات تصميم": "generatePlanDesign",
+        "تصدير PDF": "generatePDF",
+      };
+
+      let operation = "analyzePhoto";
+      if (description) {
+        for (const [key, val] of Object.entries(operationMap)) {
+          if (description.includes(key)) {
+            operation = val;
+            break;
+          }
+        }
+      }
+
+      const response = await fetch("/api/trpc/mousa.deductCredits?batch=1", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          "0": {
+            json: { operation, description: description ?? operation }
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        return { newBalance: state.user.creditBalance };
+      }
+
+      const data = await response.json() as any;
+      const result = data?.[0]?.result?.data?.json;
+
+      if (result?.success && result.newBalance !== null) {
+        // تحديث الرصيد المحلي
+        setState(prev => ({
+          ...prev,
+          user: prev.user ? { ...prev.user, creditBalance: result.newBalance } : prev.user,
+        }));
+        return { newBalance: result.newBalance };
+      }
+
+      return { newBalance: state.user.creditBalance };
+    } catch {
+      return { newBalance: state.user?.creditBalance ?? 0 };
+    }
   }
 
+  /**
+   * تحديث الرصيد من mousa.ai
+   */
   async function refreshBalance(): Promise<number> {
-    // ✅ وضع مجاني — الرصيد غير محدود
-    return 999999;
+    if (!state.user || state.user.isFreeMode || state.user.userId === 0) {
+      return state.user?.creditBalance ?? 0;
+    }
+
+    try {
+      const response = await fetch("/api/trpc/mousa.getBalance?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) return state.user.creditBalance;
+
+      const data = await response.json() as any;
+      const result = data?.[0]?.result?.data?.json;
+
+      if (result?.balance !== null && result?.balance !== undefined) {
+        setState(prev => ({
+          ...prev,
+          user: prev.user ? { ...prev.user, creditBalance: result.balance } : prev.user,
+        }));
+        return result.balance;
+      }
+
+      return state.user.creditBalance;
+    } catch {
+      return state.user?.creditBalance ?? 0;
+    }
   }
 
   function logout() {
     deleteCookie(SHARED_COOKIE);
-    setState({ user: buildFreeUser(), loading: false, token: null });
+    setState({ user: buildGuestUser(), loading: false, token: null });
   }
 
   return { ...state, deductCredits, refreshBalance, logout };
-}
-
-// ===== Free Credits Helpers (localStorage) =====
-
-function getFreeCreditsUsed(): number {
-  try {
-    return parseInt(localStorage.getItem(FREE_CREDITS_KEY) ?? "0", 10) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-function setFreeCreditsUsed(amount: number) {
-  try {
-    localStorage.setItem(FREE_CREDITS_KEY, String(amount));
-  } catch {
-    // تجاهل
-  }
 }
 
 // ===== Cookie Helpers =====
