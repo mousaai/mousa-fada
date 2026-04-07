@@ -1176,3 +1176,15 @@
 - [ ] تحديث CreditBadge لعرض الرصيد الحقيقي
 - [ ] تحديث useMousaCredit لاستخدام الرصيد الحقيقي
 - [ ] تفعيل canAfford للتحقق من الرصيد قبل كل عملية
+
+## المهام التقنية الأربع (أسبوع واحد)
+- [ ] المهمة 1: إصلاح Cookie SameSite=none لـ Safari/Brave
+- [ ] المهمة 2: إضافة Webhook Receiver على POST /api/internal/events
+- [ ] المهمة 3: إضافة Idempotency Key لكل طلب خصم
+- [ ] المهمة 4: حفظ بيانات الزائر في localStorage ونقلها عند التسجيل
+
+## المهام التقنية الأربع (أسبوع واحد)
+- [x] المهمة 1: إصلاح Cookie SameSite=none لـ Safari و Brave
+- [x] المهمة 2: إضافة Webhook Receiver على POST /api/internal/events
+- [x] المهمة 3: Idempotency Key لكل طلب خصم (X-Idempotency-Key: fada_UUID)
+- [x] المهمة 4: حفظ تصاميم الزائر في localStorage ونقلها عند التسجيل

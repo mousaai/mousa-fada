@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { loadGuestDesignsForMigration, clearGuestDesignsAfterMigration } from "./guestDesignsMigration";
 
 const MOUSA_API_URL = "https://www.mousa.ai";
 const THIS_PLATFORM = "fada";
@@ -62,6 +63,8 @@ export function useMousaAuth() {
             const cleanUrl = window.location.pathname + (cleanSearch ? "?" + cleanSearch : "");
             window.history.replaceState({}, "", cleanUrl);
             setState({ user, loading: false, token: mousaToken });
+            // نقل تصاميم الزائر للحساب عند أول تسجيل دخول
+            migrateGuestDesignsOnLogin();
             return;
           }
         } catch {
@@ -76,6 +79,8 @@ export function useMousaAuth() {
         try {
           const user = await verifySession(sessionCookie);
           setState({ user, loading: false, token: sessionCookie });
+          // نقل تصاميم الزائر للحساب
+          migrateGuestDesignsOnLogin();
           return;
         } catch {
           // فشل verify-session — نحاول السيرفر كـ fallback
@@ -340,6 +345,36 @@ export function useMousaAuth() {
   function logout() {
     deleteCookie(SHARED_COOKIE);
     setState({ user: buildGuestUser(), loading: false, token: null });
+  }
+
+  /**
+   * نقل تصاميم الزائر للحساب عند تسجيل الدخول
+   * يعمل في الخلفية بدون إزعاج المستخدم
+   */
+  function migrateGuestDesignsOnLogin() {
+    const designs = loadGuestDesignsForMigration();
+    if (designs.length === 0) return;
+
+    // إرسال التصاميم للسيرفر لحفظها في الحساب
+    fetch("/api/trpc/designs.migrateGuestDesigns?batch=1", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        "0": {
+          json: { designs }
+        }
+      }),
+    })
+    .then(res => {
+      if (res.ok) {
+        clearGuestDesignsAfterMigration();
+        console.log(`[GuestMigration] ✅ Migrated ${designs.length} guest designs to account`);
+      }
+    })
+    .catch(err => {
+      console.warn("[GuestMigration] Failed to migrate guest designs:", err);
+    });
   }
 
   return { ...state, deductCredits, refreshBalance, logout };

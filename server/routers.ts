@@ -388,9 +388,72 @@ warm lighting, high-end materials, professional photography`;
   return url;
 }
 
+// ===== Designs Router — نقل تصاميم الزائر عند التسجيل =====
+export const designsRouter = router({
+  /**
+   * استقبال تصاميم الزائر ونقلها للحساب عند تسجيل الدخول
+   * يُستدعى تلقائياً من useMousaAuth عند أول تسجيل دخول
+   */
+  migrateGuestDesigns: protectedProcedure
+    .input(z.object({
+      designs: z.array(z.object({
+        id: z.string(),
+        savedAt: z.number(),
+        primaryImageUrl: z.string().optional(),
+        spaceType: z.string().optional(),
+        styleLabel: z.string().optional(),
+        ideas: z.array(z.object({
+          id: z.string(),
+          title: z.string(),
+          description: z.string(),
+          style: z.string(),
+          imageUrl: z.string().optional(),
+          palette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+          materials: z.array(z.string()).optional(),
+          totalCost: z.number().optional(),
+        })),
+        budgetLevel: z.string().optional(),
+        roomDimensions: z.object({
+          length: z.string().optional(),
+          width: z.string().optional(),
+          height: z.string().optional(),
+        }).optional(),
+      }))
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const migrated: string[] = [];
+
+      for (const guestDesign of input.designs) {
+        try {
+          const projectName = guestDesign.styleLabel
+            ? `${guestDesign.spaceType || 'تصميم'} — ${guestDesign.styleLabel}`
+            : `تصميم محفوظ ${new Date(guestDesign.savedAt).toLocaleDateString('ar-SA')}`;
+
+          await createProject({
+            userId,
+            name: projectName,
+            description: `تصميم محفوظ من جلسة سابقة (${guestDesign.ideas.length} أفكار)`,
+            spaceType: guestDesign.spaceType ?? undefined,
+            designStyle: guestDesign.styleLabel ?? 'modern',
+            status: 'draft',
+          });
+
+          migrated.push(guestDesign.id);
+        } catch (err) {
+          console.error(`[GuestMigration] Failed to migrate design ${guestDesign.id}:`, err);
+        }
+      }
+
+      return { success: true, migrated: migrated.length, total: input.designs.length };
+    }),
+});
+
+
 // ===== الراوتر الرئيسي =====
 export const appRouter = router({
   system: systemRouter,
+  designs: designsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -4327,4 +4390,5 @@ FINAL RESULT: A jaw-dropping interior that makes viewers say "I want to live her
     }),
 
 });
+
 export type AppRouter = typeof appRouter;

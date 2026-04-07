@@ -8,6 +8,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { notifyMousaPricing } from "../mousa";
 import { registerSSORoutes } from "./sso";
+import { registerWebhookRoutes } from "./webhook";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -96,6 +97,9 @@ async function startServer() {
   });
   // ===== SSO Routes — دخول موحد مع mousa.ai =====
   registerSSORoutes(app);
+
+  // ===== Webhook Receiver — استقبال أحداث mousa.ai =====
+  registerWebhookRoutes(app);
 
   // tRPC API
   app.use(

@@ -14,6 +14,18 @@
 const MOUSA_BASE_URL = "https://www.mousa.ai";
 const PLATFORM_ID = "fada";
 
+// ===== Idempotency Key Generator =====
+import { randomUUID } from "crypto";
+
+/**
+ * توليد Idempotency Key فريد لكل طلب خصم.
+ * يمنع الخصم المزدوج في حالة إعادة المحاولة أو انقطاع الشبكة.
+ * الصيغة: fada_{uuid} — يُرسَل في header X-Idempotency-Key
+ */
+function generateIdempotencyKey(): string {
+  return `fada_${randomUUID()}`;
+}
+
 function getApiKey(): string {
   const key = process.env.MOUSA_PLATFORM_API_KEY;
   if (!key) throw new Error("MOUSA_PLATFORM_API_KEY is not set");
@@ -125,11 +137,16 @@ export async function checkMousaBalance(
 export async function deductMousaCredits(
   userId: number,
   amount: number,
-  description: string
+  description: string,
+  idempotencyKey?: string
 ): Promise<MousaDeductResult | MousaInsufficientError> {
+  const key = idempotencyKey ?? generateIdempotencyKey();
   const res = await fetch(`${MOUSA_BASE_URL}/api/platform/deduct-credits`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: {
+      ...getHeaders(),
+      "X-Idempotency-Key": key,
+    },
     body: JSON.stringify({ userId, amount, description }),
   });
 
@@ -161,11 +178,16 @@ export async function deductMousaCreditsWithFactors(
     text_length?: number;
     analysis_depth?: number;
   },
-  description: string
+  description: string,
+  idempotencyKey?: string
 ): Promise<MousaDeductResult | MousaInsufficientError> {
+  const key = idempotencyKey ?? generateIdempotencyKey();
   const res = await fetch(`${MOUSA_BASE_URL}/api/platform/deduct-credits`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: {
+      ...getHeaders(),
+      "X-Idempotency-Key": key,
+    },
     body: JSON.stringify({ userId, usage_factors: usageFactors, description }),
   });
 

@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { CreditBadge, useMousaCredit } from "@/components/CreditBadge";
 import { handleMousaErrorStatic } from "@/hooks/useMousaError";
+import { useGuestDesigns } from "@/hooks/useGuestDesigns";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
@@ -2319,8 +2320,8 @@ export default function SmartCapture() {
   const [, navigate] = useLocation();
   const { t, dir } = useLanguage();
   const { data: currentUser } = trpc.auth.me.useQuery();
-  const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
-
+   const { deduct, canAfford, balance, requiresMousa, upgradeUrl } = useMousaCredit();
+  const { saveGuestDesign, hasGuestDesigns, guestDesignsCount } = useGuestDesigns();
   // UI state
   const [step, setStep] = useState<"select" | "capture" | "filter" | "analyzing" | "results">("select");
   const [selectedMode, setSelectedMode] = useState<CaptureMode | null>(null);
@@ -2444,6 +2445,27 @@ export default function SmartCapture() {
         setStructuralSuggestions(data.structuralSuggestions as StructuralSuggestion[]);
       }
       setStep("results");
+      // حفظ التصميم في localStorage إذا كان الزائر غير مسجل
+      if (!currentUser && data.ideas && Array.isArray(data.ideas) && data.ideas.length > 0) {
+        const firstIdea = data.ideas[0] as Partial<DesignIdea>;
+        saveGuestDesign({
+          primaryImageUrl: primaryImageS3Url || primaryImage || undefined,
+          spaceType: (data.spaceAnalysis as SpaceAnalysis | null)?.spaceType,
+          styleLabel: firstIdea.styleLabel,
+          ideas: (data.ideas as Partial<DesignIdea>[]).map(idea => ({
+            id: idea.id || Math.random().toString(36).slice(2),
+            title: idea.title || "",
+            description: idea.description || "",
+            style: idea.style || "",
+            imageUrl: idea.imageUrl,
+            palette: idea.palette,
+            materials: idea.materials,
+            totalCost: idea.costMax,
+          })),
+          budgetLevel,
+          roomDimensions: { length: roomLength, width: roomWidth, height: roomHeight },
+        });
+      }
     },
     onError: (err) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

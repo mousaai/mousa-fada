@@ -21,28 +21,44 @@ function isSecureRequest(req: Request) {
   return protoList.some(proto => proto.trim().toLowerCase() === "https");
 }
 
+function isLocalHost(req: Request): boolean {
+  const hostname = req.hostname || "";
+  return LOCAL_HOSTS.has(hostname) || isIpAddress(hostname);
+}
+
+/**
+ * Cookie options للجلسة.
+ *
+ * Safari ITP و Brave Shields يمنعان الـ cookies من domain مختلف
+ * إلا إذا كانت SameSite=None + Secure=true.
+ *
+ * القاعدة:
+ * - في الإنتاج (HTTPS): SameSite=None, Secure=true, Domain=.mousa.ai
+ * - في التطوير (localhost): SameSite=Lax, Secure=false, بدون Domain
+ */
 export function getSessionCookieOptions(
   req: Request
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
-  // const hostname = req.hostname;
-  // const shouldSetDomain =
-  //   hostname &&
-  //   !LOCAL_HOSTS.has(hostname) &&
-  //   !isIpAddress(hostname) &&
-  //   hostname !== "127.0.0.1" &&
-  //   hostname !== "::1";
+  const isLocal = isLocalHost(req);
+  const isSecure = isSecureRequest(req);
 
-  // const domain =
-  //   shouldSetDomain && !hostname.startsWith(".")
-  //     ? `.${hostname}`
-  //     : shouldSetDomain
-  //       ? hostname
-  //       : undefined;
+  if (isLocal) {
+    // localhost — لا يدعم SameSite=None بدون Secure
+    return {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: false,
+    };
+  }
 
+  // الإنتاج — SameSite=None + Secure=true لدعم Safari/Brave
+  // Domain=.mousa.ai يسمح بمشاركة الـ cookie بين fada.mousa.ai و mousa.ai
   return {
     httpOnly: true,
     path: "/",
     sameSite: "none",
-    secure: isSecureRequest(req),
+    secure: true, // مطلوب دائماً مع SameSite=None
+    domain: ".mousa.ai",
   };
 }
