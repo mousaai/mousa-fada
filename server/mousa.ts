@@ -27,8 +27,9 @@ function generateIdempotencyKey(): string {
 }
 
 function getApiKey(): string {
-  const key = process.env.MOUSA_PLATFORM_API_KEY;
-  if (!key) throw new Error("MOUSA_PLATFORM_API_KEY is not set");
+  // دعم كلا الاسمين: PLATFORM_API_KEY (الرسمي من mousa.ai) و MOUSA_PLATFORM_API_KEY (القديم)
+  const key = process.env.PLATFORM_API_KEY || process.env.MOUSA_PLATFORM_API_KEY;
+  if (!key) throw new Error("PLATFORM_API_KEY is not set");
   return key;
 }
 
@@ -284,9 +285,9 @@ export const MOUSA_UPGRADE_URL = "https://www.mousa.ai/pricing?ref=fada";
  *           X-Platform-ID: fada
  */
 export async function notifyMousaPricing(): Promise<boolean> {
-  const apiKey = process.env.MOUSA_PLATFORM_API_KEY;
+  const apiKey = process.env.PLATFORM_API_KEY || process.env.MOUSA_PLATFORM_API_KEY;
   if (!apiKey) {
-    console.warn("[mousa] MOUSA_PLATFORM_API_KEY not set — skipping pricing webhook");
+    console.warn("[mousa] PLATFORM_API_KEY not set — skipping pricing webhook");
     return false;
   }
 
