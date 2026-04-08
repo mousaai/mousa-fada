@@ -75,6 +75,7 @@ async function verifyHandoffToken(token: string): Promise<MousaUser | null> {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${PLATFORM_API_KEY}`,
+        "X-Platform-ID": "fada",
       },
       body: JSON.stringify({ token }),
       signal: AbortSignal.timeout(5000), // 5 second timeout

@@ -1188,3 +1188,8 @@
 - [x] المهمة 2: إضافة Webhook Receiver على POST /api/internal/events
 - [x] المهمة 3: Idempotency Key لكل طلب خصم (X-Idempotency-Key: fada_UUID)
 - [x] المهمة 4: حفظ تصاميم الزائر في localStorage ونقلها عند التسجيل
+
+## إصلاح SSO (9 أبريل 2026)
+- [x] تحديث MOUSA_PLATFORM_API_KEY للقيمة الصحيحة (PLATFORM_API_KEY=740df917...)
+- [x] إضافة X-Platform-ID: fada في auth.middleware.ts (verifyHandoffToken)
+- [x] X-Platform-ID موجود بالفعل في mousa.ts (getHeaders)

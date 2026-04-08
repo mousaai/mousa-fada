@@ -65,6 +65,14 @@ describe("internal.routes exports", () => {
   });
 });
 
+describe("auth.middleware X-Platform-ID header", () => {
+  it("should include X-Platform-ID: fada in verifyHandoffToken", async () => {
+    const fs = await import("fs");
+    const content = fs.readFileSync(new URL("./auth.middleware.ts", import.meta.url).pathname, "utf-8");
+    expect(content).toContain('"X-Platform-ID": "fada"');
+  });
+});
+
 describe("WEBHOOK_SECRET HMAC verification", () => {
   it("should correctly compute HMAC-SHA256 for webhook signature", async () => {
     const crypto = await import("crypto");
