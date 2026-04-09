@@ -3,7 +3,8 @@ import { loadGuestDesignsForMigration, clearGuestDesignsAfterMigration } from ".
 
 const MOUSA_API_URL = "https://www.mousa.ai";
 const THIS_PLATFORM = "fada";
-const PLATFORM_API_KEY = "USAA";
+// PLATFORM_API_KEY لا يُستخدم من الـ frontend — كل التحقق يمر عبر /api/sso/* على السيرفر
+const PLATFORM_API_KEY = ""; // لا يُستخدم مباشرةً من الـ frontend
 
 // FIX FADA-001: mousa.ai يضبط cookie باسم app_session_id على domain .mousa.ai
 const SHARED_COOKIE = "app_session_id";
@@ -55,37 +56,60 @@ export function useMousaAuth() {
       const mousaToken = urlParams.get("token");
 
       if (mousaToken) {
+        // محاولة 1: verify كامل (مستخدم جديد أو جلسة منتهية)
+        let ssoUser: MousaUser | null = null;
         try {
-          const user = await verifyViaSSOEndpoint(mousaToken);
-          if (user) {
-            urlParams.delete("token");
-            const cleanSearch = urlParams.toString();
-            const cleanUrl = window.location.pathname + (cleanSearch ? "?" + cleanSearch : "");
-            window.history.replaceState({}, "", cleanUrl);
-            setState({ user, loading: false, token: mousaToken });
-            // نقل تصاميم الزائر للحساب عند أول تسجيل دخول
-            migrateGuestDesignsOnLogin();
-            return;
-          }
+          ssoUser = await verifyViaSSOEndpoint(mousaToken);
         } catch {
-          // فشل SSO — نكمل بالطرق الأخرى
+          // خطأ شبكة — نتجاوز
         }
-      }
 
-      // ===== المسار 2: cookie app_session_id من .mousa.ai =====
-      const sessionCookie = getCookie(SHARED_COOKIE);
-
-      if (sessionCookie) {
-        try {
-          const user = await verifySession(sessionCookie);
-          setState({ user, loading: false, token: sessionCookie });
-          // نقل تصاميم الزائر للحساب
+        if (ssoUser) {
+          // تسجيل دخول ناجح
+          urlParams.delete("token");
+          const cleanSearch = urlParams.toString();
+          const cleanUrl = window.location.pathname + (cleanSearch ? "?" + cleanSearch : "");
+          window.history.replaceState({}, "", cleanUrl);
+          setState({ user: ssoUser, loading: false, token: mousaToken });
           migrateGuestDesignsOnLogin();
           return;
-        } catch {
-          // فشل verify-session — نحاول السيرفر كـ fallback
+        } else {
+          // فشل verify — نحاول relink للمستخدمين الذين لديهم جلسة محلية قديمة
+          try {
+            const relinkRes = await fetch("/api/sso/relink", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: mousaToken }),
+            });
+            if (relinkRes.ok) {
+              const relinkData = await relinkRes.json() as { success: boolean; userId?: number; creditBalance?: number };
+              if (relinkData.success) {
+                console.log("[Auth] ✅ Relinked account with mousa.ai, userId=", relinkData.userId);
+                // إعادة تحميل الجلسة بعد الربط
+                const updatedUser = await verifyViaServer();
+                if (updatedUser) {
+                  urlParams.delete("token");
+                  const cleanUrl = window.location.pathname + (urlParams.toString() ? "?" + urlParams.toString() : "");
+                  window.history.replaceState({}, "", cleanUrl);
+                  setState({ user: updatedUser, loading: false, token: mousaToken });
+                  migrateGuestDesignsOnLogin();
+                  return;
+                }
+              }
+            }
+          } catch {
+            // فشل relink — نكمل بالطرق الأخرى
+          }
         }
       }
+
+      // ===== المسار 2: جلسة محلية عبر /api/sso/status =====
+      // ملاحظة: تم حذف التحقق من cookie app_session_id مباشرةً مع mousa.ai
+      // لأن PLATFORM_API_KEY لا يجب أن يكون في الـ frontend
+      const sessionCookie = getCookie(SHARED_COOKIE);
+
+      // محاولة الجلسة المحلية أولاً (cookie محلي من /api/sso/verify)
 
       // ===== المسار 3: جلسة محلية عبر /api/sso/status =====
       try {

@@ -136,7 +136,23 @@ export function registerSSORoutes(app: Express) {
         maxAge: ONE_YEAR_MS,
       });
 
-      console.log(`[SSO] ✅ User ${mousaData.openId} verified via POST /api/sso/verify`);
+      // جلب الرصيد الحقيقي عبر check-balance (أدق من verify-token)
+      let liveBalance = mousaData.creditBalance;
+      try {
+        const balanceData = await checkMousaBalance(mousaData.userId);
+        liveBalance = balanceData.balance;
+        // تحديث الرصيد في قاعدة البيانات
+        db.upsertUser({
+          openId: mousaData.openId,
+          mousaBalance: liveBalance,
+          mousaLastSync: new Date(),
+        } as any).catch(() => {});
+        console.log(`[SSO] ✅ Balance refreshed: ${liveBalance} (was ${mousaData.creditBalance})`);
+      } catch {
+        // فشل check-balance — نستخدم قيمة verify-token
+      }
+
+      console.log(`[SSO] ✅ User ${mousaData.openId} verified via POST /api/sso/verify, balance=${liveBalance}`);
 
       return res.json({
         success: true,
@@ -144,13 +160,61 @@ export function registerSSORoutes(app: Express) {
           openId: mousaData.openId,
           name: mousaData.name,
           email: mousaData.email,
-          creditBalance: mousaData.creditBalance,
+          creditBalance: liveBalance,
           userId: mousaData.userId,
         },
       });
     } catch (err: any) {
       console.error("[SSO] POST verify failed:", err?.message);
       return res.status(401).json({ success: false, error: "verification failed" });
+    }
+  });
+
+  /**
+   * POST /api/sso/relink
+   *
+   * يقبل token جديد من mousa.ai ويُحدّث mousaUserId للمستخدم الموجود.
+   * يُستخدم للمستخدمين الذين سجلوا قبل الإصلاح ولديهم mousaUserId = null.
+   */
+  app.post("/api/sso/relink", async (req: Request, res: Response) => {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      return res.status(400).json({ success: false, error: "token required" });
+    }
+    // التحقق من الجلسة المحلية أولاً
+    const cookieHeader = req.headers.cookie ?? "";
+    const cookies = parseCookies(cookieHeader);
+    const sessionCookie = cookies[COOKIE_NAME];
+    if (!sessionCookie) {
+      return res.status(401).json({ success: false, error: "no session" });
+    }
+    try {
+      const { verifySessionToken } = await import("./localAuth");
+      const session = await verifySessionToken(sessionCookie);
+      if (!session) {
+        return res.status(401).json({ success: false, error: "invalid session" });
+      }
+      // التحقق من الـ token الجديد
+      const mousaData = await verifyMousaToken(token);
+      if (!mousaData.userId || !mousaData.openId) {
+        return res.status(401).json({ success: false, error: "invalid token" });
+      }
+      // تحديث mousaUserId والرصيد للمستخدم الحالي
+      await db.upsertUser({
+        openId: session.openId,
+        mousaUserId: mousaData.userId,
+        mousaBalance: mousaData.creditBalance,
+        mousaLastSync: new Date(),
+      } as any);
+      console.log(`[SSO] ✅ Relinked ${session.openId} to mousa userId=${mousaData.userId}, balance=${mousaData.creditBalance}`);
+      return res.json({
+        success: true,
+        userId: mousaData.userId,
+        creditBalance: mousaData.creditBalance,
+      });
+    } catch (err: any) {
+      console.error("[SSO] relink failed:", err?.message);
+      return res.status(500).json({ success: false, error: "relink failed" });
     }
   });
 
@@ -226,7 +290,7 @@ export function registerSSORoutes(app: Express) {
           openId: user.openId,
           name: user.name,
           email: user.email,
-          mousaUserId: user.mousaUserId,
+          mousaUserId: resolvedMousaUserId,  // FIX: استخدام resolvedMousaUserId بدلاً من user.mousaUserId القديم
           mousaBalance: liveBalance,
         },
       });
