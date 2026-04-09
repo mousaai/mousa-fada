@@ -27,10 +27,17 @@ function generateIdempotencyKey(): string {
 }
 
 function getApiKey(): string {
-  // دعم كلا الاسمين: PLATFORM_API_KEY (الرسمي من mousa.ai) و MOUSA_PLATFORM_API_KEY (القديم)
-  const key = process.env.PLATFORM_API_KEY || process.env.MOUSA_PLATFORM_API_KEY;
-  if (!key) throw new Error("PLATFORM_API_KEY is not set");
-  return key;
+  // الأولوية: MOUSA_PLATFORM_API_KEY (مفتاح mousa.ai الحقيقي) إذا كانت قيمته صحيحة (ليست USAA)
+  // ثم PLATFORM_API_KEY كـ fallback
+  const mousaKey = process.env.MOUSA_PLATFORM_API_KEY;
+  if (mousaKey && mousaKey !== "USAA" && mousaKey.length > 10) {
+    return mousaKey;
+  }
+  const platformKey = process.env.PLATFORM_API_KEY;
+  if (platformKey && platformKey !== "USAA" && platformKey.length > 10) {
+    return platformKey;
+  }
+  throw new Error("MOUSA_PLATFORM_API_KEY is not set or invalid (got: " + (mousaKey ?? "undefined") + ")");
 }
 
 function getHeaders() {
