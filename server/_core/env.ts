@@ -25,6 +25,7 @@ export const ENV = {
   telegramChatId: process.env.TELEGRAM_CHAT_ID ?? "",
   // تكامل mousa.ai
   mousaJwtSecret: process.env.MOUSA_JWT_SECRET ?? "gUZSqUcmSESjwVurZ47xye",
-  mousaPlatformApiKey: process.env.MOUSA_PLATFORM_API_KEY ?? "USAA",
+  // PLATFORM_API_KEY له الأولوية (الاسم الرسمي)، ثم MOUSA_PLATFORM_API_KEY كـ fallback
+  mousaPlatformApiKey: process.env.PLATFORM_API_KEY || process.env.MOUSA_PLATFORM_API_KEY || "",
   mousaDbUrl: process.env.MOUSA_DB_URL ?? "",
 };

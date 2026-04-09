@@ -52,7 +52,7 @@ function verifyWebhookSignature(req: Request): boolean {
   }
 
   // طريقة 2: API Key مباشر
-  const platformApiKey = process.env.MOUSA_PLATFORM_API_KEY;
+  const platformApiKey = process.env.PLATFORM_API_KEY || process.env.MOUSA_PLATFORM_API_KEY;
   if (apiKey && platformApiKey && apiKey === platformApiKey) {
     return true;
   }
