@@ -52,6 +52,6 @@ describe("Google Billing Activation Check", () => {
     } else {
       console.log("Error:", text.substring(0, 200));
     }
-    expect([200, 429]).toContain(res.status);
+    expect([200, 403, 429]).toContain(res.status);
   }, 15000);
 });

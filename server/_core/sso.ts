@@ -9,6 +9,9 @@
  * 5. السيرفر يُنشئ جلسة محلية ويُعيد التوجيه بدون أي نافذة
  *
  * النتيجة: دخول سلس بدون تسجيل مزدوج
+ *
+ * ملاحظة (v2.0): mousa.ai لا يُعيد حقل "valid" في الاستجابة.
+ * الشرط الصحيح هو التحقق من وجود userId و openId.
  */
 import type { Express, Request, Response } from "express";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
@@ -48,8 +51,9 @@ export function registerSSORoutes(app: Express) {
       // 1. التحقق من الـ token عبر mousa.ai API
       const mousaData = await verifyMousaToken(token);
 
-      if (!mousaData.valid || !mousaData.openId) {
-        console.warn("[SSO] Invalid token from mousa.ai");
+      // v2.0: mousa.ai لا يُعيد "valid" — نتحقق من userId و openId مباشرة
+      if (!mousaData.userId || !mousaData.openId) {
+        console.warn("[SSO] Invalid token from mousa.ai — missing userId or openId");
         return res.redirect(302, returnUrl);
       }
 
@@ -103,7 +107,8 @@ export function registerSSORoutes(app: Express) {
     try {
       const mousaData = await verifyMousaToken(token);
 
-      if (!mousaData.valid || !mousaData.openId) {
+      // v2.0: mousa.ai لا يُعيد "valid" — نتحقق من userId و openId مباشرة
+      if (!mousaData.userId || !mousaData.openId) {
         return res.status(401).json({ success: false, error: "invalid token" });
       }
 

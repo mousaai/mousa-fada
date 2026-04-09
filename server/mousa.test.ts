@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   verifyMousaToken,
   checkMousaBalance,
@@ -10,9 +10,25 @@ import {
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+// حفظ القيم الأصلية لاستعادتها بعد كل اختبار
+const originalPlatformApiKey = process.env.PLATFORM_API_KEY;
+const originalMousaPlatformApiKey = process.env.MOUSA_PLATFORM_API_KEY;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  // حذف PLATFORM_API_KEY الحقيقي لضمان استخدام MOUSA_PLATFORM_API_KEY في الاختبارات
+  delete process.env.PLATFORM_API_KEY;
   process.env.MOUSA_PLATFORM_API_KEY = "USAA";
+});
+
+afterEach(() => {
+  // استعادة القيم الأصلية بعد كل اختبار
+  if (originalPlatformApiKey) {
+    process.env.PLATFORM_API_KEY = originalPlatformApiKey;
+  }
+  if (originalMousaPlatformApiKey) {
+    process.env.MOUSA_PLATFORM_API_KEY = originalMousaPlatformApiKey;
+  }
 });
 
 describe("MOUSA.AI Integration Helper", () => {
@@ -178,7 +194,30 @@ describe("MOUSA.AI Integration Helper", () => {
   });
 
   describe("API Key validation", () => {
-    it("should use MOUSA_PLATFORM_API_KEY from env", async () => {
+    it("should use PLATFORM_API_KEY when both are set (PLATFORM_API_KEY takes precedence)", async () => {
+      // PLATFORM_API_KEY له الأولوية على MOUSA_PLATFORM_API_KEY
+      process.env.PLATFORM_API_KEY = "real-key-123";
+      process.env.MOUSA_PLATFORM_API_KEY = "USAA";
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ balance: 100, sufficient: true, platformCost: 20, upgradeUrl: "" }),
+      });
+
+      await checkMousaBalance(1);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: "Bearer real-key-123",
+          }),
+        })
+      );
+      delete process.env.PLATFORM_API_KEY;
+    });
+
+    it("should use MOUSA_PLATFORM_API_KEY as fallback when PLATFORM_API_KEY is not set", async () => {
+      delete process.env.PLATFORM_API_KEY;
       process.env.MOUSA_PLATFORM_API_KEY = "USAA";
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -197,10 +236,11 @@ describe("MOUSA.AI Integration Helper", () => {
       );
     });
 
-    it("should throw if API key is missing", async () => {
+    it("should throw if both API keys are missing", async () => {
+      delete process.env.PLATFORM_API_KEY;
       delete process.env.MOUSA_PLATFORM_API_KEY;
       await expect(checkMousaBalance(1)).rejects.toThrow(
-        "MOUSA_PLATFORM_API_KEY is not set"
+        "PLATFORM_API_KEY is not set"
       );
     });
   });
@@ -211,6 +251,7 @@ import { notifyMousaPricing } from "./mousa";
 
 describe("notifyMousaPricing (Pricing Webhook)", () => {
   it("should POST to correct endpoint with all services and correct headers", async () => {
+    delete process.env.PLATFORM_API_KEY;
     process.env.MOUSA_PLATFORM_API_KEY = "USAA";
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -249,6 +290,7 @@ describe("notifyMousaPricing (Pricing Webhook)", () => {
   });
 
   it("should return false when API key is missing", async () => {
+    delete process.env.PLATFORM_API_KEY;
     delete process.env.MOUSA_PLATFORM_API_KEY;
     const result = await notifyMousaPricing();
     expect(result).toBe(false);
@@ -256,6 +298,7 @@ describe("notifyMousaPricing (Pricing Webhook)", () => {
   });
 
   it("should return false on non-ok response", async () => {
+    delete process.env.PLATFORM_API_KEY;
     process.env.MOUSA_PLATFORM_API_KEY = "USAA";
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -268,6 +311,7 @@ describe("notifyMousaPricing (Pricing Webhook)", () => {
   });
 
   it("should return false on network error", async () => {
+    delete process.env.PLATFORM_API_KEY;
     process.env.MOUSA_PLATFORM_API_KEY = "USAA";
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
