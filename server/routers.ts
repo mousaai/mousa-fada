@@ -96,8 +96,15 @@ async function resolveImageUrl(url: string, userId: number = 0): Promise<string>
   const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
   const buffer = Buffer.from(base64Data, 'base64');
   const key = `users/${userId}/temp/${nanoid()}.${ext}`;
-  const { url: s3Url } = await storagePut(key, buffer, mimeType);
-  return s3Url;
+  try {
+    const { url: s3Url } = await storagePut(key, buffer, mimeType);
+    return s3Url;
+  } catch (err) {
+    // إذا فشل رفع الصورة لـ S3، أعد data URL مباشرة
+    // invokeLLM سيكتشف data URL ويستخدم Gemini Native API تلقائياً
+    console.warn('[resolveImageUrl] S3 upload failed, using data URL directly:', (err as Error).message);
+    return url;
+  }
 }
 
 // ===== مساعد: تحليل التصميم الداخلي =====

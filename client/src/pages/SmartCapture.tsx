@@ -2516,13 +2516,15 @@ export default function SmartCapture() {
   };
 
   const handleCapture = async (dataUrl: string) => {
-    const newImages = [...capturedImages, dataUrl];
+    // ضغط الصورة قبل التحليل لتجنب timeout مع صور الهاتف الكبيرة
+    const compressed = await compressImage(dataUrl, 1280, 0.85);
+    const newImages = [...capturedImages, compressed];
     setCapturedImages(newImages);
-    if (newImages.length === 1) setPrimaryImage(dataUrl);
+    if (newImages.length === 1) setPrimaryImage(compressed);
     // بعد التصوير ننتقل مباشرة للتحليل — بدون شاشة فلتر
     setShowCamera(false);
     startAnalysis(newImages);
-  };;
+  };
 
   const handleVideoCapture = (thumb: string) => {
     setShowVideo(false);
@@ -2543,14 +2545,41 @@ export default function SmartCapture() {
     const budget = BUDGET_MAP[budgetLevel];
     const customAmount = budgetAmount ? parseInt(budgetAmount.replace(/,/g, "")) : null;
 
-    // تتبع S3 URL للصورة الأصلية (إذا كانت URL وليست base64)
+    // ===== رفع الصور لـ /api/upload/image أولاً إذا كانت data URLs =====
+    // هذا يحل مشكلة SyntaxError: Bad control character in JSON
+    let resolvedImages = images;
     try {
-      const img = images[0];
+      resolvedImages = await Promise.all(
+        images.map(async (img) => {
+          if (!img.startsWith("data:")) return img; // URL عادي — لا حاجة للرفع
+          // رفع data URL لـ /api/upload/image
+          const match = img.match(/^data:([^;]+);base64,(.+)$/);
+          if (!match) return img;
+          const mimeType = match[1];
+          const base64 = match[2];
+          // إرسال data URL كـ JSON لـ /api/upload/image
+          const res = await fetch("/api/upload/image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl: img, mimeType }),
+            credentials: "include",
+          });
+          if (!res.ok) return img; // fallback: إرسال data URL
+          const data = await res.json() as { url?: string };
+          return data.url || img;
+        })
+      );
+    } catch {
+      // fallback: استخدام الصور الأصلية
+      resolvedImages = images;
+    }
+
+    // تتبع S3 URL للصورة الأصلية
+    try {
+      const img = resolvedImages[0];
       if (img && !img.startsWith("data:")) {
-        // URL عادي (من S3 مباشرة) — نحفظه للاستخدام في توليد الصور
         setPrimaryImageS3Url(img);
       } else {
-        // base64 — سيتم إرساله كـ b64Json في generateVisualization مباشرة
         setPrimaryImageS3Url(null);
       }
     } catch {
@@ -2578,8 +2607,8 @@ export default function SmartCapture() {
         }
       : undefined;
     analyzeAndGenerateMutation.mutate({
-      imageUrl: images[0],
-      imageUrls: images.length > 1 ? images : undefined,
+      imageUrl: resolvedImages[0],
+      imageUrls: resolvedImages.length > 1 ? resolvedImages : undefined,
       captureMode: "single",
       count: ideasCount,
       budgetMin: customAmount ? Math.round(customAmount * 0.7) : budget.min,
