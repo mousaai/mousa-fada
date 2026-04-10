@@ -95,6 +95,36 @@ async function startServer() {
       return res.status(500).send("Proxy error");
     }
   });
+  // ===== Image Upload REST Endpoint =====
+  app.post("/api/upload/image", async (req, res) => {
+    try {
+      const { storagePut } = await import("../storage");
+      const { nanoid } = await import("nanoid");
+      const body = req.body as { dataUrl?: string; base64?: string; mimeType?: string };
+      let base64Data = body.base64 || "";
+      let mimeType = body.mimeType || "image/jpeg";
+      // دعم dataUrl (data:image/jpeg;base64,...)
+      if (body.dataUrl && body.dataUrl.startsWith("data:")) {
+        const match = body.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          mimeType = match[1];
+          base64Data = match[2];
+        }
+      }
+      if (!base64Data) {
+        return res.status(400).json({ error: "Missing image data" });
+      }
+      const buffer = Buffer.from(base64Data, "base64");
+      const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+      const key = `uploads/${nanoid()}.${ext}`;
+      const { url } = await storagePut(key, buffer, mimeType);
+      return res.json({ url, key });
+    } catch (err) {
+      console.error("[upload/image] Error:", err);
+      return res.status(500).json({ error: "Upload failed" });
+    }
+  });
+
   // ===== SSO Routes — دخول موحد مع mousa.ai =====
   registerSSORoutes(app);
 
