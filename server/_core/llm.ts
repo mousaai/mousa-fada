@@ -256,6 +256,111 @@ const assertApiKey = () => {
   resolveApiKey();
 };
 
+// ─── Gemini Native API (for base64 images) ──────────────────────────────────
+function hasDataUrl(messages: Message[]): boolean {
+  return messages.some((m) => {
+    const parts = Array.isArray(m.content) ? m.content : [m.content];
+    return parts.some(
+      (p) =>
+        typeof p === "object" &&
+        p !== null &&
+        "image_url" in p &&
+        typeof (p as ImageContent).image_url?.url === "string" &&
+        (p as ImageContent).image_url.url.startsWith("data:")
+    );
+  });
+}
+
+function toGeminiNativeParts(content: Message["content"]): Array<Record<string, unknown>> {
+  const parts = Array.isArray(content) ? content : [content];
+  return parts.map((p): Record<string, unknown> => {
+    if (typeof p === "string") return { text: p };
+    if (p.type === "text") return { text: (p as TextContent).text };
+    if (p.type === "image_url") {
+      const url = (p as ImageContent).image_url.url;
+      if (url.startsWith("data:")) {
+        const match = url.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) return { inline_data: { mime_type: match[1], data: match[2] } };
+      }
+      return { text: `[Image: ${url}]` };
+    }
+    return { text: JSON.stringify(p) };
+  });
+}
+
+async function invokeLLMNative(params: InvokeParams): Promise<InvokeResult> {
+  const apiKey = resolveApiKey();
+  const model = params.model || ENV.openAiModel || "gemini-2.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const systemMsg = params.messages.find((m) => m.role === "system");
+  const otherMsgs = params.messages.filter((m) => m.role !== "system");
+
+  const contents = otherMsgs.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: toGeminiNativeParts(m.content),
+  }));
+
+  const payload: Record<string, unknown> = { contents };
+
+  if (systemMsg) {
+    const text = typeof systemMsg.content === "string"
+      ? systemMsg.content
+      : (Array.isArray(systemMsg.content)
+          ? systemMsg.content.map((p) => (typeof p === "string" ? p : (p as TextContent).text || "")).join("\n")
+          : "");
+    payload.system_instruction = { parts: [{ text }] };
+  }
+
+  const rf = params.responseFormat || params.response_format;
+  const hasJsonOutput = rf?.type === "json_schema" || rf?.type === "json_object" || !!params.outputSchema || !!params.output_schema;
+  if (hasJsonOutput) {
+    // استخدام response_mime_type لإجبار Gemini على إرجاع JSON نظيف
+    payload.generationConfig = {
+      response_mime_type: "application/json",
+    };
+  }
+
+  return await withLLMRetry(async () => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`);
+    }
+
+    const native = await response.json() as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }>; role?: string }; finishReason?: string }>;
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+    };
+
+    let text = native.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+    // تنظيف markdown code blocks إذا كان الطلب JSON
+    if (hasJsonOutput) {
+      text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    }
+    return {
+      id: `gemini-native-${Date.now()}`,
+      created: Math.floor(Date.now() / 1000),
+      model,
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: text },
+        finish_reason: native.candidates?.[0]?.finishReason || "stop",
+      }],
+      usage: {
+        prompt_tokens: native.usageMetadata?.promptTokenCount || 0,
+        completion_tokens: native.usageMetadata?.candidatesTokenCount || 0,
+        total_tokens: (native.usageMetadata?.promptTokenCount || 0) + (native.usageMetadata?.candidatesTokenCount || 0),
+      },
+    } as unknown as InvokeResult;
+  });
+}
+
 // ─── Main invokeLLM ───────────────────────────────────────────────────────────
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
@@ -291,6 +396,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   if (normalizedResponseFormat) payload.response_format = normalizedResponseFormat;
+
+  // استخدام Native API عند وجود data URLs (Gemini لا يقبل data URLs في OpenAI-compat API)
+  if (hasDataUrl(params.messages)) {
+    return await invokeLLMNative(params);
+  }
 
   // Google Gemini مباشرة مع retry ذكي — لا fallback إلى Manus
   return await withLLMRetry(async () => {

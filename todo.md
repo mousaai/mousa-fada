@@ -1218,3 +1218,12 @@
 - [x] بناء الكود ورفعه للسيرفر الخارجي (204.168.191.251)
 - [x] التحقق من عمل قاعدة البيانات (لا أخطاء SSL في الـ logs)
 - [x] 285/285 اختبار ناجح
+
+## الإصدار 65.0 — إصلاح فشل التحليل والرصيد
+- [x] تشخيص سبب فشل التحليل: مفتاح Google AI API مُبلَغ عنه كمسرَّب (leaked) وتعطيله Google
+- [x] تحديث مفتاح Google AI API بمفتاح جديد (AIzaSyAR0g4...)
+- [x] إضافة Gemini Native API في llm.ts لدعم data URLs (base64 مباشرة)
+- [x] إصلاح invokeLLMNative: تنظيف markdown code blocks من JSON response
+- [x] دعم json_object و json_schema و outputSchema في hasJsonOutput
+- [x] بناء الكود ورفعه للسيرفر (quickAnalyze يعمل بشكل مثالي)
+- [ ] تشخيص سبب ظهور رصيد 200 في كراون (حساب Apple Sign-In مختلف)

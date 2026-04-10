@@ -81,6 +81,25 @@ const GLOBAL_STYLES: Record<string, { name: string; description: string; keyword
   neoclassical: { name: "نيوكلاسيكي", description: "كلاسيكي بلمسة عصرية، أناقة متوازنة", keywords: "updated classical, elegant proportions, refined" },
 };
 
+// ===== مساعد: تحويل base64 URL إلى S3 URL =====
+/**
+ * إذا كان الـ URL هو base64 data URL، يرفعه لـ S3 ويُعيد الـ URL الحقيقي.
+ * إذا كان URL عادي (https://...)، يُعيده كما هو.
+ */
+async function resolveImageUrl(url: string, userId: number = 0): Promise<string> {
+  if (!url.startsWith('data:')) return url;
+  // استخراج mime type وبيانات base64
+  const match = url.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return url;
+  const mimeType = match[1];
+  const base64Data = match[2];
+  const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+  const buffer = Buffer.from(base64Data, 'base64');
+  const key = `users/${userId}/temp/${nanoid()}.${ext}`;
+  const { url: s3Url } = await storagePut(key, buffer, mimeType);
+  return s3Url;
+}
+
 // ===== مساعد: تحليل التصميم الداخلي =====
 async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType: string, area: number) {
   const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
@@ -804,7 +823,8 @@ ${existingContext}
           { role: "system", content: systemPrompt },
         ];
         if (input.referenceImageUrl) {
-          messages.push({ role: "user", content: [{ type: "image_url", image_url: { url: input.referenceImageUrl, detail: "high" } } as ImageContent, { type: "text", text: userPrompt } as TextContent] });
+          const resolvedRefUrl = await resolveImageUrl(input.referenceImageUrl, ctx.user?.id || 0);
+          messages.push({ role: "user", content: [{ type: "image_url", image_url: { url: resolvedRefUrl, detail: "high" } } as ImageContent, { type: "text", text: userPrompt } as TextContent] });
         } else {
           messages.push({ role: "user", content: userPrompt });
         }
@@ -1228,8 +1248,12 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
                        input.captureMode === "panorama" ? "(صورة بانوراما)" :
                        input.captureMode === "video" ? "(إطار من فيديو)" : "";
 
-      // Build image content for all images (max 4 for efficiency)
-      const imageContents = allImages.slice(0, 4).map(url => ({
+      // رفع base64 images لـ S3 أولاً للحصول على URLs حقيقية يقبلها Gemini
+      const userId = ctx.user?.id || 0;
+      const resolvedImages = await Promise.all(
+        allImages.slice(0, 4).map(url => resolveImageUrl(url, userId))
+      );
+      const imageContents = resolvedImages.map(url => ({
         type: "image_url" as const,
         image_url: { url, detail: "low" as const }
       }));
@@ -1387,7 +1411,7 @@ ${extraReqs}
   "costBreakdown": {"furniture": "X,000 ر.س", "flooring": "X,000 ر.س", "walls": "X,000 ر.س", "lighting": "X,000 ر.س", "accessories": "X,000 ر.س"},
   "materials": ["مادة 1", "مادة 2", "مادة 3"]
 }` },
-            { type: "image_url", image_url: { url: input.imageUrl, detail: "low" } }
+            { type: "image_url", image_url: { url: await resolveImageUrl(input.imageUrl, ctx.user?.id || 0), detail: "low" } }
           ] as Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }> }
         ],
         response_format: { type: "json_object" },
@@ -1431,7 +1455,7 @@ ${extraReqs}
         {
           role: "user",
           content: [
-            ...(input.referenceImageUrl ? [{ type: "image_url", image_url: { url: input.referenceImageUrl, detail: "low" } }] : []),
+            ...(input.referenceImageUrl ? [{ type: "image_url", image_url: { url: await resolveImageUrl(input.referenceImageUrl, ctx.user?.id || 0), detail: "low" } }] : []),
             {
               type: "text",
               text: `ولّدي ${input.count} أفكار تصميمية مختلفة ومتنوعة لهذا الفضاء.
@@ -1534,11 +1558,14 @@ ${colorText}
       const styleKeys = ["modern", "gulf", "minimal", "japanese", "scandinavian", "mediterranean", "moroccan", "luxury", "industrial", "bohemian"];
       const selectedStyles = styleKeys.slice(0, count);
 
-      const imageContents: ImageContent[] = (imageUrls || [imageUrl]).map(url => ({
+       // رفع base64 images لـ S3 أولاً
+      const resolvedImageUrls = await Promise.all(
+        (imageUrls || [imageUrl]).map(url => resolveImageUrl(url, ctx.user?.id || 0))
+      );
+      const imageContents: ImageContent[] = resolvedImageUrls.map(url => ({
         type: "image_url" as const,
         image_url: { url, detail: "high" as const }
       }));
-
       // قاعدة تغيير العناصر الهيكلية — الافتراضي: تثبيت الفتحات والبنية الإنشائية
       // المبدأ: ما لم يطلب المستخدم صراحةً تغيير عنصر بنيوي، يبقى في مكانه
       // الإبداع مطلوب في: الألوان، المواد، الأثاث، الإضاءة، التشطيبات فقط
@@ -2428,20 +2455,18 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         {
           role: "user",
           content: [
-            { type: "image_url" as const, image_url: { url: input.imageUrl, detail: "high" as const } },
+             { type: "image_url" as const, image_url: { url: await resolveImageUrl(input.imageUrl, ctx.user?.id || 0), detail: "high" as const } },
             { type: "text" as const, text: userPrompt },
           ],
         },
       ];
-
       const response = await invokeLLM({ messages });
       const rawContent = response?.choices?.[0]?.message?.content;
       const raw = typeof rawContent === 'string' ? rawContent : "{}";
       const jsonStr = raw.replace(/```json\n?|```/g, "").trim();
       let refined: Record<string, unknown> = {};
       try { refined = JSON.parse(jsonStr); } catch { refined = {}; }
-
-      // حفظ الفكرة المعدّلة
+      // حفظ الفكرة المعدّلةة
       const newDbId = await saveGeneratedIdea({
         userId: ctx.user.id,
         imageUrl: input.imageUrl,
@@ -2705,6 +2730,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         spaceType: z.string().optional(), // نوع الفضاء
       }))
       .mutation(async ({ input }) => {
+        const resolvedUrl = await resolveImageUrl(input.imageUrl, 0);
         const messages: Message[] = [
           {
             role: "system",
@@ -2715,7 +2741,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
             content: [
               {
                 type: "image_url" as const,
-                image_url: { url: input.imageUrl, detail: "high" as const },
+                image_url: { url: resolvedUrl, detail: "high" as const },
               },
               {
                 type: "text" as const,
@@ -3113,7 +3139,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
           {
             role: "user",
             content: [
-              { type: "image_url" as const, image_url: { url: input.imageUrl, detail: "high" as const } },
+              { type: "image_url" as const, image_url: { url: await resolveImageUrl(input.imageUrl, userId), detail: "high" as const } },
               {
                 type: "text" as const,
                 text: `حللي هذا الفضاء الداخلي بدقة عالية لأتمكن من تقليده في غرفتي. أعيدي JSON بهذا الشكل بالضبط:
@@ -3649,7 +3675,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
           content: [
             {
               type: "image_url" as const,
-              image_url: { url: input.imageUrl, detail: "high" as const },
+              image_url: { url: await resolveImageUrl(input.imageUrl, 0), detail: "high" as const },
             } as ImageContent,
             {
               type: "text" as const,
@@ -3844,9 +3870,10 @@ PHOTOGRAPHY QUALITY:
         };
         console.log(`[analyzePlan] رفع PDF على Supabase: ${pdfUrl}`);
       } else {
+        const resolvedPlanUrl = await resolveImageUrl(input.imageUrl, 0);
         singleImagePart = {
           type: "image_url" as const,
-          image_url: { url: input.imageUrl, detail: "high" as const },
+          image_url: { url: resolvedPlanUrl, detail: "high" as const },
         };
       }
 
