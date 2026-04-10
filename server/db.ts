@@ -1,5 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createPool } from "mysql2";
 import {
   InsertUser, users, projects, analyses, designElements, perspectives, chatSessions,
   arScans, marketPrices, moodBoards, reports, designReferences,
@@ -8,12 +9,32 @@ import {
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _db: any = null;
 
+/**
+ * إنشاء pool مع SSL صريح لـ TiDB Cloud
+ * TiDB Cloud تشترط SSL/TLS وترفض الاتصالات غير المشفرة
+ */
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // تنظيف DATABASE_URL من ssl parameters الخاطئة
+      const cleanUrl = process.env.DATABASE_URL
+        .replace('?sslaccept=strict', '')
+        .replace('?ssl=true', '')
+        .replace('&ssl=true', '')
+        .replace('?ssl=false', '')
+        .replace('&ssl=false', '');
+      // إنشاء pool مع SSL object صريح (rejectUnauthorized=false لتجنب مشاكل شهادة CA)
+      const pool = createPool({
+        uri: cleanUrl,
+        ssl: { rejectUnauthorized: false },
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+      });
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

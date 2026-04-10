@@ -35,10 +35,9 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
   if (!user || user.isFreeMode || user.userId === 0) {
     // تحديد نوع المستخدم: زائر حقيقي أم مستخدم بجلسة لكن غير مربوط
     const hasLocalSession = user && user.openId && user.openId !== "guest";
-    const returnUrl = encodeURIComponent(window.location.href);
-    const mousaLinkUrl = hasLocalSession
-      ? `https://www.mousa.ai?return=${returnUrl}` // مستخدم بجلسة — يعود بـ token
-      : "https://www.mousa.ai"; // زائر حقيقي
+    // استخدام origin فقط كـ return URL حتى يُعاد التوجيه لـ fada.mousa.ai/?token=...
+    const returnUrl = encodeURIComponent(window.location.origin);
+    const mousaLinkUrl = `https://www.mousa.ai/redirect?platform=fada&return=${returnUrl}`;
     const buttonText = hasLocalSession ? "ربط حسابي" : "سجّل دخول";
     const tooltipTitle = hasLocalSession ? "ربط حسابك بـ mousa.ai" : "سجّل دخولك عبر mousa.ai";
     const tooltipDesc = hasLocalSession
@@ -50,8 +49,7 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
           <TooltipTrigger asChild>
             <a
               href={mousaLinkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              target="_self"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 ${className}`}
               dir="rtl"
             >
