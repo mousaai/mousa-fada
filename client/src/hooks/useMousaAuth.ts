@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadGuestDesignsForMigration, clearGuestDesignsAfterMigration } from "./guestDesignsMigration";
 
-const MOUSA_API_URL = "https://www.mousa.ai";
 const THIS_PLATFORM = "fada";
-// PLATFORM_API_KEY لا يُستخدم من الـ frontend — كل التحقق يمر عبر /api/sso/* على السيرفر
-const PLATFORM_API_KEY = ""; // لا يُستخدم مباشرةً من الـ frontend
 
 // FIX FADA-001: mousa.ai يضبط cookie باسم app_session_id على domain .mousa.ai
 const SHARED_COOKIE = "app_session_id";
@@ -38,6 +35,44 @@ function buildGuestUser(): MousaUser {
   };
 }
 
+/**
+ * ⚡ قراءة بيانات المستخدم من JWT cookie مباشرة (بدون API call)
+ *
+ * الـ JWT يحتوي على: openId, name, mousaUserId, creditBalance, email
+ * هذا يحل مشكلة Nginx على fada.mousa.ai الذي لا يُوجّه /api/* لـ Express
+ */
+function parseJWTCookie(cookieValue: string): {
+  openId?: string;
+  name?: string;
+  mousaUserId?: number;
+  creditBalance?: number;
+  email?: string;
+} | null {
+  try {
+    // JWT = header.payload.signature — نحتاج الـ payload فقط
+    const parts = cookieValue.split(".");
+    if (parts.length !== 3) return null;
+    // Base64URL decode
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const decoded = atob(padded);
+    const payload = JSON.parse(decoded);
+    // التحقق من انتهاء الصلاحية
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return null; // منتهي الصلاحية
+    }
+    return {
+      openId: typeof payload.openId === "string" ? payload.openId : undefined,
+      name: typeof payload.name === "string" ? payload.name : undefined,
+      mousaUserId: typeof payload.mousaUserId === "number" ? payload.mousaUserId : undefined,
+      creditBalance: typeof payload.creditBalance === "number" ? payload.creditBalance : undefined,
+      email: typeof payload.email === "string" ? payload.email : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function useMousaAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -56,7 +91,7 @@ export function useMousaAuth() {
       const mousaToken = urlParams.get("token");
 
       if (mousaToken) {
-        // محاولة 1: verify كامل (مستخدم جديد أو جلسة منتهية)
+        // محاولة verify كامل (مستخدم جديد أو جلسة منتهية)
         let ssoUser: MousaUser | null = null;
         try {
           ssoUser = await verifyViaSSOEndpoint(mousaToken);
@@ -86,8 +121,9 @@ export function useMousaAuth() {
               const relinkData = await relinkRes.json() as { success: boolean; userId?: number; creditBalance?: number };
               if (relinkData.success) {
                 console.log("[Auth] ✅ Relinked account with mousa.ai, userId=", relinkData.userId);
-                // إعادة تحميل الجلسة بعد الربط
-                const updatedUser = await verifyViaServer();
+                // قراءة الجلسة المحدّثة من الـ cookie الجديد
+                await new Promise(r => setTimeout(r, 200)); // انتظار ضبط الـ cookie
+                const updatedUser = readUserFromCookie() || await verifyViaServer();
                 if (updatedUser) {
                   urlParams.delete("token");
                   const cleanUrl = window.location.pathname + (urlParams.toString() ? "?" + urlParams.toString() : "");
@@ -104,14 +140,31 @@ export function useMousaAuth() {
         }
       }
 
-      // ===== المسار 2: جلسة محلية عبر /api/sso/status =====
-      // ملاحظة: تم حذف التحقق من cookie app_session_id مباشرةً مع mousa.ai
-      // لأن PLATFORM_API_KEY لا يجب أن يكون في الـ frontend
+      // ===== المسار 2: قراءة بيانات المستخدم من JWT cookie مباشرة =====
+      // ⚡ هذا يعمل حتى لو Nginx لا يُوجّه /api/* لـ Express
       const sessionCookie = getCookie(SHARED_COOKIE);
+      if (sessionCookie) {
+        const jwtData = parseJWTCookie(sessionCookie);
+        if (jwtData?.openId && jwtData.openId !== "guest") {
+          const userFromCookie: MousaUser = {
+            userId: jwtData.mousaUserId ?? 0,
+            openId: jwtData.openId,
+            name: jwtData.name ?? "مستخدم",
+            email: jwtData.email ?? "",
+            creditBalance: jwtData.creditBalance ?? 0,
+            platform: THIS_PLATFORM,
+            isFreeMode: !jwtData.mousaUserId,
+          };
+          console.log(`[Auth] ✅ Loaded user from JWT cookie: ${jwtData.openId}, balance=${jwtData.creditBalance}, mousaUserId=${jwtData.mousaUserId}`);
+          setState({ user: userFromCookie, loading: false, token: sessionCookie });
 
-      // محاولة الجلسة المحلية أولاً (cookie محلي من /api/sso/verify)
+          // في الخلفية: محاولة تحديث الرصيد من السيرفر (إذا كان متاحاً)
+          refreshBalanceInBackground(userFromCookie);
+          return;
+        }
+      }
 
-      // ===== المسار 3: جلسة محلية عبر /api/sso/status =====
+      // ===== المسار 3: جلسة محلية عبر /api/sso/status (fallback) =====
       try {
         const user = await verifyViaServer();
         if (user) {
@@ -130,6 +183,59 @@ export function useMousaAuth() {
   }
 
   /**
+   * قراءة بيانات المستخدم من الـ cookie الحالي
+   */
+  function readUserFromCookie(): MousaUser | null {
+    const sessionCookie = getCookie(SHARED_COOKIE);
+    if (!sessionCookie) return null;
+    const jwtData = parseJWTCookie(sessionCookie);
+    if (!jwtData?.openId || jwtData.openId === "guest") return null;
+    return {
+      userId: jwtData.mousaUserId ?? 0,
+      openId: jwtData.openId,
+      name: jwtData.name ?? "مستخدم",
+      email: jwtData.email ?? "",
+      creditBalance: jwtData.creditBalance ?? 0,
+      platform: THIS_PLATFORM,
+      isFreeMode: !jwtData.mousaUserId,
+    };
+  }
+
+  /**
+   * تحديث الرصيد في الخلفية من السيرفر (بدون انتظار)
+   */
+  async function refreshBalanceInBackground(currentUser: MousaUser) {
+    if (!currentUser.userId || currentUser.isFreeMode) return;
+    try {
+      // محاولة /api/sso/status أولاً
+      const statusRes = await fetch("/api/sso/status", {
+        credentials: "include",
+        signal: AbortSignal.timeout(5000), // timeout 5 ثوانٍ
+      });
+      if (statusRes.ok) {
+        const contentType = statusRes.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const statusData = await statusRes.json() as {
+            authenticated: boolean;
+            user?: { mousaBalance?: number | null; mousaUserId?: number | null };
+          };
+          if (statusData.authenticated && statusData.user?.mousaBalance !== null && statusData.user?.mousaBalance !== undefined) {
+            const newBalance = statusData.user.mousaBalance;
+            setState(prev => ({
+              ...prev,
+              user: prev.user ? { ...prev.user, creditBalance: newBalance } : prev.user,
+            }));
+            console.log(`[Auth] ✅ Background balance refresh: ${newBalance}`);
+            return;
+          }
+        }
+      }
+    } catch {
+      // السيرفر غير متاح — نبقى على بيانات الـ JWT
+    }
+  }
+
+  /**
    * إرسال token لـ /api/sso/verify لإنشاء جلسة محلية تلقائياً
    */
   async function verifyViaSSOEndpoint(token: string): Promise<MousaUser | null> {
@@ -140,6 +246,8 @@ export function useMousaAuth() {
       body: JSON.stringify({ token }),
     });
     if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) return null; // HTML response = Nginx issue
     const data = await response.json() as {
       success: boolean;
       user?: {
@@ -166,29 +274,35 @@ export function useMousaAuth() {
   async function verifyViaServer(): Promise<MousaUser | null> {
     try {
       // أولاً: /api/sso/status — أسرع وأدق
-      const statusRes = await fetch("/api/sso/status", { credentials: "include" });
+      const statusRes = await fetch("/api/sso/status", {
+        credentials: "include",
+        signal: AbortSignal.timeout(5000),
+      });
       if (statusRes.ok) {
-        const statusData = await statusRes.json() as {
-          authenticated: boolean;
-          user?: {
-            openId: string;
-            name: string | null;
-            email: string | null;
-            mousaUserId: number | null;
-            mousaBalance: number | null;
+        const contentType = statusRes.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const statusData = await statusRes.json() as {
+            authenticated: boolean;
+            user?: {
+              openId: string;
+              name: string | null;
+              email: string | null;
+              mousaUserId: number | null;
+              mousaBalance: number | null;
+            };
           };
-        };
-        if (statusData.authenticated && statusData.user) {
-          const u = statusData.user;
-          return {
-            userId: u.mousaUserId ?? 0,
-            openId: u.openId,
-            name: u.name ?? "مستخدم",
-            email: u.email ?? "",
-            creditBalance: u.mousaBalance ?? 0,
-            platform: "fada",
-            isFreeMode: !u.mousaUserId,
-          };
+          if (statusData.authenticated && statusData.user) {
+            const u = statusData.user;
+            return {
+              userId: u.mousaUserId ?? 0,
+              openId: u.openId,
+              name: u.name ?? "مستخدم",
+              email: u.email ?? "",
+              creditBalance: u.mousaBalance ?? 0,
+              platform: "fada",
+              isFreeMode: !u.mousaUserId,
+            };
+          }
         }
       }
 
@@ -196,6 +310,7 @@ export function useMousaAuth() {
       const response = await fetch("/api/trpc/mousa.getBalance?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D", {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(5000),
       });
       if (!response.ok) return null;
       const data = await response.json() as any;
@@ -220,47 +335,11 @@ export function useMousaAuth() {
             };
           }
         }
-        return {
-          userId: 1,
-          openId: "mousa_user",
-          name: "مستخدم",
-          email: "",
-          creditBalance: result.balance ?? 0,
-          platform: "fada",
-          isFreeMode: false,
-        };
       }
       return null;
     } catch {
       return null;
     }
-  }
-
-  async function verifySession(session: string): Promise<MousaUser> {
-    const response = await fetch(`${MOUSA_API_URL}/api/platform/verify-session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${PLATFORM_API_KEY}`,
-        "X-Platform-ID": THIS_PLATFORM,
-      },
-      body: JSON.stringify({ session }),
-    });
-
-    if (!response.ok) throw new Error("فشل التحقق من الجلسة");
-
-    const data = await response.json();
-    if (!data.authenticated) throw new Error("الجلسة غير صالحة");
-
-    return {
-      userId: data.userId,
-      openId: data.openId,
-      name: data.name,
-      email: data.email,
-      creditBalance: data.creditBalance,
-      platform: data.platform ?? THIS_PLATFORM,
-      isFreeMode: false,
-    };
   }
 
   /**

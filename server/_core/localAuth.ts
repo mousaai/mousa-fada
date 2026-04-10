@@ -30,10 +30,19 @@ export function generateToken(bytes = 32): string {
 }
 
 // ===== إنشاء JWT session (محلي — لا يحتاج Manus) =====
-export async function createSessionToken(openId: string, name: string): Promise<string> {
+// ⚡ يتضمن الآن mousaUserId + creditBalance + email لتجنب استدعاء /api/sso/status
+export async function createSessionToken(
+  openId: string,
+  name: string,
+  extra?: { mousaUserId?: number | null; creditBalance?: number; email?: string }
+): Promise<string> {
   const secret = new TextEncoder().encode(ENV.cookieSecret);
   const expiresAt = Math.floor(Date.now() / 1000) + 365 * 24 * 3600;
-  return new SignJWT({ openId, name, appId: "fada-local" })
+  const payload: Record<string, unknown> = { openId, name, appId: "fada-local" };
+  if (extra?.mousaUserId) payload.mousaUserId = extra.mousaUserId;
+  if (extra?.creditBalance !== undefined) payload.creditBalance = extra.creditBalance;
+  if (extra?.email) payload.email = extra.email;
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setExpirationTime(expiresAt)
     .sign(secret);
@@ -42,14 +51,20 @@ export async function createSessionToken(openId: string, name: string): Promise<
 // ===== التحقق من JWT session =====
 export async function verifySessionToken(
   token: string | undefined | null
-): Promise<{ openId: string; name: string } | null> {
+): Promise<{ openId: string; name: string; mousaUserId?: number; creditBalance?: number; email?: string } | null> {
   if (!token) return null;
   try {
     const secret = new TextEncoder().encode(ENV.cookieSecret);
     const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
-    const { openId, name } = payload as Record<string, unknown>;
-    if (typeof openId !== "string" || typeof name !== "string") return null;
-    return { openId, name };
+    const p = payload as Record<string, unknown>;
+    if (typeof p.openId !== "string" || typeof p.name !== "string") return null;
+    return {
+      openId: p.openId,
+      name: p.name,
+      mousaUserId: typeof p.mousaUserId === "number" ? p.mousaUserId : undefined,
+      creditBalance: typeof p.creditBalance === "number" ? p.creditBalance : undefined,
+      email: typeof p.email === "string" ? p.email : undefined,
+    };
   } catch {
     return null;
   }
@@ -77,7 +92,7 @@ export async function registerUser(input: {
     lastSignedIn: new Date(),
   });
 
-  const sessionToken = await createSessionToken(openId, input.name);
+  const sessionToken = await createSessionToken(openId, input.name, { email: input.email });
   return { openId, sessionToken };
 }
 
@@ -95,7 +110,11 @@ export async function loginUser(input: {
   if (!valid) throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
 
   await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
-  const sessionToken = await createSessionToken(user.openId, user.name ?? "");
+  const sessionToken = await createSessionToken(user.openId, user.name ?? "", {
+    email: user.email ?? undefined,
+    mousaUserId: user.mousaUserId ?? undefined,
+    creditBalance: user.mousaBalance ?? undefined,
+  });
   return { user, sessionToken };
 }
 

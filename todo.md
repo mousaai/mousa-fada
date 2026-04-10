@@ -1193,3 +1193,16 @@
 - [x] تحديث MOUSA_PLATFORM_API_KEY للقيمة الصحيحة (PLATFORM_API_KEY=740df917...)
 - [x] إضافة X-Platform-ID: fada في auth.middleware.ts (verifyHandoffToken)
 - [x] X-Platform-ID موجود بالفعل في mousa.ts (getHeaders)
+
+## الإصدار 63.0 — إصلاح جذري لمشكلة الرصيد 0 على fada.mousa.ai
+- [x] تشخيص المشكلة: Nginx على fada.mousa.ai يُخدّم /api/* كـ static HTML بدلاً من توجيهها لـ Express
+- [x] تعديل localAuth.ts: createSessionToken تضمّن mousaUserId + creditBalance + email في JWT
+- [x] تعديل verifySessionToken: تُعيد الآن mousaUserId + creditBalance + email من الـ JWT
+- [x] تعديل sso.ts: استخدام createSessionToken المحلية بدلاً من sdk.createSessionToken
+- [x] تعديل sso.ts: جلب الرصيد الحقيقي من mousa.ai عند /api/sso/token و /api/sso/verify
+- [x] تعديل useMousaAuth.ts: إضافة parseJWTCookie لقراءة بيانات المستخدم من cookie مباشرة
+- [x] تعديل useMousaAuth.ts: المسار 2 يقرأ من JWT cookie بدلاً من /api/sso/status
+- [x] تعديل useMousaAuth.ts: refreshBalanceInBackground يحدّث الرصيد في الخلفية
+- [x] تعديل useMousaAuth.ts: التحقق من Content-Type قبل parse JSON (لتجنب HTML response)
+- [x] تعديل vite.ts: serveStatic يُعيد 404 JSON لـ /api/* بدلاً من HTML
+- [x] إضافة 4 اختبارات vitest جديدة للـ JWT payload (285/285 ناجحة)

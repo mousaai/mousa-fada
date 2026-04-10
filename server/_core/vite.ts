@@ -61,7 +61,11 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // ⚠️ استثناء /api/* لمنع التقاطها بواسطة الـ catch-all
+  app.use("*", (req, res) => {
+    if (req.originalUrl.startsWith("/api/")) {
+      return res.status(404).json({ error: "API route not found", path: req.originalUrl });
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

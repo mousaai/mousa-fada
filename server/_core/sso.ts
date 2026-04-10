@@ -12,16 +12,20 @@
  *
  * ملاحظة (v2.0): mousa.ai لا يُعيد حقل "valid" في الاستجابة.
  * الشرط الصحيح هو التحقق من وجود userId و openId.
+ *
+ * ⚡ الإصلاح الجذري (v63):
+ * - استخدام createSessionToken المحلية (localAuth.ts) بدلاً من sdk.createSessionToken
+ * - تضمين mousaUserId + creditBalance + email في الـ JWT cookie مباشرة
+ * - الـ frontend يقرأ البيانات من الـ JWT بدون الحاجة لـ /api/sso/status
+ * - هذا يحل مشكلة Nginx على fada.mousa.ai الذي لا يُوجّه /api/* لـ Express
  */
 import type { Express, Request, Response } from "express";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
 import * as db from "../db";
 import { verifyMousaToken, checkMousaBalance, getMousaUserByOpenId } from "../mousa";
-import { ENV } from "./env";
+import { createSessionToken, verifySessionToken } from "./localAuth";
 
-const MOUSA_BASE_URL = "https://www.mousa.ai";
 const PLATFORM_ID = "fada";
 
 /**
@@ -57,7 +61,16 @@ export function registerSSORoutes(app: Express) {
         return res.redirect(302, returnUrl);
       }
 
-      // 2. upsert المستخدم في قاعدة بيانات فضاء المحلية
+      // 2. جلب الرصيد الحقيقي
+      let liveBalance = mousaData.creditBalance ?? 0;
+      try {
+        const balanceData = await checkMousaBalance(mousaData.userId);
+        liveBalance = balanceData.balance;
+      } catch {
+        // فشل check-balance — نستخدم قيمة verify-token
+      }
+
+      // 3. upsert المستخدم في قاعدة بيانات فضاء المحلية
       await db.upsertUser({
         openId: mousaData.openId,
         name: mousaData.name || null,
@@ -65,24 +78,30 @@ export function registerSSORoutes(app: Express) {
         loginMethod: "mousa_sso",
         lastSignedIn: new Date(),
         mousaUserId: mousaData.userId,
-        mousaBalance: mousaData.creditBalance,
+        mousaBalance: liveBalance,
         mousaLastSync: new Date(),
       } as any);
 
-      // 3. إنشاء جلسة محلية (JWT) بدون Manus OAuth
-      const sessionToken = await sdk.createSessionToken(mousaData.openId, {
-        name: mousaData.name || "",
-        expiresInMs: ONE_YEAR_MS,
-      });
+      // 4. إنشاء جلسة محلية (JWT) مع بيانات mousa مضمّنة
+      // ⚡ هذا يتيح للـ frontend قراءة البيانات من الـ cookie مباشرة
+      const sessionToken = await createSessionToken(
+        mousaData.openId,
+        mousaData.name || "",
+        {
+          mousaUserId: mousaData.userId,
+          creditBalance: liveBalance,
+          email: mousaData.email || undefined,
+        }
+      );
 
-      // 4. ضبط الـ cookie وإعادة التوجيه بدون أي نافذة
+      // 5. ضبط الـ cookie وإعادة التوجيه بدون أي نافذة
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });
 
-      console.log(`[SSO] ✅ User ${mousaData.openId} (${mousaData.name}) logged in via mousa.ai SSO`);
+      console.log(`[SSO] ✅ User ${mousaData.openId} (${mousaData.name}) logged in via mousa.ai SSO, balance=${liveBalance}`);
       return res.redirect(302, returnUrl);
     } catch (err: any) {
       console.error("[SSO] Token verification failed:", err?.message);
@@ -112,6 +131,16 @@ export function registerSSORoutes(app: Express) {
         return res.status(401).json({ success: false, error: "invalid token" });
       }
 
+      // جلب الرصيد الحقيقي عبر check-balance (أدق من verify-token)
+      let liveBalance = mousaData.creditBalance ?? 0;
+      try {
+        const balanceData = await checkMousaBalance(mousaData.userId);
+        liveBalance = balanceData.balance;
+        console.log(`[SSO] ✅ Balance refreshed: ${liveBalance} (was ${mousaData.creditBalance})`);
+      } catch {
+        // فشل check-balance — نستخدم قيمة verify-token
+      }
+
       // upsert المستخدم
       await db.upsertUser({
         openId: mousaData.openId,
@@ -120,37 +149,26 @@ export function registerSSORoutes(app: Express) {
         loginMethod: "mousa_sso",
         lastSignedIn: new Date(),
         mousaUserId: mousaData.userId,
-        mousaBalance: mousaData.creditBalance,
+        mousaBalance: liveBalance,
         mousaLastSync: new Date(),
       } as any);
 
-      // إنشاء جلسة محلية
-      const sessionToken = await sdk.createSessionToken(mousaData.openId, {
-        name: mousaData.name || "",
-        expiresInMs: ONE_YEAR_MS,
-      });
+      // إنشاء جلسة محلية مع بيانات mousa مضمّنة في JWT
+      const sessionToken = await createSessionToken(
+        mousaData.openId,
+        mousaData.name || "",
+        {
+          mousaUserId: mousaData.userId,
+          creditBalance: liveBalance,
+          email: mousaData.email || undefined,
+        }
+      );
 
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });
-
-      // جلب الرصيد الحقيقي عبر check-balance (أدق من verify-token)
-      let liveBalance = mousaData.creditBalance;
-      try {
-        const balanceData = await checkMousaBalance(mousaData.userId);
-        liveBalance = balanceData.balance;
-        // تحديث الرصيد في قاعدة البيانات
-        db.upsertUser({
-          openId: mousaData.openId,
-          mousaBalance: liveBalance,
-          mousaLastSync: new Date(),
-        } as any).catch(() => {});
-        console.log(`[SSO] ✅ Balance refreshed: ${liveBalance} (was ${mousaData.creditBalance})`);
-      } catch {
-        // فشل check-balance — نستخدم قيمة verify-token
-      }
 
       console.log(`[SSO] ✅ User ${mousaData.openId} verified via POST /api/sso/verify, balance=${liveBalance}`);
 
@@ -189,7 +207,6 @@ export function registerSSORoutes(app: Express) {
       return res.status(401).json({ success: false, error: "no session" });
     }
     try {
-      const { verifySessionToken } = await import("./localAuth");
       const session = await verifySessionToken(sessionCookie);
       if (!session) {
         return res.status(401).json({ success: false, error: "invalid session" });
@@ -206,6 +223,22 @@ export function registerSSORoutes(app: Express) {
         mousaBalance: mousaData.creditBalance,
         mousaLastSync: new Date(),
       } as any);
+      // تحديث الـ cookie بالبيانات الجديدة
+      const user = await db.getUserByOpenId(session.openId);
+      const newSessionToken = await createSessionToken(
+        session.openId,
+        session.name,
+        {
+          mousaUserId: mousaData.userId,
+          creditBalance: mousaData.creditBalance ?? 0,
+          email: user?.email || undefined,
+        }
+      );
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, newSessionToken, {
+        ...cookieOptions,
+        maxAge: ONE_YEAR_MS,
+      });
       console.log(`[SSO] ✅ Relinked ${session.openId} to mousa userId=${mousaData.userId}, balance=${mousaData.creditBalance}`);
       return res.json({
         success: true,
@@ -222,6 +255,8 @@ export function registerSSORoutes(app: Express) {
    * GET /api/sso/status
    *
    * يُعيد حالة الجلسة الحالية (للتحقق من الواجهة الأمامية)
+   * ⚡ الآن يُعيد البيانات من الـ JWT مباشرة (لا يحتاج DB call)
+   * مع fallback لتحديث الرصيد من mousa.ai
    */
   app.get("/api/sso/status", async (req: Request, res: Response) => {
     const cookieHeader = req.headers.cookie ?? "";
@@ -233,52 +268,41 @@ export function registerSSORoutes(app: Express) {
     }
 
     try {
-      const { verifySessionToken } = await import("./localAuth");
       const session = await verifySessionToken(sessionCookie);
       if (!session) {
         return res.json({ authenticated: false });
       }
 
-      const user = await db.getUserByOpenId(session.openId);
-      if (!user) {
-        return res.json({ authenticated: false });
-      }
+      // ⚡ البيانات الأساسية من الـ JWT مباشرة (بدون DB)
+      let liveBalance = session.creditBalance ?? 0;
+      let resolvedMousaUserId = session.mousaUserId;
 
-      // جلب الرصيد الحقيقي من mousa.ai
-      let liveBalance = user.mousaBalance ?? 0;
-      let resolvedMousaUserId = user.mousaUserId;
-
-      // إذا لم يكن مربوطاً بعد — نحاول الربط تلقائياً
-      if (!resolvedMousaUserId) {
-        try {
-          const mousaData = await getMousaUserByOpenId(user.openId);
-          if (mousaData?.userId) {
-            resolvedMousaUserId = mousaData.userId;
-            liveBalance = mousaData.balance;
-            db.upsertUser({
-              openId: user.openId,
-              mousaUserId: mousaData.userId,
-              mousaBalance: mousaData.balance,
-              mousaLastSync: new Date(),
-            } as any).catch(() => {});
-            console.log(`[SSO] ✅ Auto-linked ${user.openId} to mousa userId=${mousaData.userId}, balance=${mousaData.balance}`);
+      // محاولة تحديث الرصيد من DB (إذا كان السيرفر متاحاً)
+      try {
+        const user = await db.getUserByOpenId(session.openId);
+        if (user) {
+          if (!resolvedMousaUserId && user.mousaUserId) {
+            resolvedMousaUserId = user.mousaUserId;
           }
-        } catch {
-          // فشل الربط — ليس خطأ حرج
+          if (user.mousaBalance !== null && user.mousaBalance !== undefined) {
+            liveBalance = user.mousaBalance;
+          }
         }
+      } catch {
+        // DB غير متاح — نستخدم بيانات الـ JWT
       }
 
-      // إذا كان مربوطاً — جلب الرصيد الحقيقي
+      // محاولة جلب الرصيد الحقيقي من mousa.ai
       if (resolvedMousaUserId) {
         try {
           const balanceData = await checkMousaBalance(resolvedMousaUserId);
           liveBalance = balanceData.balance;
           db.upsertUser({
-            openId: user.openId,
+            openId: session.openId,
             mousaBalance: liveBalance,
             mousaLastSync: new Date(),
           } as any).catch(() => {});
-          console.log(`[SSO] ✅ Balance refreshed for ${user.openId}: ${liveBalance}`);
+          console.log(`[SSO] ✅ Balance refreshed for ${session.openId}: ${liveBalance}`);
         } catch (err) {
           console.warn(`[SSO] Could not fetch live balance for userId=${resolvedMousaUserId}:`, err);
         }
@@ -287,10 +311,10 @@ export function registerSSORoutes(app: Express) {
       return res.json({
         authenticated: true,
         user: {
-          openId: user.openId,
-          name: user.name,
-          email: user.email,
-          mousaUserId: resolvedMousaUserId,  // FIX: استخدام resolvedMousaUserId بدلاً من user.mousaUserId القديم
+          openId: session.openId,
+          name: session.name,
+          email: session.email,
+          mousaUserId: resolvedMousaUserId,
           mousaBalance: liveBalance,
         },
       });
