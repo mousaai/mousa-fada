@@ -33,25 +33,36 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
 
   // مستخدم غير مرتبط بـ mousa.ai
   if (!user || user.isFreeMode || user.userId === 0) {
+    // تحديد نوع المستخدم: زائر حقيقي أم مستخدم بجلسة لكن غير مربوط
+    const hasLocalSession = user && user.openId && user.openId !== "guest";
+    const returnUrl = encodeURIComponent(window.location.href);
+    const mousaLinkUrl = hasLocalSession
+      ? `https://www.mousa.ai?return=${returnUrl}` // مستخدم بجلسة — يعود بـ token
+      : "https://www.mousa.ai"; // زائر حقيقي
+    const buttonText = hasLocalSession ? "ربط حسابي" : "سجّل دخول";
+    const tooltipTitle = hasLocalSession ? "ربط حسابك بـ mousa.ai" : "سجّل دخولك عبر mousa.ai";
+    const tooltipDesc = hasLocalSession
+      ? "اضغط للانتقال إلى mousa.ai وستُربط تلقائياً"
+      : "للاستفادة من رصيد الكريدت الخاص بك";
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <a
-              href="https://www.mousa.ai"
+              href={mousaLinkUrl}
               target="_blank"
               rel="noopener noreferrer"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 ${className}`}
               dir="rtl"
             >
               <Coins className="w-4 h-4" />
-              <span>سجّل دخول</span>
+              <span>{buttonText}</span>
               <ExternalLink className="w-3 h-3 opacity-50" />
             </a>
           </TooltipTrigger>
           <TooltipContent dir="rtl">
-            <p className="font-bold">سجّل دخولك عبر mousa.ai</p>
-            <p className="text-xs opacity-70">للاستفادة من رصيد الكريدت الخاص بك</p>
+            <p className="font-bold">{tooltipTitle}</p>
+            <p className="text-xs opacity-70">{tooltipDesc}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
