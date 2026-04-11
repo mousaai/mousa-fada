@@ -3134,7 +3134,7 @@ export default function SmartCapture() {
                     <div className="mt-2">
                       <p className="text-[10px] text-[#8B6914]/60 mb-2">أو اختر من مراجعك المحفوظة:</p>
                       <div className="flex gap-2 overflow-x-auto pb-1">
-                        {refListQuery.data.slice(0, 5).map((ref) => (
+                        {refListQuery.data.slice(0, 5).map((ref: (typeof refListQuery.data)[number]) => (
                           <button
                             key={ref.id}
                             onClick={() => {

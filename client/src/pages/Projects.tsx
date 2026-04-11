@@ -165,7 +165,7 @@ export default function ProjectsPage() {
               </div>
             ) : projects && projects.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {projects.map((project) => (
+                {projects.map((project: Project) => (
                   <div key={project.id} className="elegant-card p-5 group">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export default function ProjectsPage() {
                   </div>
                 ) : analyses.length > 0 ? (
                   <div className="space-y-4">
-                    {analyses.map((analysis) => {
+                    {analyses.map((analysis: typeof analyses[number]) => {
                       const result = analysis.analysisResult as Record<string, unknown> | null;
                       const colors = analysis.colorPalette as Array<{ hex: string; name: string }> | null;
                       return (

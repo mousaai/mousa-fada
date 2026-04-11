@@ -369,7 +369,7 @@ export default function ARScan() {
         {activeTab === "history" && (
           <div className="space-y-3">
             {scans && scans.length > 0 ? (
-              scans.map((scan, i) => {
+              scans.map((scan: (typeof scans)[number], i: number) => {
                 const scanData = scan.rooms as { rooms?: Array<{ name: string; area: number }> } | null;
                 return (
                   <Card key={i} className="border-gold/20 hover:border-gold/40 transition-colors">

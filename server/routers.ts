@@ -86,25 +86,33 @@ const GLOBAL_STYLES: Record<string, { name: string; description: string; keyword
  * إذا كان الـ URL هو base64 data URL، يرفعه لـ S3 ويُعيد الـ URL الحقيقي.
  * إذا كان URL عادي (https://...)، يُعيده كما هو.
  */
-async function resolveImageUrl(url: string, userId: number = 0): Promise<string> {
-  if (!url.startsWith('data:')) return url;
-  // استخراج mime type وبيانات base64
-  const match = url.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return url;
-  const mimeType = match[1];
-  const base64Data = match[2];
-  const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-  const buffer = Buffer.from(base64Data, 'base64');
-  const key = `users/${userId}/temp/${nanoid()}.${ext}`;
-  try {
-    const { url: s3Url } = await storagePut(key, buffer, mimeType);
-    return s3Url;
-  } catch (err) {
-    // إذا فشل رفع الصورة لـ S3، أعد data URL مباشرة
-    // invokeLLM سيكتشف data URL ويستخدم Gemini Native API تلقائياً
-    console.warn('[resolveImageUrl] S3 upload failed, using data URL directly:', (err as Error).message);
+async function resolveImageUrl(url: string, _userId: number = 0): Promise<string> {
+  // إذا كان data URL، أعده مباشرة — Gemini Native API يقبله
+  if (url.startsWith('data:')) {
+    console.log('[resolveImageUrl] Using data URL directly for Gemini Native API');
     return url;
   }
+  // إذا كان URL محلي (نفس الدومين)، حوّله إلى base64
+  try {
+    const urlObj = new URL(url);
+    const isLocalUrl = urlObj.hostname.includes('mousa.ai') ||
+                       urlObj.hostname === 'localhost' ||
+                       urlObj.hostname === '127.0.0.1';
+    if (isLocalUrl) {
+      console.log('[resolveImageUrl] Local URL detected, fetching and converting to base64:', url);
+      const response = await fetch(url);
+      if (response.ok) {
+        const buffer = await response.arrayBuffer();
+        const mimeType = response.headers.get('content-type') || 'image/jpeg';
+        const base64 = Buffer.from(buffer).toString('base64');
+        return `data:${mimeType};base64,${base64}`;
+      }
+    }
+  } catch (err) {
+    console.warn('[resolveImageUrl] URL check failed:', (err as Error).message);
+  }
+  // URL خارجي حقيقي — أعده كما هو
+  return url;
 }
 
 // ===== مساعد: تحليل التصميم الداخلي =====
