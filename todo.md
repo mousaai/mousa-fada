@@ -1227,3 +1227,9 @@
 - [x] دعم json_object و json_schema و outputSchema في hasJsonOutput
 - [x] بناء الكود ورفعه للسيرفر (quickAnalyze يعمل بشكل مثالي)
 - [ ] تشخيص سبب ظهور رصيد 200 في كراون (حساب Apple Sign-In مختلف)
+
+## الإصدار 66.0 — إصلاح فشل النشر (canvas package)
+- [x] تشخيص سبب فشل النشر: canvas@3.2.3 تحتاج pixman-1 غير متوفرة في بيئة النشر
+- [x] إزالة canvas وpdf2pic وpdfjs-dist من package.json (لا يُستخدم أي منها في الكود الفعلي)
+- [x] تحديث pnpm-lock.yaml بعد إزالة المكتبات
+- [x] التحقق من 0 أخطاء TypeScript بعد الإزالة
