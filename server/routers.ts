@@ -92,26 +92,27 @@ async function resolveImageUrl(url: string, _userId: number = 0): Promise<string
     console.log('[resolveImageUrl] Using data URL directly for Gemini Native API');
     return url;
   }
-  // إذا كان URL محلي (نفس الدومين)، حوّله إلى base64
+  // أي URL (محلي أو CDN) — جلبه وتحويله إلى base64 لضمان وصول Gemini إليه
   try {
-    const urlObj = new URL(url);
-    const isLocalUrl = urlObj.hostname.includes('mousa.ai') ||
-                       urlObj.hostname === 'localhost' ||
-                       urlObj.hostname === '127.0.0.1';
-    if (isLocalUrl) {
-      console.log('[resolveImageUrl] Local URL detected, fetching and converting to base64:', url);
-      const response = await fetch(url);
-      if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        const mimeType = response.headers.get('content-type') || 'image/jpeg';
-        const base64 = Buffer.from(buffer).toString('base64');
-        return `data:${mimeType};base64,${base64}`;
-      }
+    console.log('[resolveImageUrl] Fetching URL and converting to base64:', url.substring(0, 80));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (response.ok) {
+      const buffer = await response.arrayBuffer();
+      const mimeType = response.headers.get('content-type') || 'image/jpeg';
+      const cleanMime = mimeType.split(';')[0].trim();
+      const base64 = Buffer.from(buffer).toString('base64');
+      console.log('[resolveImageUrl] ✅ Converted to base64, size:', buffer.byteLength, 'bytes');
+      return `data:${cleanMime};base64,${base64}`;
+    } else {
+      console.warn('[resolveImageUrl] Fetch failed with status:', response.status);
     }
   } catch (err) {
-    console.warn('[resolveImageUrl] URL check failed:', (err as Error).message);
+    console.warn('[resolveImageUrl] Fetch error:', (err as Error).message);
   }
-  // URL خارجي حقيقي — أعده كما هو
+  // fallback: أعد الـ URL كما هو
   return url;
 }
 

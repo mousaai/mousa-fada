@@ -1233,3 +1233,9 @@
 - [x] إزالة canvas وpdf2pic وpdfjs-dist من package.json (لا يُستخدم أي منها في الكود الفعلي)
 - [x] تحديث pnpm-lock.yaml بعد إزالة المكتبات
 - [x] التحقق من 0 أخطاء TypeScript بعد الإزالة
+
+## الإصدار 67.0 — إصلاح جذري نهائي لفشل التحليل
+- [x] تشخيص السبب الحقيقي: Forge CDN URL لا يمكن لـ Gemini الوصول إليه من خوادم Google
+- [x] تعديل resolveImageUrl ليجلب أي URL (محلي أو CDN) ويحوّله لـ base64 قبل إرساله لـ Gemini
+- [x] إضافة timeout 15 ثانية لعملية الجلب لتجنب التعليق
+- [x] 0 أخطاء TypeScript
