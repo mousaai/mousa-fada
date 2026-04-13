@@ -187,5 +187,33 @@ export function registerInternalRoutes(app: Express): void {
     });
   });
 
-  console.log("[InternalRoutes] Registered: POST /api/mousa/webhook, GET /api/mousa/health");
+  // ── GET /api/pricing ────────────────────────────────────────────────────────
+  // يُستخدم من mousa.ai لجلب جدول أسعار المنصة تلقائياً كل 24 ساعة
+  app.get("/api/pricing", (_req: Request, res: Response) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    return res.json({
+      platform: "fada",
+      platformName: "فضاء",
+      version: "1.0.0",
+      updatedAt: new Date().toISOString(),
+      currency: "credits",
+      creditsPerSAR: 10,
+      services: [
+        { id: "analyzeAndIdeas",  nameAr: "تحليل + توليد أفكار",        nameEn: "Analysis + Ideas",          cost: 70, category: "analysis" },
+        { id: "render3DFromPlan", nameAr: "رندر 3D من مسقط",            nameEn: "3D Render from Floor Plan",  cost: 60, category: "generation" },
+        { id: "visualConcept",   nameAr: "توليد تصور بصري",            nameEn: "Visual Concept",            cost: 50, category: "generation" },
+        { id: "analyzeImage",    nameAr: "تحليل صورة",                 nameEn: "Image Analysis",            cost: 40, category: "analysis" },
+        { id: "colorPalette",    nameAr: "اقتراح لوحة ألوان",          nameEn: "Color Palette",             cost: 30, category: "analysis" },
+        { id: "materialSelect",  nameAr: "اختيار مواد وأثاث",          nameEn: "Material & Furniture",      cost: 30, category: "analysis" },
+        { id: "costEstimate",    nameAr: "تقدير تكلفة التنفيذ",        nameEn: "Cost Estimation",           cost: 40, category: "analysis" },
+        { id: "arScan",          nameAr: "مسح AR للفضاء",              nameEn: "AR Space Scan",             cost: 50, category: "generation" },
+        { id: "smartCapture",    nameAr: "التقاط ذكي للفضاء",          nameEn: "Smart Capture",             cost: 40, category: "analysis" },
+        { id: "boqGenerate",     nameAr: "توليد جدول كميات",           nameEn: "BOQ Generation",            cost: 50, category: "generation" },
+        { id: "exportPDF",       nameAr: "تصدير PDF",                  nameEn: "Export PDF",                cost: 10, category: "export" },
+        { id: "chatConsult",     nameAr: "استشارة نصية",               nameEn: "Text Consultation",         cost: 20, category: "consultation" },
+      ],
+    });
+  });
+
+  console.log("[InternalRoutes] Registered: POST /api/mousa/webhook, GET /api/mousa/health, GET /api/pricing");
 }
