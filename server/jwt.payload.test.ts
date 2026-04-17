@@ -27,7 +27,7 @@ describe("JWT Payload with Mousa Data", () => {
   });
 
   it("should verify JWT and return all fields", async () => {
-    const token = await createSessionToken("openId_xyz", "سارة", {
+    const token = await createSessionToken("openId_xyz", "اليازية", {
       mousaUserId: 7,
       creditBalance: 200,
       email: "sarah@design.com",
@@ -36,7 +36,7 @@ describe("JWT Payload with Mousa Data", () => {
     const verified = await verifySessionToken(token);
     expect(verified).not.toBeNull();
     expect(verified!.openId).toBe("openId_xyz");
-    expect(verified!.name).toBe("سارة");
+    expect(verified!.name).toBe("اليازية");
     expect(verified!.mousaUserId).toBe(7);
     expect(verified!.creditBalance).toBe(200);
     expect(verified!.email).toBe("sarah@design.com");
@@ -77,7 +77,7 @@ describe("JWT Payload with Mousa Data", () => {
     // إنشاء JWT payload يدوياً
     const payload = {
       openId: "ZiSTZeFw48Gx7FpBCmCndh",
-      name: "م. سارة",
+      name: "م. اليازية",
       mousaUserId: 2,
       creditBalance: 10,
       email: "mousa@almaskanengineering.com",

@@ -125,7 +125,7 @@ export default function MoodBoard() {
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gold mb-3">لوحة الإلهام التصميمية</h1>
           <p className="text-beige/70 max-w-xl mx-auto">
-            اختر نمط التصميم والفضاء، وستقوم م. سارة بتوليد لوحة إلهام احترافية تضم الألوان والمواد والأثاث المناسب
+            اختر نمط التصميم والفضاء، وستقوم م. اليازية بتوليد لوحة إلهام احترافية تضم الألوان والمواد والأثاث المناسب
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export default function MoodBoard() {
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      م. سارة تصمم لوحتك...
+                      م. اليازية تصمم لوحتك...
                     </>
                   ) : (
                     <>
@@ -258,7 +258,7 @@ export default function MoodBoard() {
                   </div>
                   <h3 className="text-gold/70 text-lg font-medium mb-2">لوحة الإلهام في انتظارك</h3>
                   <p className="text-beige/40 text-sm max-w-xs">
-                    اختر نمط التصميم والفضاء من اليسار، ثم اضغط "توليد لوحة الإلهام" لترى إبداع م. سارة
+                    اختر نمط التصميم والفضاء من اليسار، ثم اضغط "توليد لوحة الإلهام" لترى إبداع م. اليازية
                   </p>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export default function MoodBoard() {
                   <div className="w-20 h-20 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
                     <Sparkles className="w-10 h-10 text-gold" />
                   </div>
-                  <h3 className="text-gold text-lg font-medium mb-2">م. سارة تصمم لوحتك...</h3>
+                  <h3 className="text-gold text-lg font-medium mb-2">م. اليازية تصمم لوحتك...</h3>
                   <p className="text-beige/60 text-sm">تحليل النمط، اختيار الألوان، تنسيق العناصر</p>
                   <div className="flex justify-center gap-1 mt-4">
                     {[0, 1, 2].map(i => (

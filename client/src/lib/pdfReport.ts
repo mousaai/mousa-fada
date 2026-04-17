@@ -445,7 +445,7 @@ function buildHTML(project: ProjectData): string {
 <!-- ===== PAGE 1: COVER ===== -->
 <div class="page">
   <div class="cover-hero">
-    <div class="brand-ar">م. سارة | فضاء</div>
+    <div class="brand-ar">م. اليازية | فضاء</div>
     <div class="brand-en">Sarah AI | Fadaa Platform</div>
     <div class="tagline-ar">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</div>
     <div class="tagline-en">AI-Powered Architectural & Environmental Design Expert</div>
@@ -503,7 +503,7 @@ function buildHTML(project: ProjectData): string {
 
   <div class="page-footer">
     <span>fada.mousa.ai</span>
-    <span class="ar">م. سارة | خبيرة التصميم المعماري والبيئي</span>
+    <span class="ar">م. اليازية | خبيرة التصميم المعماري والبيئي</span>
     <span>Page 1</span>
   </div>
 </div>
@@ -533,7 +533,7 @@ function buildHTML(project: ProjectData): string {
     <div class="section-title">
       <div class="bar"></div>
       <div>
-        <div class="title-ar">توصيات م. سارة</div>
+        <div class="title-ar">توصيات م. اليازية</div>
         <div class="title-en">Sarah's Recommendations</div>
       </div>
     </div>
@@ -565,7 +565,7 @@ function buildHTML(project: ProjectData): string {
 
   <div class="page-footer">
     <span>fada.mousa.ai</span>
-    <span class="ar">م. سارة | تحليل الفضاء</span>
+    <span class="ar">م. اليازية | تحليل الفضاء</span>
     <span>Page 2</span>
   </div>
 </div>
@@ -622,7 +622,7 @@ function buildHTML(project: ProjectData): string {
 
   <div class="page-footer">
     <span>fada.mousa.ai</span>
-    <span class="ar">م. سارة | الألوان والمواد</span>
+    <span class="ar">م. اليازية | الألوان والمواد</span>
     <span>Page 3</span>
   </div>
 </div>
@@ -713,7 +713,7 @@ function buildHTML(project: ProjectData): string {
 
   <div class="page-footer">
     <span>fada.mousa.ai</span>
-    <span class="ar">م. سارة | الأثاث والتكاليف</span>
+    <span class="ar">م. اليازية | الأثاث والتكاليف</span>
     <span>Page 4</span>
   </div>
 </div>
@@ -747,7 +747,7 @@ function buildHTML(project: ProjectData): string {
     ` : ""}
 
     <div class="signature-box" style="margin-top: 30px;">
-      <div class="name-ar">م. سارة | فضاء</div>
+      <div class="name-ar">م. اليازية | فضاء</div>
       <div class="name-en">Sarah AI | Fadaa Platform</div>
       <div class="sub-ar">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</div>
       <div class="sub-en">AI-Powered Architectural & Environmental Design Expert</div>
@@ -760,7 +760,7 @@ function buildHTML(project: ProjectData): string {
 
   <div class="page-footer">
     <span>fada.mousa.ai</span>
-    <span class="ar">م. سارة | الخاتمة</span>
+    <span class="ar">م. اليازية | الخاتمة</span>
     <span>Page 5</span>
   </div>
 </div>

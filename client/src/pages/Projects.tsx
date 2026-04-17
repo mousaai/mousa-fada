@@ -123,7 +123,7 @@ export default function ProjectsPage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-amber-800 hover:text-amber-600 transition-colors">
             <Home className="w-5 h-5" />
-            <span className="font-bold">م. سارة</span>
+            <span className="font-bold">م. اليازية</span>
           </button>
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/analyze")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">

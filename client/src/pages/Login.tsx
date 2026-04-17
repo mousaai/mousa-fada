@@ -93,7 +93,7 @@ export default function Login() {
             </div>
             <div className="text-right">
               <h1 className="text-2xl font-bold text-white">فضاء</h1>
-              <p className="text-xs" style={{ color: "#c9a96e" }}>م. سارة | خبيرة التصميم المعماري والبيئي</p>
+              <p className="text-xs" style={{ color: "#c9a96e" }}>م. اليازية | خبيرة التصميم المعماري والبيئي</p>
             </div>
           </div>
         </div>

@@ -58,7 +58,7 @@ class ErrorBoundary extends Component<Props, State> {
               className="text-base mb-8"
               style={{ color: "oklch(0.55 0.04 60)" }}
             >
-              م. سارة تعتذر عن هذا الخلل المؤقت. يرجى إعادة تحميل الصفحة للمتابعة.
+              م. اليازية تعتذر عن هذا الخلل المؤقت. يرجى إعادة تحميل الصفحة للمتابعة.
             </p>
 
             {/* Dev-only error details */}

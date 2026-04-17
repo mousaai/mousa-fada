@@ -25,9 +25,9 @@ interface ChatMessage {
 }
 
 const SESSION_TYPES = [
-  { key: "general", label: "استشارة عامة", icon: Sparkles, desc: "تحدث مع م. سارة حول أي موضوع تصميمي" },
-  { key: "floor_plan", label: "تحليل مخطط", icon: Map, desc: "ارفع مخططك المعماري وسارة ستحلله" },
-  { key: "camera_scan", label: "مسح 360° لايف", icon: ScanLine, desc: "مسح لايف للفضاء — م. سارة توجّهك خطوة بخطوة" },
+  { key: "general", label: "استشارة عامة", icon: Sparkles, desc: "تحدث مع م. اليازية حول أي موضوع تصميمي" },
+  { key: "floor_plan", label: "تحليل مخطط", icon: Map, desc: "ارفع مخططك المعماري واليازية ستحلله" },
+  { key: "camera_scan", label: "مسح 360° لايف", icon: ScanLine, desc: "مسح لايف للفضاء — م. اليازية توجّهك خطوة بخطوة" },
   { key: "element_design", label: "تصميم عنصر", icon: Layers, desc: "صمّم عنصراً محدداً بالتفصيل" },
 ];
 
@@ -75,10 +75,10 @@ export default function SarahChat() {
   useEffect(() => {
     if (!showSessionTypes && messages.length === 0) {
       const welcomeMessages: Record<string, string> = {
-        general: `مرحباً! أنا م. سارة، مهندسة التصميم الداخلي والمعماري. 🌟\n\nأنا هنا لمساعدتك في كل ما يتعلق بالتصميم الداخلي — من اختيار الألوان والمواد، إلى تصميم الفضاءات الكاملة بأنماط عالمية متنوعة.\n\nكيف يمكنني مساعدتك اليوم؟`,
-        floor_plan: `مرحباً! أنا م. سارة. 📐\n\nسأساعدك في تحليل مخططك المعماري بشكل احترافي.\n\n**ما أحتاجه منك:**\n1. ارفع صورة المخطط (PDF أو صورة)\n2. أخبرني عن نوع المشروع (فيلا، شقة، مكتب...)\n3. ما هو النمط الذي تريده؟\n\nابدأ برفع المخطط وسأحلله فوراً! 🏗️`,
-        camera_scan: `مرحباً! أنا م. سارة. 📸\n\nاضغط على زر **"مسح 360° لايف"** أدناه وسأفتح الكاميرا مباشرة وأوجّهك خطوة بخطوة لتصوير كل جدار وسقف وأرضية في فضاءك.\n\nبعد اكتمال المسح سأحلل كل شيء وأقدم لك توصيات تصميمية دقيقة! 🎯`,
-        element_design: `مرحباً! أنا م. سارة. ✨\n\nسأساعدك في تصميم عنصر معماري محدد بمواصفات احترافية كاملة.\n\n**أخبرني:**\n- ما العنصر الذي تريد تصميمه؟\n- في أي غرفة؟\n- ما المساحة؟\n- ما النمط المطلوب؟\n- ما ميزانيتك؟`,
+        general: `مرحباً! أنا م. اليازية، مهندسة التصميم الداخلي والمعماري. 🌟\n\nأنا هنا لمساعدتك في كل ما يتعلق بالتصميم الداخلي — من اختيار الألوان والمواد، إلى تصميم الفضاءات الكاملة بأنماط عالمية متنوعة.\n\nكيف يمكنني مساعدتك اليوم؟`,
+        floor_plan: `مرحباً! أنا م. اليازية. 📐\n\nسأساعدك في تحليل مخططك المعماري بشكل احترافي.\n\n**ما أحتاجه منك:**\n1. ارفع صورة المخطط (PDF أو صورة)\n2. أخبرني عن نوع المشروع (فيلا، شقة، مكتب...)\n3. ما هو النمط الذي تريده؟\n\nابدأ برفع المخطط وسأحلله فوراً! 🏗️`,
+        camera_scan: `مرحباً! أنا م. اليازية. 📸\n\nاضغط على زر **"مسح 360° لايف"** أدناه وسأفتح الكاميرا مباشرة وأوجّهك خطوة بخطوة لتصوير كل جدار وسقف وأرضية في فضاءك.\n\nبعد اكتمال المسح سأحلل كل شيء وأقدم لك توصيات تصميمية دقيقة! 🎯`,
+        element_design: `مرحباً! أنا م. اليازية. ✨\n\nسأساعدك في تصميم عنصر معماري محدد بمواصفات احترافية كاملة.\n\n**أخبرني:**\n- ما العنصر الذي تريد تصميمه؟\n- في أي غرفة؟\n- ما المساحة؟\n- ما النمط المطلوب؟\n- ما ميزانيتك؟`,
       };
       setMessages([{ role: "assistant", content: welcomeMessages[sessionType] || welcomeMessages.general }]);
     }
@@ -128,7 +128,7 @@ export default function SarahChat() {
     setIsSending(true);
 
     try {
-      // إرسال كل الصور المرفوعة لم. سارة دفعة واحدة
+      // إرسال كل الصور المرفوعة لم. اليازية دفعة واحدة
       const result = await sendMutation.mutateAsync({
         sessionId: sessionId ?? undefined,
         projectId: selectedProjectId ?? undefined,
@@ -201,8 +201,8 @@ export default function SarahChat() {
           <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8 text-gold" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">م. سارة</h2>
-          <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للتحدث مع م. سارة</p>
+          <h2 className="text-2xl font-bold mb-2">م. اليازية</h2>
+          <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للتحدث مع م. اليازية</p>
           <Button className="btn-gold w-full">تسجيل الدخول</Button>
         </Card>
       </div>
@@ -228,7 +228,7 @@ export default function SarahChat() {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-bold">م. سارة</h1>
+              <h1 className="font-bold">م. اليازية</h1>
               <p className="text-xs text-white/70">خبيرة التصميم المعماري والبيئي</p>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
@@ -267,7 +267,7 @@ export default function SarahChat() {
               <div className="w-20 h-20 bg-gradient-to-br from-gold to-[#C9A84C] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Bot className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">مرحباً! أنا م. سارة</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-2">مرحباً! أنا م. اليازية</h2>
               <p className="text-muted-foreground">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</p>
               <p className="text-sm text-muted-foreground mt-1">كيف يمكنني مساعدتك اليوم؟</p>
             </div>
@@ -449,7 +449,7 @@ export default function SarahChat() {
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <div className="w-2 h-2 bg-gold rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                      <span className="text-xs text-muted-foreground mr-2">م. سارة تحلل...</span>
+                      <span className="text-xs text-muted-foreground mr-2">م. اليازية تحلل...</span>
                     </div>
                   </div>
                 </div>
@@ -556,7 +556,7 @@ export default function SarahChat() {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="اكتب رسالتك لم. سارة..."
+                    placeholder="اكتب رسالتك لم. اليازية..."
                     className="min-h-[40px] max-h-32 resize-none py-2.5 pl-10 text-sm"
                     rows={1}
                   />

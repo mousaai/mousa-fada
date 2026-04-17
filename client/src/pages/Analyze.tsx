@@ -148,7 +148,7 @@ export default function AnalyzePage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-amber-800 hover:text-amber-600 transition-colors">
             <Home className="w-5 h-5" />
-            <span className="font-bold">م. سارة</span>
+            <span className="font-bold">م. اليازية</span>
           </button>
           <div className="flex items-center gap-3">
             {currentProjectId && (
@@ -311,7 +311,7 @@ export default function AnalyzePage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                    {uploadMutation.isPending ? "جاري رفع الصورة..." : createProjectMutation.isPending ? "جاري إنشاء المشروع..." : "م. سارة تحلل الفضاء..."}
+                    {uploadMutation.isPending ? "جاري رفع الصورة..." : createProjectMutation.isPending ? "جاري إنشاء المشروع..." : "م. اليازية تحلل الفضاء..."}
                   </>
                 ) : (
                   <>
@@ -330,7 +330,7 @@ export default function AnalyzePage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h1 className="text-2xl font-black text-stone-800">نتائج التحليل</h1>
-                <p className="text-stone-500 text-sm mt-1">تحليل م. سارة لفضائك</p>
+                <p className="text-stone-500 text-sm mt-1">تحليل م. اليازية لفضائك</p>
               </div>
               <div className="flex gap-3">
                 <Button
@@ -362,7 +362,7 @@ export default function AnalyzePage() {
                       <div className="w-8 h-8 rounded-lg gold-gradient flex items-center justify-center">
                         <Sparkles className="w-4 h-4 text-white" />
                       </div>
-                      <h2 className="font-bold text-stone-800">تقييم م. سارة</h2>
+                      <h2 className="font-bold text-stone-800">تقييم م. اليازية</h2>
                     </div>
                     <div className="text-stone-700 leading-relaxed text-sm">
                       <Streamdown>{analysisResult.overview}</Streamdown>
@@ -589,7 +589,7 @@ export default function AnalyzePage() {
                   <div className="elegant-card p-5">
                     <h2 className="font-bold text-stone-800 text-sm mb-3 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                      توصيات م. سارة
+                      توصيات م. اليازية
                     </h2>
                     <ul className="space-y-2">
                       {analysisResult.recommendations.map((rec, i) => (

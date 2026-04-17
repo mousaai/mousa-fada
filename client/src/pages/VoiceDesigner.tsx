@@ -1785,7 +1785,7 @@ export default function VoiceDesigner() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement("a");
-    link.download = `مخطط-م-سارة-${Date.now()}.png`;
+    link.download = `مخطط-م-اليازية-${Date.now()}.png`;
     link.href = canvas.toDataURL("image/png", 1.0);
     link.click();
     toast.success("تم تحميل المخطط");
@@ -3176,7 +3176,7 @@ export default function VoiceDesigner() {
 
       {/* ===== Bottom Status Bar ===== */}
       <div className="bg-white border-t border-[#e8d9c0] px-3 py-1.5 flex items-center gap-3 text-[9px] text-[#8B6914]">
-        <span className="font-bold text-[#5C3D11]">م. سارة — لوحة الرسم المعماري</span>
+        <span className="font-bold text-[#5C3D11]">م. اليازية — لوحة الرسم المعماري</span>
         <span>•</span>
         <span>{elements.filter(e => e.type === "room").length} غرفة</span>
         <span>{elements.filter(e => e.type === "wall").length} جدار</span>

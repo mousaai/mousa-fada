@@ -52,7 +52,7 @@ export type RoomDesignIdea = {
 export async function analyzeFloorPlanAdvanced(
   imageUrl: string
 ): Promise<FloorPlanAnalysis> {
-  const systemPrompt = `أنتِ م. سارة، مهندسة معمارية متخصصة في قراءة وتحليل المخططات المعمارية.
+  const systemPrompt = `أنتِ م. اليازية، مهندسة معمارية متخصصة في قراءة وتحليل المخططات المعمارية.
 تستطيعين قراءة أي مخطط معماري وتحديد الغرف والأبعاد والمساحات بدقة عالية.
 ردودك باللغة العربية.`;
 
@@ -205,7 +205,7 @@ export async function generateRoomDesignIdea(
   room: Room,
   overallStyle: string
 ): Promise<RoomDesignIdea> {
-  const systemPrompt = `أنتِ م. سارة، مصممة داخلية متخصصة في تصميم الغرف بناءً على الأبعاد الفعلية.
+  const systemPrompt = `أنتِ م. اليازية، مصممة داخلية متخصصة في تصميم الغرف بناءً على الأبعاد الفعلية.
 تستطيعين تحليل أبعاد الغرفة وتوليد أفكار تصميم دقيقة تناسب المساحة والوظيفة.
 ردودك باللغة العربية.`;
 

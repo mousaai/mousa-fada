@@ -122,7 +122,7 @@ export const perspectives = mysqlTable("perspectives", {
 export type Perspective = typeof perspectives.$inferSelect;
 export type InsertPerspective = typeof perspectives.$inferInsert;
 
-// ===== جدول جلسات المحادثة مع م. سارة =====
+// ===== جدول جلسات المحادثة مع م. اليازية =====
 export const chatSessions = mysqlTable("chatSessions", {
   id: int("id").autoincrement().primaryKey(),
   projectId: int("projectId"),
@@ -153,7 +153,7 @@ export const arScans = mysqlTable("arScans", {
   modelUrl: text("modelUrl"), // USDZ 3D model
   // حالة المعالجة
   status: mysqlEnum("status", ["received", "processing", "completed", "error"]).default("received").notNull(),
-  aiAnalysis: json("aiAnalysis"), // تحليل م. سارة للبيانات
+  aiAnalysis: json("aiAnalysis"), // تحليل م. اليازية للبيانات
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -264,7 +264,7 @@ export type InsertAiUsageLog = typeof aiUsageLogs.$inferInsert;
 export const platforms = mysqlTable("platforms", {
   id: int("id").autoincrement().primaryKey(),
   platformId: varchar("platformId", { length: 50 }).notNull().unique(), // e.g. "fada", "bonyan"
-  name: varchar("name", { length: 100 }).notNull(),                     // "م. سارة | فضاء"
+  name: varchar("name", { length: 100 }).notNull(),                     // "م. اليازية | فضاء"
   domain: varchar("domain", { length: 255 }).notNull(),                 // "fada.mousa.ai"
   apiKey: varchar("apiKey", { length: 255 }),                           // مفتاح API الخاص بالمنصة
   webhookSecret: varchar("webhookSecret", { length: 255 }),             // سر التحقق من Webhook

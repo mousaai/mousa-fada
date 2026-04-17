@@ -491,7 +491,7 @@ export function calculateBOQ(
             totalMin: Math.round(qty * uMin),
             totalMax: Math.round(qty * uMax),
             notes: item.notes || "",
-            basis: "تقدير م. سارة",
+            basis: "تقدير م. اليازية",
           };
         });
         categories.push(buildCategory(cat.category, getCategoryIcon(cat.category), enrichedItems));

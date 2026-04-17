@@ -260,7 +260,7 @@ export default function DesignStudio() {
           </div>
           <div className="flex gap-2">
             <Link href="/projects"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">مشاريعي</Button></Link>
-            <Link href="/chat"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">استشر م. سارة</Button></Link>
+            <Link href="/chat"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">استشر م. اليازية</Button></Link>
           </div>
         </div>
       </div>
@@ -418,7 +418,7 @@ export default function DesignStudio() {
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
               <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-800">
-                <strong>لماذا الهوية البصرية مهمة؟</strong> عند تصميم الأرضيات والجدران والأسقف بشكل منفصل، قد تبدو غير متناسقة. م. سارة ستستخدم هذه الهوية لضمان أن كل عنصر يكمل الآخر في الروح والمواد والألوان.
+                <strong>لماذا الهوية البصرية مهمة؟</strong> عند تصميم الأرضيات والجدران والأسقف بشكل منفصل، قد تبدو غير متناسقة. م. اليازية ستستخدم هذه الهوية لضمان أن كل عنصر يكمل الآخر في الروح والمواد والألوان.
               </p>
             </div>
 
@@ -655,13 +655,13 @@ function DesignStepContent({
         {hasDesign && <Badge className="mr-auto bg-green-500 text-white text-xs">✓ مصمّم</Badge>}
       </div>
 
-      {/* نصائح م. سارة */}
+      {/* نصائح م. اليازية */}
       <Card className="border-gold/20 bg-gold/5">
         <CardContent className="py-3 px-4">
           <div className="flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-gold mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-medium text-gold mb-1">نصائح م. سارة</p>
+              <p className="text-xs font-medium text-gold mb-1">نصائح م. اليازية</p>
               <ul className="space-y-0.5">
                 {config.tips.map((tip, i) => (
                   <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
@@ -741,12 +741,12 @@ function DesignStepContent({
                   {isDesigning ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      م. سارة تصمم...
+                      م. اليازية تصمم...
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      صمّمي {config.label} يا م. سارة
+                      صمّمي {config.label} يا م. اليازية
                     </span>
                   )}
                 </Button>
@@ -778,7 +778,7 @@ function DesignStepContent({
               <div className="text-center py-6">
                 <Eye className="w-12 h-12 text-gold/50 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground mb-2">
-                  م. سارة ستولّد منظوراً ثلاثي الأبعاد يجمع كل العناصر المصممة
+                  م. اليازية ستولّد منظوراً ثلاثي الأبعاد يجمع كل العناصر المصممة
                 </p>
                 {(elements?.length || 0) < 3 && (
                   <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
@@ -790,7 +790,7 @@ function DesignStepContent({
                   {isGeneratingPerspective ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      م. سارة تولّد المنظور...
+                      م. اليازية تولّد المنظور...
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
@@ -898,10 +898,10 @@ function DesignResultView({ design }: { design: DesignResult }) {
         </span>
       </div>
 
-      {/* ملاحظات م. سارة */}
+      {/* ملاحظات م. اليازية */}
       {design.professionalNotes && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-          <p className="text-xs font-medium text-blue-700 mb-1">ملاحظات م. سارة المهنية</p>
+          <p className="text-xs font-medium text-blue-700 mb-1">ملاحظات م. اليازية المهنية</p>
           <p className="text-xs text-blue-600">{design.professionalNotes}</p>
         </div>
       )}

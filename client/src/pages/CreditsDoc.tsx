@@ -64,7 +64,7 @@ export default function CreditsDoc() {
                 <span className="text-sm bg-white/20 rounded-full px-3 py-1">وثيقة تقنية داخلية</span>
               </div>
               <h1 className="text-3xl font-bold mb-1">نظام احتساب النقاط</h1>
-              <p className="text-white/80 text-lg">منصة م. سارة × Mousa.ai — الإصدار 1.0</p>
+              <p className="text-white/80 text-lg">منصة م. اليازية × Mousa.ai — الإصدار 1.0</p>
               <p className="text-white/60 text-sm mt-1">مارس 2026 | fada.mousa.ai</p>
             </div>
             <button
@@ -374,7 +374,7 @@ export default function CreditsDoc() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-400 pb-6">
-          <p>وثيقة داخلية — منصة م. سارة | fada.mousa.ai</p>
+          <p>وثيقة داخلية — منصة م. اليازية | fada.mousa.ai</p>
           <p className="mt-1">للتواصل: من خلال منصة Mousa.ai</p>
         </div>
       </div>

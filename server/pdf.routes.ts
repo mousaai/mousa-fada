@@ -120,7 +120,7 @@ function buildPDFHtml(idea: DesignIdeaForPDF, spaceType?: string, imageBase64?: 
   const boqHtml = idea.boq && idea.boq.categories.length > 0 ? `
     <div style="page-break-before:always;background:${lightBg};padding:0;">
       <div style="background:${gold};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="color:${white};font-size:11px;font-weight:bold;">م. سارة | جدول الكميات BOQ</span>
+        <span style="color:${white};font-size:11px;font-weight:bold;">م. اليازية | جدول الكميات BOQ</span>
         <span style="color:${white};font-size:11px;font-weight:bold;">${idea.title}</span>
       </div>
       <div style="padding:16px 24px;">
@@ -161,7 +161,7 @@ function buildPDFHtml(idea: DesignIdeaForPDF, spaceType?: string, imageBase64?: 
         ${idea.boq.disclaimer ? `<p style="font-size:8px;color:#888;text-align:center;margin-top:10px;">${idea.boq.disclaimer}</p>` : ""}
       </div>
       <div style="background:${gold};padding:6px 20px;text-align:center;">
-        <span style="color:${white};font-size:8px;">م. سارة — جدول الكميات — ${today} | fada.mousa.ai</span>
+        <span style="color:${white};font-size:8px;">م. اليازية — جدول الكميات — ${today} | fada.mousa.ai</span>
       </div>
     </div>` : "";
 
@@ -191,7 +191,7 @@ function buildPDFHtml(idea: DesignIdeaForPDF, spaceType?: string, imageBase64?: 
 <!-- صفحة 1: الغلاف -->
 <div class="page">
   <div style="background:${gold};padding:12px 20px;text-align:center;">
-    <span style="color:${white};font-size:13px;font-weight:bold;">م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
+    <span style="color:${white};font-size:13px;font-weight:bold;">م. اليازية | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
   </div>
   <div style="background:${darkBrown};height:3px;"></div>
   <div class="content">
@@ -216,14 +216,14 @@ function buildPDFHtml(idea: DesignIdeaForPDF, spaceType?: string, imageBase64?: 
     </div>
   </div>
   <div class="footer">
-    <span>م. سارة — دفتر التصميم الاحترافي — ${today} | fada.mousa.ai</span>
+    <span>م. اليازية — دفتر التصميم الاحترافي — ${today} | fada.mousa.ai</span>
   </div>
 </div>
 
 <!-- صفحة 2: المزايا والتوصيات -->
 <div class="page">
   <div class="header">
-    <span>م. سارة | مزايا التصميم</span>
+    <span>م. اليازية | مزايا التصميم</span>
     <span>${idea.title}</span>
   </div>
   <div class="content">
@@ -238,12 +238,12 @@ function buildPDFHtml(idea: DesignIdeaForPDF, spaceType?: string, imageBase64?: 
         `الميزانية التقديرية: ${idea.estimatedCost} — يُنصح بتخصيص 10-15% احتياطياً للطوارئ`,
         `الجدول الزمني: ${idea.timeline || "يُحدد بعد الاتفاق مع المقاول"}`,
         "يُنصح بالحصول على 3 عروض أسعار من مقاولين معتمدين قبل البدء",
-        "م. سارة تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
+        "م. اليازية تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
       ].map(r => `<div style="font-size:9px;color:#503c1e;padding:3px 0;border-bottom:1px solid #f0e8d8;">• ${r}</div>`).join("")}
     </div>
   </div>
   <div class="footer">
-    <span>م. سارة — مزايا التصميم — ${today} | fada.mousa.ai</span>
+    <span>م. اليازية — مزايا التصميم — ${today} | fada.mousa.ai</span>
   </div>
 </div>
 
@@ -304,7 +304,7 @@ export function registerPDFRoutes(app: Express): void {
 
       // قراءة وإرسال PDF
       const pdfBuffer = await readFile(tmpPdf);
-      const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}.pdf`;
+      const fileName = `م_اليازية_${idea.title.replace(/\s+/g, "_").substring(0, 30)}.pdf`;
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);

@@ -74,7 +74,7 @@ export default function CostsPage() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-amber-800 hover:text-amber-600 transition-colors">
             <Home className="w-5 h-5" />
-            <span className="font-bold">م. سارة</span>
+            <span className="font-bold">م. اليازية</span>
           </button>
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/analyze")} className="text-sm text-stone-600 hover:text-amber-700 transition-colors font-medium">
@@ -207,7 +207,7 @@ export default function CostsPage() {
               {calculateMutation.isPending ? (
                 <>
                   <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                  م. سارة تحسب التكاليف...
+                  م. اليازية تحسب التكاليف...
                 </>
               ) : (
                 <>
@@ -290,7 +290,7 @@ export default function CostsPage() {
                   <div className="elegant-card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
                     <h2 className="font-bold text-stone-800 mb-3 flex items-center gap-2">
                       <Lightbulb className="w-5 h-5 text-amber-600" />
-                      نصائح م. سارة للتوفير
+                      نصائح م. اليازية للتوفير
                     </h2>
                     <ul className="space-y-2">
                       {result.tips.map((tip, i) => (

@@ -18,10 +18,10 @@ import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const SCAN_STEPS = [
-  { icon: "📱", title: "حمّل أداة م. سارة Measure", desc: "تطبيق iOS مستقل يستخدم LiDAR لمسح الفضاء بدقة ±1 سم" },
+  { icon: "📱", title: "حمّل أداة م. اليازية Measure", desc: "تطبيق iOS مستقل يستخدم LiDAR لمسح الفضاء بدقة ±1 سم" },
   { icon: "🏠", title: "امسح الغرفة", desc: "حرّك الهاتف ببطء حول الغرفة — التطبيق يبني نموذج ثلاثي الأبعاد تلقائياً" },
-  { icon: "📤", title: "أرسل البيانات", desc: "اضغط 'إرسال لم. سارة' في التطبيق — ستصل البيانات هنا فوراً" },
-  { icon: "✨", title: "ابدأ التصميم", desc: "م. سارة تحلل الأبعاد وتبدأ التصميم عنصراً بعنصر بدقة هندسية كاملة" },
+  { icon: "📤", title: "أرسل البيانات", desc: "اضغط 'إرسال لم. اليازية' في التطبيق — ستصل البيانات هنا فوراً" },
+  { icon: "✨", title: "ابدأ التصميم", desc: "م. اليازية تحلل الأبعاد وتبدأ التصميم عنصراً بعنصر بدقة هندسية كاملة" },
 ];
 
 export default function ARScan() {
@@ -99,7 +99,7 @@ export default function ARScan() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gold">مسح الفضاء بالكاميرا الذكية</h1>
-              <p className="text-beige/60 text-sm">استقبال بيانات أداة م. سارة Measure أو إدخال الأبعاد يدوياً</p>
+              <p className="text-beige/60 text-sm">استقبال بيانات أداة م. اليازية Measure أو إدخال الأبعاد يدوياً</p>
             </div>
           </div>
         </div>
@@ -221,7 +221,7 @@ export default function ARScan() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  بعد إرسال البيانات من تطبيق م. سارة Measure، أدخل معرّف المسح لمعالجته وبدء التصميم.
+                  بعد إرسال البيانات من تطبيق م. اليازية Measure، أدخل معرّف المسح لمعالجته وبدء التصميم.
                 </p>
                 <div>
                   <Label htmlFor="scanId" className="text-sm mb-1 block">معرّف المسح (Scan ID)</Label>
@@ -243,12 +243,12 @@ export default function ARScan() {
                 </Button>
 
                 <div className="border-t border-border pt-4">
-                  <p className="text-xs text-muted-foreground mb-3 font-medium">توصيف أداة م. سارة Measure (iOS)</p>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">توصيف أداة م. اليازية Measure (iOS)</p>
                   <div className="space-y-2 text-xs text-muted-foreground">
                     <div className="flex gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" /><span>ARKit + RoomPlan API — دقة ±1 سم</span></div>
                     <div className="flex gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" /><span>يتطلب iPhone 12 Pro أو أحدث (LiDAR)</span></div>
                     <div className="flex gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" /><span>يستخرج: الأبعاد، الأبواب، النوافذ، الأعمدة</span></div>
-                    <div className="flex gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" /><span>يرسل البيانات مباشرة لمنصة م. سارة</span></div>
+                    <div className="flex gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" /><span>يرسل البيانات مباشرة لمنصة م. اليازية</span></div>
                   </div>
                 </div>
               </CardContent>
@@ -415,7 +415,7 @@ export default function ARScan() {
               <div className="text-center py-16">
                 <Scan className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
                 <p className="text-muted-foreground mb-2">لا توجد مسوحات بعد</p>
-                <p className="text-sm text-muted-foreground">استخدم أداة م. سارة Measure أو أدخل الأبعاد يدوياً</p>
+                <p className="text-sm text-muted-foreground">استخدم أداة م. اليازية Measure أو أدخل الأبعاد يدوياً</p>
               </div>
             )}
           </div>

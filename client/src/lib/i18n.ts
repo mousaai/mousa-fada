@@ -1,4 +1,4 @@
-// i18n translations for م. سارة — Arabic, English, Urdu, French
+// i18n translations for م. اليازية — Arabic, English, Urdu, French
 
 export type Language = "ar" | "en" | "ur" | "fr";
 
@@ -189,12 +189,12 @@ type Translations = Record<TranslationKey, string>;
 export const translations: Record<Language, Translations> = {
   ar: {
     // App & Navigation
-    "app.name": "م. سارة",
+    "app.name": "م. اليازية",
     "app.tagline": "خبيرة التصميم المعماري والبيئي",
     "app.subtitle": "صمّم أي فضاء بلمسة واحدة",
     "nav.analyze": "تحليل",
     "nav.studio": "استوديو",
-    "nav.sarah": "م. سارة",
+    "nav.sarah": "م. اليازية",
     "nav.projects": "مشاريعي",
     "nav.store": "متجر الأثاث",
     // Home
@@ -202,9 +202,9 @@ export const translations: Record<Language, Translations> = {
     "home.hero.subtitle": "داخلي • واجهات المباني • لاندسكيب • مسابح",
     "home.hero.cta": "تحليل الآن",
     "home.sections.analyze": "تحليل سريع",
-    "home.sections.analyze.desc": "التقط صورة وسارة تحللها",
+    "home.sections.analyze.desc": "التقط صورة واليازية تحللها",
     "home.sections.studio": "ارسم بصوتك",
-    "home.sections.studio.desc": "صف فضاءك وسارة تصممه",
+    "home.sections.studio.desc": "صف فضاءك واليازية تصممه",
     "home.sections.store": "متجر الأثاث",
     "home.sections.store.desc": "أثاث حقيقي من متاجر محلية",
     "home.recentProjects": "آخر المشاريع",
@@ -219,7 +219,7 @@ export const translations: Record<Language, Translations> = {
     "auth.profile": "الملف الشخصي",
     // SmartCapture
     "smart.title": "التحليل الذكي",
-    "smart.subtitle": "التقط صورة لأي فضاء وسارة تحلله فوراً",
+    "smart.subtitle": "التقط صورة لأي فضاء واليازية تحلله فوراً",
     "smart.upload": "رفع صورة",
     "smart.uploadDesc": "اضغط لرفع صورة أو التقاطها",
     "smart.analyze": "تحليل الصورة",
@@ -263,7 +263,7 @@ export const translations: Record<Language, Translations> = {
     "ideas.area": "المساحة",
     // VoiceDesigner
     "voice.title": "الرسم بالصوت",
-    "voice.subtitle": "صف فضاءك وسارة ترسم المسقط",
+    "voice.subtitle": "صف فضاءك واليازية ترسم المسقط",
     "voice.startDrawing": "ابدأ الرسم",
     "voice.voiceInput": "إدخال صوتي",
     "voice.listening": "جاري الاستماع...",
@@ -346,12 +346,12 @@ export const translations: Record<Language, Translations> = {
     "common.beta": "تجريبي",
     "common.experimental": "تجريبي",
     // Sarah AI
-    "sarah.title": "م. سارة",
+    "sarah.title": "م. اليازية",
     "sarah.subtitle": "خبيرتك في التصميم المعماري والبيئي",
-    "sarah.greeting": "مرحباً! أنا م. سارة، خبيرتك في التصميم الداخلي، الواجهات، اللاندسكيب والزراعة التجميلية، المسابح، والتصميم الحضري. كيف يمكنني مساعدتك؟",
-    "sarah.placeholder": "اسألي م. سارة عن التصميم...",
+    "sarah.greeting": "مرحباً! أنا م. اليازية، خبيرتك في التصميم الداخلي، الواجهات، اللاندسكيب والزراعة التجميلية، المسابح، والتصميم الحضري. كيف يمكنني مساعدتك؟",
+    "sarah.placeholder": "اسألي م. اليازية عن التصميم...",
     "sarah.send": "إرسال",
-    "sarah.thinking": "م. سارة تفكر...",
+    "sarah.thinking": "م. اليازية تفكر...",
   },
 
   en: {

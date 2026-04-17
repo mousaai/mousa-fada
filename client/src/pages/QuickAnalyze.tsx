@@ -620,7 +620,7 @@ export default function QuickAnalyze() {
             {step === "mode" ? "اختر طريقة التصوير" :
              step === "capture" ? "التقط صور الفضاء" :
              step === "style" ? "اختر نمط التصميم" :
-             step === "analyzing" ? "م. سارة تحلل..." : "نتيجة التحليل"}
+             step === "analyzing" ? "م. اليازية تحلل..." : "نتيجة التحليل"}
           </p>
         </div>
         {step !== "mode" && (
@@ -666,7 +666,7 @@ export default function QuickAnalyze() {
 
             <div className="bg-[#C9A84C]/10 rounded-2xl p-4 border border-[#C9A84C]/20">
               <p className="text-xs text-[#8B6914] text-center leading-relaxed">
-                💡 <strong>نصيحة م. سارة:</strong> كلما زادت الصور، كان التحليل أدق. صوّر الجدران والأرضية والسقف من زوايا مختلفة.
+                💡 <strong>نصيحة م. اليازية:</strong> كلما زادت الصور، كان التحليل أدق. صوّر الجدران والأرضية والسقف من زوايا مختلفة.
               </p>
             </div>
           </div>
@@ -900,7 +900,7 @@ export default function QuickAnalyze() {
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-3">
                       <Sparkles className="w-8 h-8 text-[#C9A84C] animate-pulse" />
                     </div>
-                    <p className="font-bold text-lg">م. سارة تحلل...</p>
+                    <p className="font-bold text-lg">م. اليازية تحلل...</p>
                     {captureMode === "multi" && images.length > 1 && (
                       <p className="text-sm opacity-80">{images.length} صور</p>
                     )}
@@ -958,7 +958,7 @@ export default function QuickAnalyze() {
               {vizImage ? (
                 <div className="relative cursor-pointer" onClick={() => setLightboxImage(vizImage)}>
                   <img src={vizImage} className="w-full h-56 object-cover" alt="visualization" />
-                  <div className="absolute top-2 right-2 bg-[#C9A84C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">✨ م. سارة</div>
+                  <div className="absolute top-2 right-2 bg-[#C9A84C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">✨ م. اليازية</div>
                   <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
                     <ZoomIn className="w-3 h-3" /> تكبير
                   </div>
@@ -968,7 +968,7 @@ export default function QuickAnalyze() {
                   <div className="w-12 h-12 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
                     <Wand2 className="w-6 h-6 text-[#C9A84C] animate-pulse" />
                   </div>
-                  <p className="text-sm text-[#8B6914]">م. سارة تولّد الصورة التصورية...</p>
+                  <p className="text-sm text-[#8B6914]">م. اليازية تولّد الصورة التصورية...</p>
                   <p className="text-xs text-[#8B6914]/60">15-30 ثانية</p>
                 </div>
               ) : (
@@ -982,11 +982,11 @@ export default function QuickAnalyze() {
               )}
             </div>
 
-            {/* تقييم م. سارة */}
+            {/* تقييم م. اليازية */}
             <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0] shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-[#C9A84C]" />
-                <span className="font-bold text-[#5C3D11] text-sm">تقييم م. سارة</span>
+                <span className="font-bold text-[#5C3D11] text-sm">تقييم م. اليازية</span>
               </div>
               <p className="text-sm text-[#6B4C1E] leading-relaxed">{result.overview}</p>
             </div>
@@ -1122,7 +1122,7 @@ export default function QuickAnalyze() {
             {/* التوصيات */}
             {result.topSuggestions.length > 0 && (
               <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0] shadow-sm">
-                <p className="font-bold text-[#5C3D11] text-sm mb-3">توصيات م. سارة</p>
+                <p className="font-bold text-[#5C3D11] text-sm mb-3">توصيات م. اليازية</p>
                 <div className="space-y-2">
                   {result.topSuggestions.map((s, i) => (
                     <div key={i} className="flex items-start gap-2">
@@ -1183,7 +1183,7 @@ export default function QuickAnalyze() {
                 <span className="text-xs text-[#5C3D11] font-medium">حفظ</span>
               </button>
               <button onClick={() => {
-                if (navigator.share) navigator.share({ title: "تحليل م. سارة", text: result.overview });
+                if (navigator.share) navigator.share({ title: "تحليل م. اليازية", text: result.overview });
                 else { toast.success("تم النسخ"); navigator.clipboard.writeText(result.overview); }
               }} className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] active:scale-95 transition-transform">
                 <Share2 className="w-4 h-4 text-white" />

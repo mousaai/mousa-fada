@@ -265,7 +265,7 @@ export function getBestStylesForSpace(spaceType: string): string[] {
 
 // ===== دالة بناء system prompt لـ Gemini لتوليد أفكار best-of-best =====
 export function buildBestPracticeSystemPrompt(): string {
-  return `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية بخبرة 20 سنة.
+  return `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي العالمية بخبرة 20 سنة.
 
 🏆 قاعدة "BEST OF BEST" المطلقة:
 كل فكرة تصميمية تقترحينها يجب أن تكون على مستوى:

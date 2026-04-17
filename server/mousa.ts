@@ -245,7 +245,7 @@ export async function getMousaUserByOpenId(
 // ─── Credit Costs ─────────────────────────────────────────────────────────────
 
 /**
- * Credit costs per operation in م. سارة (fada platform)
+ * Credit costs per operation in م. اليازية (fada platform)
  * Updated v48.0 — based on actual workload analysis per service:
  *
  * analyzePhoto         20  — LLM + single image (high detail)
@@ -313,7 +313,7 @@ export async function notifyMousaPricing(): Promise<boolean> {
     minCost,
     maxCost,
     baseCost: costs.analyzePhoto, // التكلفة الافتراضية عند عدم تحديد العملية
-    description: `fada platform (م. سارة) — ${services.length} services, range ${minCost}–${maxCost} credits`,
+    description: `fada platform (م. اليازية) — ${services.length} services, range ${minCost}–${maxCost} credits`,
   };
 
   try {

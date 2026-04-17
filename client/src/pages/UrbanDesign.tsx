@@ -260,8 +260,8 @@ export default function UrbanDesign() {
           <div className="space-y-6">
             {/* Hero Banner */}
             <div className="bg-gradient-to-br from-[#2C5F2E] to-[#1a3d1b] rounded-3xl p-5 text-white">
-              <p className="text-lg font-black mb-1">م. سارة للتصميم الحضري</p>
-              <p className="text-sm opacity-80">ارفع صورة جوية أو مخطط عام للمنطقة وستحللها م. سارة وتقترح تصميماً حضرياً متكاملاً</p>
+              <p className="text-lg font-black mb-1">م. اليازية للتصميم الحضري</p>
+              <p className="text-sm opacity-80">ارفع صورة جوية أو مخطط عام للمنطقة وستحللها م. اليازية وتقترح تصميماً حضرياً متكاملاً</p>
               <div className="flex gap-3 mt-3 flex-wrap">
                 {["أحياء سكنية", "شوارع تجارية", "حدائق عامة", "واجهات بحرية"].map(tag => (
                   <span key={tag} className="px-2 py-1 rounded-full bg-white/20 text-xs">{tag}</span>
@@ -441,7 +441,7 @@ export default function UrbanDesign() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <p className="text-xl font-black text-[#1a3d1b]">م. سارة تحلل المنطقة</p>
+              <p className="text-xl font-black text-[#1a3d1b]">م. اليازية تحلل المنطقة</p>
               <p className="text-sm text-[#2C5F2E]/70">تحليل الكثافة والمناطق والمساحات...</p>
             </div>
             <div className="w-full max-w-xs space-y-2">
@@ -567,7 +567,7 @@ export default function UrbanDesign() {
                         <div className="mx-4 mb-4 rounded-xl bg-[#2C5F2E]/5 border border-[#2C5F2E]/10 flex items-center justify-center" style={{ height: 200 }}>
                           <div className="flex flex-col items-center gap-3">
                             <Loader2 className="w-8 h-8 text-[#2C5F2E] animate-spin" />
-                            <p className="text-xs text-[#2C5F2E]/70">م. سارة تصمم {zone.name}...</p>
+                            <p className="text-xs text-[#2C5F2E]/70">م. اليازية تصمم {zone.name}...</p>
                           </div>
                         </div>
                       )}
@@ -595,7 +595,7 @@ export default function UrbanDesign() {
             {/* Recommendations */}
             {analysisResult.recommendations?.length > 0 && (
               <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
-                <p className="text-sm font-bold text-[#5C3D11] mb-3">توصيات م. سارة الحضرية</p>
+                <p className="text-sm font-bold text-[#5C3D11] mb-3">توصيات م. اليازية الحضرية</p>
                 <div className="space-y-2">
                   {analysisResult.recommendations.map((rec: string, i: number) => (
                     <div key={i} className="flex items-start gap-2">

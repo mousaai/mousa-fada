@@ -167,9 +167,9 @@ describe("PDF Filename Generation", () => {
     const ideaTitle = "تصميم عصري أنيق";
     const sanitized = ideaTitle.replace(/\s+/g, "_").substring(0, 30);
     const timestamp = 1234567890;
-    const fileName = `م_سارة_${sanitized}_${timestamp}.pdf`;
+    const fileName = `م_اليازية_${sanitized}_${timestamp}.pdf`;
 
-    expect(fileName).toContain("م_سارة");
+    expect(fileName).toContain("م_اليازية");
     expect(fileName).toContain("تصميم_عصري_أنيق");
     expect(fileName.endsWith(".pdf")).toBe(true);
   });
@@ -186,7 +186,7 @@ describe("PDF Filename Generation", () => {
 describe("PDF Pages Structure", () => {
   it("should define correct page structure", () => {
     const pages = [
-      { name: "غلاف", content: ["صورة التصميم", "اسم الفكرة", "شعار م. سارة", "التكلفة الإجمالية"] },
+      { name: "غلاف", content: ["صورة التصميم", "اسم الفكرة", "شعار م. اليازية", "التكلفة الإجمالية"] },
       { name: "التصميم", content: ["الوصف", "لوحة الألوان", "المواد", "المزايا"] },
       { name: "BOQ", content: ["جدول الكميات", "الأسعار", "الإجمالي"] },
       { name: "المواصفات", content: ["الأثاث", "تفاصيل تقنية"] },
@@ -200,8 +200,8 @@ describe("PDF Pages Structure", () => {
     expect(pages[3].content).toContain("الأثاث");
   });
 
-  it("should include م. سارة branding in all pages", () => {
-    const brandName = "م. سارة";
+  it("should include م. اليازية branding in all pages", () => {
+    const brandName = "م. اليازية";
     const footerText = `${brandName} | خبيرة التصميم الداخلي والمعماري`;
 
     expect(footerText).toContain(brandName);

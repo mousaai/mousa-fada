@@ -17,7 +17,7 @@ export interface VoiceState {
 const COMMAND_PATTERNS: { pattern: RegExp; command: VoiceCommand }[] = [
   { pattern: /تحليل|صوّر|صور|الكاميرا|افتح|التقط|تصوير/i, command: "analyze" },
   { pattern: /صمم|استوديو|تصميم|ابدأ|إنشاء/i, command: "design" },
-  { pattern: /تحدث|سارة|محادثة|كلمي|اسألي/i, command: "chat" },
+  { pattern: /تحدث|اليازية|محادثة|كلمي|اسألي/i, command: "chat" },
   { pattern: /مشاريعي|مشاريع|أعمالي|ملفاتي/i, command: "projects" },
   { pattern: /تكاليف|ميزانية|سعر|تكلفة|حساب/i, command: "costs" },
   { pattern: /إلهام|لوحة/i, command: "moodboard" },

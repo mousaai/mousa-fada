@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const COMMAND_LABELS: Record<VoiceCommand, string> = {
   analyze: "فتح التحليل...",
   design: "فتح الاستوديو...",
-  chat: "فتح م. سارة...",
+  chat: "فتح م. اليازية...",
   projects: "فتح المشاريع...",
   costs: "فتح التكاليف...",
   moodboard: "فتح لوحة الإلهام...",
@@ -19,7 +19,7 @@ const COMMAND_LABELS: Record<VoiceCommand, string> = {
 const COMMAND_HINTS = [
   "قل: «تحليل» لرفع صورة",
   "قل: «صمم» للاستوديو",
-  "قل: «سارة» للمحادثة",
+  "قل: «اليازية» للمحادثة",
   "قل: «مشاريعي» لمشاريعك",
   "قل: «تكاليف» للميزانية",
 ];

@@ -142,7 +142,7 @@ describe("PlanDesign — analyzePlan", () => {
     // استدعاء LLM مباشرة
     const response = await invokeLLM({
       messages: [
-        { role: "system", content: "أنتِ م. سارة" },
+        { role: "system", content: "أنتِ م. اليازية" },
         { role: "user", content: [{ type: "image_url" as const, image_url: { url: "data:image/png;base64,abc", detail: "high" as const } }] },
       ],
       response_format: { type: "json_object" },

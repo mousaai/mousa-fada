@@ -587,7 +587,7 @@ export default function PlanDesign() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <p className="text-xl font-black text-[#5C3D11]">م. سارة تحلل مخططك</p>
+              <p className="text-xl font-black text-[#5C3D11]">م. اليازية تحلل مخططك</p>
               <p className="text-sm text-[#8B6914]/70">Gemini 2.5 Pro يستخرج التفاصيل المعمارية...</p>
             </div>
             <div className="w-full max-w-xs space-y-3">

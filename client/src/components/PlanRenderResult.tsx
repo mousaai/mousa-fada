@@ -101,7 +101,7 @@ async function generateRenderPDF(imageUrl: string, data: DesignData, style: stri
   await addHtmlPage(`
     <div style="background:#faf6f0;min-height:1123px;padding:0;">
       <div style="background:${goldHex};padding:14px 20px;text-align:center;">
-        <span style="color:#fff;font-size:14px;font-weight:bold;">م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
+        <span style="color:#fff;font-size:14px;font-weight:bold;">م. اليازية | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
       </div>
       <div style="background:${brownHex};height:3px;"></div>
       <div style="padding:20px 24px;">
@@ -142,7 +142,7 @@ async function generateRenderPDF(imageUrl: string, data: DesignData, style: stri
   await addHtmlPage(`
     <div style="background:#faf6f0;min-height:1123px;padding:0;">
       <div style="background:${goldHex};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="color:#fff;font-size:12px;font-weight:bold;">م. سارة | التصميم الداخلي</span>
+        <span style="color:#fff;font-size:12px;font-weight:bold;">م. اليازية | التصميم الداخلي</span>
         <span style="color:#fff;font-size:12px;font-weight:bold;">${data.title}</span>
       </div>
       <div style="padding:20px 24px;">
@@ -207,7 +207,7 @@ async function generateRenderPDF(imageUrl: string, data: DesignData, style: stri
     await addHtmlPage(`
       <div style="background:#faf6f0;min-height:1123px;padding:0;">
         <div style="background:${goldHex};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="color:#fff;font-size:12px;font-weight:bold;">م. سارة | جدول الكميات BOQ</span>
+          <span style="color:#fff;font-size:12px;font-weight:bold;">م. اليازية | جدول الكميات BOQ</span>
           <span style="color:#fff;font-size:12px;font-weight:bold;">${data.title}</span>
         </div>
         <div style="padding:20px 24px;">
@@ -381,7 +381,7 @@ export default function PlanRenderResult({
 
   const handleShare = async () => {
     try {
-      if (navigator.share) await navigator.share({ title: data?.title || "تصميم م. سارة", url: localImageUrl });
+      if (navigator.share) await navigator.share({ title: data?.title || "تصميم م. اليازية", url: localImageUrl });
       else { await navigator.clipboard.writeText(localImageUrl); toast.success("تم نسخ رابط الصورة"); }
     } catch { /* ignore */ }
   };
@@ -435,7 +435,7 @@ export default function PlanRenderResult({
                     <Wand2 className="w-7 h-7 text-[#C9A84C] animate-pulse" />
                   </div>
                   <p className="text-sm text-[#8B6914] font-bold">
-                    {isApplyingStyle ? "م. سارة تغيّر النمط..." : isChangingStyle ? "جاري تغيير النمط..." : "جاري إعادة التوليد..."}
+                    {isApplyingStyle ? "م. اليازية تغيّر النمط..." : isChangingStyle ? "جاري تغيير النمط..." : "جاري إعادة التوليد..."}
                   </p>
                   <div className="flex gap-1">
                     {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 rounded-full bg-[#C9A84C] animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
@@ -687,14 +687,14 @@ export default function PlanRenderResult({
                 >
                   <div className="flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4" />
-                    <span>{bonyanMatchMutation.isPending ? "م. سارة تبحث في متاجر بنيان..." : "اشتري هذا الديكور من بنيان"}</span>
+                    <span>{bonyanMatchMutation.isPending ? "م. اليازية تبحث في متاجر بنيان..." : "اشتري هذا الديكور من بنيان"}</span>
                   </div>
                   {!bonyanMatchMutation.isPending && <ChevronDown className={`w-4 h-4 transition-transform ${showBonyan ? "rotate-180" : ""}`} />}
                 </button>
                 {bonyanMatchMutation.isPending && (
                   <div className="flex items-center justify-center gap-2 py-3">
                     <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
-                    <p className="text-xs text-amber-700">م. سارة تبحث في متاجر بنيان...</p>
+                    <p className="text-xs text-amber-700">م. اليازية تبحث في متاجر بنيان...</p>
                   </div>
                 )}
                 {showBonyan && bonyanMatchMutation.data && (
@@ -820,7 +820,7 @@ export default function PlanRenderResult({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all shadow-lg"
             >
               {isRefining ? (
-                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />م. سارة تحسّن التصميم...</>
+                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />م. اليازية تحسّن التصميم...</>
               ) : (
                 <><span>✨</span>تطبيق التحسين</>
               )}
@@ -906,7 +906,7 @@ export default function PlanRenderResult({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-black flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all shadow-lg"
             >
               {isApplyingStyle ? (
-                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />م. سارة تغيّر النمط...</>
+                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />م. اليازية تغيّر النمط...</>
               ) : (
                 <><Palette className="w-4 h-4" />طبّق {selectedNewStyle ? `نمط ${STYLE_LABELS[selectedNewStyle] || selectedNewStyle}` : "النمط"} على هذه الفكرة</>
               )}

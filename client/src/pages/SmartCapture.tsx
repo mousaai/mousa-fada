@@ -346,7 +346,7 @@ function SpaceAnalysisCard({ analysis }: { analysis: SpaceAnalysis }) {
             <div>
               <p className="text-xs font-bold text-[#5C3D11] mb-2 flex items-center gap-1">
                 <Info className="w-3 h-3 text-orange-500" />
-                ملاحظات م. سارة
+                ملاحظات م. اليازية
               </p>
               <div className="space-y-1">
                 {analysis.currentIssues.map((issue, i) => (
@@ -438,7 +438,7 @@ function StructuralSuggestionsCard({ suggestions }: { suggestions: StructuralSug
       {expanded && (
         <div className="px-4 pb-4 space-y-3">
           <p className="text-[10px] text-amber-700 bg-amber-100 rounded-xl px-3 py-2 leading-relaxed">
-            ⚠️ هذه مقترحات اختيارية تتطلب أعمال إنشائية. م. سارة تقدمها كأفكار إضافية — التصاميم الأساسية تحافظ على البنية الأصلية.
+            ⚠️ هذه مقترحات اختيارية تتطلب أعمال إنشائية. م. اليازية تقدمها كأفكار إضافية — التصاميم الأساسية تحافظ على البنية الأصلية.
           </p>
           {suggestions.map((s) => (
             <div key={s.id} className="bg-white rounded-xl border border-amber-200 overflow-hidden">
@@ -603,7 +603,7 @@ function ShopTheLookPanel({
           {isLoading && (
             <div className="flex items-center justify-center gap-2 py-6">
               <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
-              <p className="text-xs text-amber-700">م. سارة تبحث في متاجر بنيان...</p>
+              <p className="text-xs text-amber-700">م. اليازية تبحث في متاجر بنيان...</p>
             </div>
           )}
 
@@ -718,7 +718,7 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}.pdf`;
+  const fileName = `م_اليازية_${idea.title.replace(/\s+/g, "_").substring(0, 30)}.pdf`;
   a.download = fileName;
   document.body.appendChild(a);
   a.click();
@@ -813,7 +813,7 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
   await addHtmlPage(`
     <div style="background:${lightBg};min-height:1123px;padding:0;">
       <div style="background:${gold};padding:12px 20px;text-align:center;">
-        <span style="color:${white};font-size:13px;font-weight:bold;">م. سارة | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
+        <span style="color:${white};font-size:13px;font-weight:bold;">م. اليازية | خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</span>
       </div>
       <div style="background:${darkBrown};height:3px;"></div>
       <div style="padding:18px 24px;">
@@ -838,7 +838,7 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
         </div>
       </div>
       <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
-        <span style="color:${white};font-size:8px;">م. سارة — دفتر التصميم الاحترافي — ${today} | fada.mousa.ai</span>
+        <span style="color:${white};font-size:8px;">م. اليازية — دفتر التصميم الاحترافي — ${today} | fada.mousa.ai</span>
       </div>
     </div>`, true);
 
@@ -852,7 +852,7 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
   await addHtmlPage(`
     <div style="background:${lightBg};min-height:1123px;padding:0;">
       <div style="background:${gold};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="color:${white};font-size:11px;font-weight:bold;">م. سارة | مزايا التصميم</span>
+        <span style="color:${white};font-size:11px;font-weight:bold;">م. اليازية | مزايا التصميم</span>
         <span style="color:${white};font-size:11px;font-weight:bold;">${idea.title}</span>
       </div>
       <div style="padding:18px 24px;">
@@ -890,12 +890,12 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
             `الميزانية التقديرية: ${idea.estimatedCost} — يُنصح بتخصيص 10-15% احتياطياً للطوارئ`,
             `الجدول الزمني: ${idea.timeline || "يُحدد بعد الاتفاق مع المقاول"}`,
             "يُنصح بالحصول على 3 عروض أسعار من مقاولين معتمدين قبل البدء",
-            "م. سارة تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
+            "م. اليازية تقدم هذا التصميم كمرجع إلهامي — التنفيذ النهائي يحتاج مهندساً معتمداً",
           ].map(r => `<div style="font-size:9px;color:#503c1e;padding:3px 0;border-bottom:1px solid #f0e8d8;">• ${r}</div>`).join("")}
         </div>
       </div>
       <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
-        <span style="color:${white};font-size:8px;">م. سارة — مزايا التصميم — ${today} | fada.mousa.ai</span>
+        <span style="color:${white};font-size:8px;">م. اليازية — مزايا التصميم — ${today} | fada.mousa.ai</span>
       </div>
     </div>`);
 
@@ -934,7 +934,7 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
     await addHtmlPage(`
       <div style="background:${lightBg};min-height:1123px;padding:0;">
         <div style="background:${gold};padding:10px 20px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="color:${white};font-size:11px;font-weight:bold;">م. سارة | جدول الكميات BOQ</span>
+          <span style="color:${white};font-size:11px;font-weight:bold;">م. اليازية | جدول الكميات BOQ</span>
           <span style="color:${white};font-size:11px;font-weight:bold;">${idea.title}</span>
         </div>
         <div style="padding:16px 24px;">
@@ -948,13 +948,13 @@ async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?:
           ${idea.boq.disclaimer ? `<p style="font-size:8px;color:#888;text-align:center;margin-top:10px;">${idea.boq.disclaimer}</p>` : ""}
         </div>
         <div style="background:${gold};padding:6px 20px;text-align:center;position:absolute;bottom:0;width:100%;box-sizing:border-box;">
-          <span style="color:${white};font-size:8px;">م. سارة — جدول الكميات — ${today} | fada.mousa.ai</span>
+          <span style="color:${white};font-size:8px;">م. اليازية — جدول الكميات — ${today} | fada.mousa.ai</span>
         </div>
       </div>`);
   }
 
   // حفظ الملف
-  const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}_${Date.now()}.pdf`;
+  const fileName = `م_اليازية_${idea.title.replace(/\s+/g, "_").substring(0, 30)}_${Date.now()}.pdf`;
   doc.save(fileName);
   return fileName;
 }
@@ -1588,7 +1588,7 @@ function IdeaCard({
                 {isRefining ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    م. سارة تحسّن التصميم...
+                    م. اليازية تحسّن التصميم...
                   </>
                 ) : (
                   <>
@@ -1702,7 +1702,7 @@ function IdeaCard({
                 {isApplyingStyle ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    م. سارة تغيّر النمط...
+                    م. اليازية تغيّر النمط...
                   </>
                 ) : (
                   <>
@@ -2413,7 +2413,7 @@ export default function SmartCapture() {
   const [ideasCount, setIdeasCount] = useState(3);
   const [budgetLevel, setBudgetLevel] = useState<"economy" | "mid" | "luxury" | "premium">("mid");
   const [budgetAmount, setBudgetAmount] = useState<string>("");
-  // حرية النظر المعماري — الافتراضي: م. سارة تحافظ على مواضع الأبواب والنوافذ تلقائياً
+  // حرية النظر المعماري — الافتراضي: م. اليازية تحافظ على مواضع الأبواب والنوافذ تلقائياً
   const [allowPlatformFreedom, setAllowPlatformFreedom] = useState(false);
   // متغيرات قديمة محتفظ بها للتوافق مع الكود القديم
   const lockStructural = false;
@@ -2894,7 +2894,7 @@ export default function SmartCapture() {
             {/* Architectural integrity note */}
             <div className="bg-[#C9A84C]/10 rounded-2xl p-3 border border-[#C9A84C]/20">
               <p className="text-xs text-[#8B6914] leading-relaxed">
-                🏗️ <strong>م. سارة</strong> تحلل أي فضاء: غرفة، واجهة مبنى، حديقة، مسبح — وتولد تصاميم مخصصة لكل نوع
+                🏗️ <strong>م. اليازية</strong> تحلل أي فضاء: غرفة، واجهة مبنى، حديقة، مسبح — وتولد تصاميم مخصصة لكل نوع
               </p>
             </div>
           </div>
@@ -2953,7 +2953,7 @@ export default function SmartCapture() {
               </div>
             </div>
 
-            {/* م. سارة لها صلاحية كاملة على جميع عناصر الفضاء */}
+            {/* م. اليازية لها صلاحية كاملة على جميع عناصر الفضاء */}
 
             {/* عدد الأفكار */}
             <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0]">
@@ -2979,7 +2979,7 @@ export default function SmartCapture() {
                 <Palette className="w-4 h-4 text-[#C9A84C]" />
                 <div className="text-right flex-1">
                   <p className="text-sm font-bold text-[#5C3D11]">🎨 النمط المفضّل</p>
-                  <p className="text-[10px] text-[#8B6914]/60">اختر الطابع الذي تريده — م. سارة ستلتزم به في كل الأفكار</p>
+                  <p className="text-[10px] text-[#8B6914]/60">اختر الطابع الذي تريده — م. اليازية ستلتزم به في كل الأفكار</p>
                 </div>
                 {preferredStyle && (
                   <button onClick={() => setPreferredStyle(null)}
@@ -3027,7 +3027,7 @@ export default function SmartCapture() {
                 <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-rose-400" />
                 <div className="text-right flex-1">
                   <p className="text-sm font-bold text-[#5C3D11]">🎨 الألوان المفضّلة</p>
-                  <p className="text-[10px] text-[#8B6914]/60">اختر ألواناً محددة — م. سارة ستبني عليها (متعدد الاختيار)</p>
+                  <p className="text-[10px] text-[#8B6914]/60">اختر ألواناً محددة — م. اليازية ستبني عليها (متعدد الاختيار)</p>
                 </div>
                 {preferredColors.length > 0 && (
                   <button onClick={() => setPreferredColors([])}
@@ -3093,7 +3093,7 @@ export default function SmartCapture() {
                   <Star className="w-4 h-4 text-[#C9A84C]" />
                   <div className="text-right">
                     <p className="text-sm font-bold text-[#5C3D11]">تقليد نمط معين</p>
-                    <p className="text-[10px] text-[#8B6914]/60">اختياري — صوّر فضاءً أعجبك وستقلده م. سارة في غرفتك</p>
+                    <p className="text-[10px] text-[#8B6914]/60">اختياري — صوّر فضاءً أعجبك وستقلده م. اليازية في غرفتك</p>
                   </div>
                 </div>
                 <div className={`w-12 h-6 rounded-full transition-all relative flex-shrink-0 ${
@@ -3142,7 +3142,7 @@ export default function SmartCapture() {
                   {analyzeRefMutation.isPending && (
                     <div className="flex items-center gap-2 bg-amber-50 rounded-xl p-3">
                       <div className="w-4 h-4 rounded-full border-2 border-[#C9A84C] border-t-transparent animate-spin" />
-                      <p className="text-xs text-[#8B6914]">م. سارة تحلّل المرجع...</p>
+                      <p className="text-xs text-[#8B6914]">م. اليازية تحلّل المرجع...</p>
                     </div>
                   )}
 
@@ -3337,7 +3337,7 @@ export default function SmartCapture() {
                     </p>
                     <p className="text-[10px] text-[#8B6914]/60">
                       {allowPlatformFreedom
-                        ? 'م. سارة تغيّر كل شيء بما فيها الأبواب والنوافذ والدرجات'
+                        ? 'م. اليازية تغيّر كل شيء بما فيها الأبواب والنوافذ والدرجات'
                         : 'الأبواب والنوافذ والدرجات والسقف ثابتة — الإبداع في التصميم فقط'}
                     </p>
                   </div>
@@ -3364,7 +3364,7 @@ export default function SmartCapture() {
                         </span>
                       ))}
                     </div>
-                    <p className="text-[9px] text-amber-600/70 text-center mt-2">م. سارة تبدع بحرية كاملة في: الألوان • المواد • الأثاث • الإضاءة • التشطيبات</p>
+                    <p className="text-[9px] text-amber-600/70 text-center mt-2">م. اليازية تبدع بحرية كاملة في: الألوان • المواد • الأثاث • الإضاءة • التشطيبات</p>
                   </div>
                 </div>
               )}
@@ -3372,7 +3372,7 @@ export default function SmartCapture() {
                 <div className="px-4 pb-3 border-t border-[#f0e8d8] pt-3">
                   <div className="bg-orange-50 rounded-xl px-3 py-2.5 border border-orange-200">
                     <p className="text-[10px] text-orange-700 text-center leading-relaxed">
-                      ⚠️ حرية كاملة — م. سارة قد تغيّر مواضع الأبواب والنوافذ والدرجات وفق تقديرها المعماري
+                      ⚠️ حرية كاملة — م. اليازية قد تغيّر مواضع الأبواب والنوافذ والدرجات وفق تقديرها المعماري
                     </p>
                   </div>
                 </div>
@@ -3421,7 +3421,7 @@ export default function SmartCapture() {
                   <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                     <Sparkles className="w-8 h-8 text-[#C9A84C] animate-pulse" />
                   </div>
-                  <p className="text-white font-black text-lg">م. سارة تحلل الفضاء</p>
+                  <p className="text-white font-black text-lg">م. اليازية تحلل الفضاء</p>
                   <p className="text-white/70 text-sm">تولّد {ideasCount} أفكار تصميمية...</p>
                 </div>
               </div>
@@ -3568,7 +3568,7 @@ export default function SmartCapture() {
                 <Home className="w-4 h-4" /> حفظ في المشاريع
               </button>
               <button onClick={() => {
-                if (navigator.share) navigator.share({ title: "أفكار م. سارة", text: `${ideas.length} أفكار تصميمية` });
+                if (navigator.share) navigator.share({ title: "أفكار م. اليازية", text: `${ideas.length} أفكار تصميمية` });
                 else toast.success("تم النسخ");
               }} className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold active:scale-95 transition-transform">
                 <Share2 className="w-4 h-4" /> مشاركة

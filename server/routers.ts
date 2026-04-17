@@ -120,7 +120,7 @@ async function resolveImageUrl(url: string, _userId: number = 0): Promise<string
 async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType: string, area: number) {
   const styleInfo = GLOBAL_STYLES[style] || GLOBAL_STYLES.modern;
 
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتخصصة.
+  const systemPrompt = `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي العالمية المتخصصة.
 خبرتك تشمل جميع أنماط التصميم العالمية: الخليجي، الياباني، الهندي، الصيني، الأوروبي، وغيرها.
 تحللين الصور والمخططات المعمارية وتقدمين توصيات تصميم داخلي احترافية على أعلى مستوى عالمي.
 ردودك دائماً باللغة العربية الفصحى بأسلوب احترافي ومتقدم.`;
@@ -183,7 +183,7 @@ async function analyzeInteriorDesign(imageUrl: string, style: string, spaceType:
 
 // ===== مساعد: تحليل المخطط المعماري =====
 async function analyzeFloorPlan(imageUrl: string) {
-  const systemPrompt = `أنتِ م. سارة، مهندسة معمارية متخصصة في قراءة وتحليل المخططات المعمارية.
+  const systemPrompt = `أنتِ م. اليازية، مهندسة معمارية متخصصة في قراءة وتحليل المخططات المعمارية.
 تستطيعين قراءة أي مخطط معماري وتحديد الغرف والأبعاد والمساحات بدقة عالية.
 ردودك باللغة العربية.`;
 
@@ -260,7 +260,7 @@ async function designElement(
     perspective: "المنظور الكامل"
   };
 
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية.
+  const systemPrompt = `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي العالمية.
 تصممين عناصر التصميم الداخلي بأعلى المعايير العالمية.
 متخصصة في نمط ${styleInfo.name}: ${styleInfo.description}.
 ردودك باللغة العربية مع مواصفات دقيقة وعملية.`;
@@ -347,7 +347,7 @@ async function sarahChat(
   sessionType: string,
   projectContext?: string
 ) {
-  const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتميزة.
+  const systemPrompt = `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي العالمية المتميزة.
 
 شخصيتك:
 - محترفة، ودودة، وذكية
@@ -799,7 +799,7 @@ export const appRouter = router({
         const existingContext = input.existingElements && Object.keys(input.existingElements).length > 0 ?
           `\nالعناصر المصممة مسبقاً (للتناسق معها):\n${JSON.stringify(input.existingElements, null, 2)}` : '';
 
-        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي العالمية المتخصصة في الهوية البصرية المتكاملة.
+        const systemPrompt = `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي العالمية المتخصصة في الهوية البصرية المتكاملة.
 مهمتك: تصميم ${elementNames[input.elementType]} بحيث يتناسق تماماً مع باقي عناصر المشروع.
 نمط التصميم: ${styleInfo.name} - ${styleInfo.keywords}
 الميزانية: ${budgetMap[input.budget]}
@@ -832,7 +832,7 @@ ${existingContext}
   "totalCostMax": 5000,
   "unit": "م²",
   "quantity": ${input.roomArea},
-  "professionalNotes": "ملاحظات م. سارة المهنية"
+  "professionalNotes": "ملاحظات م. اليازية المهنية"
 }`;
 
         const messages: Message[] = [
@@ -1027,7 +1027,7 @@ ${existingContext}
         };
         const spaceName = spaceNames[input.spaceType] || input.spaceType;
 
-        const prompt = `أنتِ م. سارة خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري).
+        const prompt = `أنتِ م. اليازية خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري).
 أنشئي لوحة إلهام تصميمية احترافية لـ:
 - نمط التصميم: ${styleInfo.name} (${styleInfo.description})
 - نوع الفضاء: ${spaceName}
@@ -1054,7 +1054,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودكِ دائماً باللغة العربية بصيغة JSON صحيحة." },
+            { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودكِ دائماً باللغة العربية بصيغة JSON صحيحة." },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
@@ -1130,7 +1130,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const analysisResponse = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). حللي بيانات المسح AR وقدمي توصيات تصميمية بالعربية." },
+            { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). حللي بيانات المسح AR وقدمي توصيات تصميمية بالعربية." },
             { role: "user", content: `بيانات المسح:المساحة الإجمالية: ${input.totalArea}م²\n${roomsDesc}\n\nقدمي JSON: {"summary": "ملخص", "recommendations": ["توصية 1", "توصية 2"], "suggestedStyle": "نمط مقترح"}` }
           ],
           response_format: { type: "json_object" }
@@ -1201,7 +1201,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       }))
       .mutation(async ({ ctx: _ctx, input }) => {
         const styleInfo = GLOBAL_STYLES[input.designStyle] || GLOBAL_STYLES.modern;
-        const prompt = `أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). احسبي تقدير تكلفة تصميم داخلي:
+        const prompt = `أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). احسبي تقدير تكلفة تصميم داخلي:
 - المساحة: ${input.area} متر مربع
 - نمط التصميم: ${styleInfo.name}
 - نوع الفضاء: ${input.spaceType}
@@ -1226,7 +1226,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك باللغة العربية." },
+            { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك باللغة العربية." },
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
@@ -1276,7 +1276,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري). تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
+          { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري). تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
             { type: "text" as const, text: `حللي هذا الفضاء ${modeNote} بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
 {
@@ -1411,7 +1411,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك بالعربية بصيغة JSON فقط." },
+          { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
             { type: "text", text: `حللي هذا الفضاء بأسلوب ${styleName}.
 ${colorConstraint}
@@ -1466,7 +1466,7 @@ ${extraReqs}
           role: "system",
           content: `${buildBestPracticeSystemPrompt()}
 
-أنتِ م. سارة، خبيرة التصميم المعماري والبيئي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
+أنتِ م. اليازية، خبيرة التصميم المعماري والبيئي العالمية. تولدين أفكاراً تصميمية فريدة ومتنوعة باللغة العربية. ردودك JSON فقط.`
         },
         {
           role: "user",
@@ -1557,7 +1557,7 @@ ${colorText}
         lockColumns: z.boolean().default(true),
         lockSteps: z.boolean().default(true),  // تثبيت الدرجات وفروق المستويات
         lockCeiling: z.boolean().default(true), // تثبيت نوع السقف (مستوٍ/مرتفع)
-        allowPlatformFreedom: z.boolean().default(false), // منح م. سارة حرية النظر المعماري
+        allowPlatformFreedom: z.boolean().default(false), // منح م. اليازية حرية النظر المعماري
       }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -1607,7 +1607,7 @@ ${colorText}
       if (lockedItems.length > 0) {
         doorChangeRule = `🔒 قاعدة البنية الإنشائية (غير قابلة للتجاوز): يجب الحفاظ على ${lockedItems.join('، ')} في نفس مواضعها وأحجامها تماماً. هذا ليس خياراً — هذه بنية إنشائية ثابتة. أبدعي بحرية كاملة في كل شيء آخر: الألوان، المواد، الأثاث، الإضاءة، التشطيبات، الديكور. الإبداع يكون في التصميم لا في تغيير البنية.`;
       } else {
-        doorChangeRule = `🎨 م. سارة لها صلاحية معمارية كاملة — المستخدم أذن بتغيير جميع العناصر بما فيها الفتحات والبنية.`;
+        doorChangeRule = `🎨 م. اليازية لها صلاحية معمارية كاملة — المستخدم أذن بتغيير جميع العناصر بما فيها الفتحات والبنية.`;
       }
 
       // بناء تعليمات المرجع إذا وجد
@@ -1634,7 +1634,7 @@ ${colorText}
       const bpSystemBase = buildBestPracticeSystemPrompt();
       const systemPrompt = `${bpSystemBase}
 
-أنتِ م. سارة، مهندسة معمارية ومصممة بيئات شاملة بخبرة 20 سنة. تتخصصين في تصميم جميع الفضاءات المعمارية — داخلية وخارجية. تتمتعين بخلفية علمية شاملة تغطي:
+أنتِ م. اليازية، مهندسة معمارية ومصممة بيئات شاملة بخبرة 20 سنة. تتخصصين في تصميم جميع الفضاءات المعمارية — داخلية وخارجية. تتمتعين بخلفية علمية شاملة تغطي:
 - الهندسة الإنشائية: الجدران الحاملة، الأعمدة، الدرجات، الفتحات، النسب والأبعاد
 - التصميم الداخلي: الإضاءة، التدفقات، المواد، الألوان، الأثاث
 - تصميم الواجهات الخارجية: الكلادينج، الطلاء الخارجي، الإضاءة الخارجية، المداخل
@@ -1699,7 +1699,7 @@ ${colorText}
 قاعدتكِ الذهبية المطلقة للتصوير الافتراضي:
 1. نفس الزاوية بالضبط — لا تغيير في زاوية الكاميرا أو الزوم أو اتجاه الصورة
 2. نفس أبعاد الفضاء بالضبط — لا تغيير في أبعاد الفضاء أو نسبه
-3. م. سارة لها صلاحية كاملة على كل شيء آخر — الأبواب والنوافذ والجدران والتشطيبات والأثاث
+3. م. اليازية لها صلاحية كاملة على كل شيء آخر — الأبواب والنوافذ والجدران والتشطيبات والأثاث
 ردودكِ دائماً بالعربية بصيغة JSON فقط.
 🎨 RADICAL DIVERSITY LAW (قانون التباين الجذري المطلق):
 كل فكرة تصميمية يجب أن تكون مختلفة كلياً عن الأخرى في 5 محاور:
@@ -2069,7 +2069,7 @@ ${structuralAnalysisPrompt}
           const palette = (idea.palette as Array<{name: string; hex: string}> || []).map((c) => `${c.name} (${c.hex})`).join(", ");
           const mats = (idea.materials as string[] || []).join(", ");
           
-          // برومبت معماري ذكي يدعم جميع الفضاءات - م. سارة لها صلاحية كاملة
+          // برومبت معماري ذكي يدعم جميع الفضاءات - م. اليازية لها صلاحية كاملة
           const cameraNote = `CAMERA CONSTRAINT: Use IDENTICAL camera setup as original photo - ${cameraDesc}. Do NOT change zoom level, camera angle, or perspective.`;
           const roomNote = roomDesc ? `SPACE GEOMETRY: ${roomDesc}. Maintain EXACT space proportions.` : "";
           
@@ -2312,7 +2312,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
               notes: item.notes || "",
               totalMin: Math.round((item.qty || 1) * (item.unitPriceMin || 0)),
               totalMax: Math.round((item.qty || 1) * (item.unitPriceMax || 0)),
-              basis: "تقدير م. سارة",
+              basis: "تقدير م. اليازية",
             })),
             subtotalMin: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMin || 0)), 0),
             subtotalMax: (cat.items || []).reduce((s, i) => s + Math.round((i.qty || 1) * (i.unitPriceMax || 0)), 0),
@@ -2465,7 +2465,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       });
 
       const systemPrompt = `${buildBestPracticeSystemPrompt()}
-أنتِ م. سارة، خبيرة التصميم المعماري. مهمتك تعديل فكرة تصميمية بناءً على طلب المستخدم. ردك JSON فقط.${refinementNote}`;
+أنتِ م. اليازية، خبيرة التصميم المعماري. مهمتك تعديل فكرة تصميمية بناءً على طلب المستخدم. ردك JSON فقط.${refinementNote}`;
 
       const userPrompt = `عدّلي الفكرة التصميمية بناءً على طلب المستخدم: "${input.refinementRequest}"
 أعطيني الفكرة المعدّلة بصيغة JSON بنفس هيكل الفكرة الأصلية مع تطبيق التعديل المطلوب.`;
@@ -2554,7 +2554,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         ? `المخطط الحالي يحتوي على: ${input.currentPlan.rooms.map((r: {label:string;width:number;height:number}) => `${r.label} (${r.width}×${r.height}م)`).join("، ")}. أبواب: ${input.currentPlan.doors.length}. نوافذ: ${input.currentPlan.windows.length}.`
         : "المخطط فارغ حتى الآن.";
 
-      const systemPrompt = `أنت م. سارة، مهندسة معمارية خبيرة تساعد في رسم المخططات الهندسية بالصوت والكتابة. 
+      const systemPrompt = `أنت م. اليازية، مهندسة معمارية خبيرة تساعد في رسم المخططات الهندسية بالصوت والكتابة. 
 تعمل مع لوحة رسم تفاعلية تعرض مخططاً هندسياً من الأعلى (top-down floor plan).
 
 نظام ترقيم الجدران (مهم جداً):
@@ -2575,7 +2575,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
 3. الأبواب والنوافذ تُضاف على جدران الغرف المحددة.
 4. رد بـ JSON فقط بالشكل التالي:
 {
-  "sarahResponse": "رد م. سارة بالعربية (جملة قصيرة)",
+  "sarahResponse": "رد م. اليازية بالعربية (جملة قصيرة)",
   "action": "add_room" | "add_door" | "add_window" | "remove" | "clear" | "none",
   "updatedPlan": { ...نفس هيكل المخطط مع التعديلات... }
 }
@@ -2713,7 +2713,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
 
         const aiResponse = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). تنظمين قائمة الأثاث المقترح من متجر حقيقي. ردودك بالعربية بصيغة JSON فقط." },
+            { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). تنظمين قائمة الأثاث المقترح من متجر حقيقي. ردودك بالعربية بصيغة JSON فقط." },
             { role: "user", content: `نوع الفضاء: ${input.spaceType}\nنمط التصميم: ${input.designStyle}\n\nالمنتجات المتاحة من متجر بنيان:\n${productsDesc}\n\nنظّمي هذه المنتجات وأضيفي تعليقاً لكل منتج يشرح لماذا يناسب هذا الفضاء والنمط. أعيدي JSON:\n{"recommendations": [{"productIndex": 0, "reason": "سبب التوصية", "category": "الأثاث/الإضاءة/الديكور", "priority": "أساسي/اختياري"}]}` }
           ],
           response_format: { type: "json_object" },
@@ -2754,7 +2754,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         const messages: Message[] = [
           {
             role: "system",
-            content: `أنتِ م. سارة خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). مهمتك تحليل صور الغرف واستخراج قطع الأثاث والديكور الموجودة فيها بدقة. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+            content: `أنتِ م. اليازية خبيرة التصميم المعماري والبيئي (داخلي، واجهات، لاندسكيب، مسابح، تصميم حضري). مهمتك تحليل صور الغرف واستخراج قطع الأثاث والديكور الموجودة فيها بدقة. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
           },
           {
             role: "user",
@@ -3150,11 +3150,11 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       .mutation(async ({ input, ctx }) => {
         const userId = ctx.user.id;
 
-        // م. سارة تحلل الصورة وتصف النمط والألوان والمواد
+        // م. اليازية تحلل الصورة وتصف النمط والألوان والمواد
         const messages: Message[] = [
           {
             role: "system",
-            content: `أنتِ م. سارة، خبيرة التصميم المعماري والبيئي. مهمتك تحليل صور الفضاءات التي يعجب بها العميل وتصفها بدقة حتى يمكن تقليدها لاحقاً في فضاء آخر. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
+            content: `أنتِ م. اليازية، خبيرة التصميم المعماري والبيئي. مهمتك تحليل صور الفضاءات التي يعجب بها العميل وتصفها بدقة حتى يمكن تقليدها لاحقاً في فضاء آخر. ردودك دائماً بالعربية وبصيغة JSON فقط.`,
           },
           {
             role: "user",
@@ -3373,7 +3373,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         // توليد عنوان ووصف جديدين بالعربية
         const titleRes = await invokeLLM({
           messages: [
-            { role: "system", content: "أنتِ م. سارة مهندسة التصميم المعماري والبيئي. أجيبي بـ JSON فقط بدون أي نص إضافي." },
+            { role: "system", content: "أنتِ م. اليازية مهندسة التصميم المعماري والبيئي. أجيبي بـ JSON فقط بدون أي نص إضافي." },
             { role: "user", content: `أعطيني عنواناً قصيراً (4-6 كلمات) ووصفاً موجزاً (جملة واحدة) لتصميم ${styleInfo.name} ${newColors && newColors.length > 0 ? `بألوان: ${newColors.join("، ")}` : ""} لـ ${spaceType || "غرفة"}. JSON: {"title": "...", "description": "..."}` },
           ],
           response_format: { type: "json_schema", json_schema: { name: "idea_title", strict: true, schema: { type: "object", properties: { title: { type: "string" }, description: { type: "string" } }, required: ["title", "description"], additionalProperties: false } } },
@@ -3458,7 +3458,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
           moroccan: "مغربي", luxury: "فاخر بريميوم", mediterranean: "متوسطي", industrial: "صناعي"
         };
         const styleName = styleMap[designStyle] || designStyle;
-        const systemPrompt = `أنتِ م. سارة، مهندسة التصميم المعماري والبيئي خبيرة في السوق الخليجي. أجيبي بـ JSON فقط بدون أي نص إضافي.`;
+        const systemPrompt = `أنتِ م. اليازية، مهندسة التصميم المعماري والبيئي خبيرة في السوق الخليجي. أجيبي بـ JSON فقط بدون أي نص إضافي.`;
         const userPrompt = `بناءً على المسقط التالي:
 - الغرف: ${roomsDesc}
 - المساحة الإجمالية: ${totalArea.toFixed(1)}م²
@@ -3686,7 +3686,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
       projectScale: z.enum(["small", "medium", "large"]).default("medium"),
     }))
     .mutation(async ({ input }) => {
-      const systemPrompt = `أنتِ م. سارة، مهندسة تخطيط حضري وخبيرة تصميم معماري. تحللين الصور الجوية والمخططات الحضرية وتقدمين تحليلات شاملة. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
+      const systemPrompt = `أنتِ م. اليازية، مهندسة تخطيط حضري وخبيرة تصميم معماري. تحللين الصور الجوية والمخططات الحضرية وتقدمين تحليلات شاملة. ردودكِ دائماً بالعربية بصيغة JSON فقط.`;
 
       const messages: Message[] = [
         { role: "system", content: systemPrompt },
@@ -3721,7 +3721,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
     }
   ],
   "recommendations": [
-    "توصية حضرية من م. سارة"
+    "توصية حضرية من م. اليازية"
   ]
 }
 إذا لم تتمكني من قراءة الصورة بوضوح، قدّمي تقديرات منطقية بناءاً على ما ترينه.`,
@@ -3859,7 +3859,7 @@ PHOTOGRAPHY QUALITY:
       designStyle: z.string().default("modern"),
     }))
     .mutation(async ({ input }) => {
-      const systemPrompt = `أنتِ م. سارة، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.
+      const systemPrompt = `أنتِ م. اليازية، مهندسة معمارية وخبيرة تصميم داخلي. تحللين المخططات المعمارية وتستخرجين منها كل المعلومات الممكنة. ردودكِ دائماً بالعربية بصيغة JSON فقط. استخرجي كل الغرف والمساحات المرئية في المخطط بدقة.
 
 تعليمات خاصة للـ PDF متعدد الصفحات:
 - افحصي كل صفحات الـ PDF بعناية
@@ -3987,7 +3987,7 @@ PHOTOGRAPHY QUALITY:
     }
   ],
   "recommendations": [
-    "توصية مهنية من م. سارة"
+    "توصية مهنية من م. اليازية"
   ]
 }`,
           } as TextContent,

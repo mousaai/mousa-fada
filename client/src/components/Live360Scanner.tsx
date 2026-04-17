@@ -351,7 +351,7 @@ export default function Live360Scanner({ onComplete, onClose, onUploadPhoto }: L
           </div>
           <h2 className="text-white text-2xl font-black mb-2">اكتمل المسح!</h2>
           <p className="text-white/70 text-sm mb-1">{capturedPhotos.length} صورة تم التقاطها</p>
-          <p className="text-amber-400 text-sm">جاري إرسال الصور لم. سارة...</p>
+          <p className="text-amber-400 text-sm">جاري إرسال الصور لم. اليازية...</p>
           <div className="flex gap-1 mt-4">
             {capturedPhotos.map((p, i) => (
               <img key={i} src={p.dataUrl} alt="" className="w-10 h-8 object-cover rounded-lg border border-green-400/50" />

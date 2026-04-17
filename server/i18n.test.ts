@@ -15,7 +15,7 @@ function isRTL(lang: Language): boolean {
 // Key translations to verify
 const EXPECTED_TRANSLATIONS: Record<Language, Record<string, string>> = {
   ar: {
-    "app.name": "م. سارة",
+    "app.name": "م. اليازية",
     "nav.analyze": "تحليل",
     "home.hero.cta": "تحليل الآن",
     "common.loading": "جاري التحميل...",
@@ -74,7 +74,7 @@ describe("i18n - Language Support", () => {
   });
 
   it("should have correct Arabic app name", () => {
-    expect(EXPECTED_TRANSLATIONS.ar["app.name"]).toBe("م. سارة");
+    expect(EXPECTED_TRANSLATIONS.ar["app.name"]).toBe("م. اليازية");
   });
 
   it("should have correct English app name", () => {
