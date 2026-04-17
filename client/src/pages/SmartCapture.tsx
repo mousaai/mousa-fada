@@ -701,6 +701,25 @@ function ShopTheLookPanel({
 }
 
 // ===== PDF Export: دفتر التصميم الاحترافي (html2canvas approach for proper Arabic) =====
+// تحويل URL صورة إلى base64 data URL لتجنب مشاكل CORS في html2canvas
+async function imageUrlToBase64(url: string): Promise<string | null> {
+  if (!url) return null;
+  if (url.startsWith("data:")) return url; // already base64
+  try {
+    const response = await fetch(url, { mode: "cors", cache: "force-cache" });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   const { jsPDF } = await import("jspdf");
   const html2canvas = (await import("html2canvas")).default;
@@ -719,6 +738,9 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   const emerald = "#107C5A";
   const today = new Date().toLocaleDateString("ar-AE");
 
+  // تحويل صورة التصميم إلى base64 مسبقاً لتجنب CORS
+  const imageBase64 = idea.imageUrl ? await imageUrlToBase64(idea.imageUrl) : null;
+
   // Helper: render HTML page to canvas and add to PDF
   async function addHtmlPage(html: string, isFirst = false) {
     const container = document.createElement("div");
@@ -726,17 +748,26 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
     container.innerHTML = html;
     document.body.appendChild(container);
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // انتظار تحميل الصور داخل الـ container
+      const imgs = container.querySelectorAll("img");
+      await Promise.all(Array.from(imgs).map(img =>
+        img.complete ? Promise.resolve() : new Promise<void>(res => {
+          img.onload = () => res();
+          img.onerror = () => res();
+        })
+      ));
+      await new Promise(resolve => setTimeout(resolve, 300));
       const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: lightBg,
         logging: false,
         width: 794,
         height: 1123,
+        imageTimeout: 8000,
       });
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const imgData = canvas.toDataURL("image/jpeg", 0.88);
       if (!isFirst) doc.addPage();
       doc.addImage(imgData, "JPEG", 0, 0, W, H);
     } finally {
@@ -751,8 +782,9 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
       <div style="font-size:9px;color:${darkBrown};margin-top:3px;">${c.name}</div>
     </div>`).join("");
 
-  const imgTag = idea.imageUrl
-    ? `<img src="${idea.imageUrl}" style="width:100%;height:320px;object-fit:cover;border-radius:8px;border:3px solid ${gold};display:block;margin-bottom:14px;" crossorigin="anonymous" />`
+  // استخدام base64 للصورة لتجنب مشاكل CORS في html2canvas
+  const imgTag = imageBase64
+    ? `<img src="${imageBase64}" style="width:100%;height:320px;object-fit:cover;border-radius:8px;border:3px solid ${gold};display:block;margin-bottom:14px;" />`
     : `<div style="width:100%;height:320px;background:linear-gradient(135deg,${gold},${darkBrown});border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;"><span style="color:white;font-size:18px;font-weight:bold;">صورة التصميم</span></div>`;
 
   await addHtmlPage(`
@@ -954,10 +986,25 @@ function IdeaCard({
     setIsExportingPDF(true);
     try {
       await generateDesignBookPDF(idea, spaceType);
-      toast.success("تم تصدير دفتر التصميم بنجاح!");
+      toast.success("تم تصدير دفتر التصميم بنجاح! تحقق من مجلد التنزيلات");
     } catch (err) {
-      console.error(err);
-      toast.error("حدث خطأ أثناء تصدير PDF");
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("[PDF Export Error]", errMsg, err);
+      // رسائل خطأ مختلفة حسب نوع المشكلة
+      if (errMsg.includes("canvas") || errMsg.includes("tainted") || errMsg.includes("CORS")) {
+        toast.error("خطأ في معالجة الصورة — جاري التصدير بدون صورة...");
+        // محاولة ثانية بدون صورة
+        try {
+          await generateDesignBookPDF({ ...idea, imageUrl: undefined }, spaceType);
+          toast.success("تم تصدير الدفتر بدون صورة (جاري إصلاح الصورة)");
+        } catch {
+          toast.error("تعذّر تصدير PDF — حاول مرة أخرى");
+        }
+      } else if (errMsg.includes("memory") || errMsg.includes("heap")) {
+        toast.error("الملف كبير جداً — جاري تقليل جودة الصورة...");
+      } else {
+        toast.error("تعذّر تصدير PDF — تأكد من اتصال الإنترنت وحاول مرة أخرى");
+      }
     } finally {
       setIsExportingPDF(false);
     }
@@ -3356,18 +3403,24 @@ export default function SmartCapture() {
                 </div>
               </div>
             )}
+            {/* شريط التقدم الزمني الكلي */}
+            <div className="w-full bg-[#e8d9c0] rounded-full h-1.5 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#C9A84C] to-[#8B6914] rounded-full animate-pulse" style={{ width: "60%" }} />
+            </div>
+            <p className="text-xs text-[#8B6914] text-center">المدة الإجمالية المتوقعة: 30 – 60 ثانية</p>
             <div className="w-full space-y-2.5">
               {[
-                "تحليل البنية المعمارية (أبواب، سلالم، أبعاد)",
-                `توليد ${ideasCount} أفكار تصميمية متنوعة`,
-                "حساب تكاليف الاستبدال التفصيلية",
-                "اقتراح تحسينات بنيوية اختيارية",
+                { label: "تحليل البنية المعمارية (أبواب، سلالم، أبعاد)", duration: "~10 ث" },
+                { label: `توليد ${ideasCount} أفكار تصميمية متنوعة`, duration: "~20 ث" },
+                { label: "حساب تكاليف الاستبدال التفصيلية", duration: "~15 ث" },
+                { label: "اقتراح تحسينات بنيوية اختيارية", duration: "~10 ث" },
               ].map((s, i) => (
                 <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-[#e8d9c0]">
                   <div className="w-5 h-5 rounded-full bg-[#C9A84C]/20 flex items-center justify-center flex-shrink-0">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#C9A84C] animate-pulse" style={{ animationDelay: `${i * 0.4}s` }} />
                   </div>
-                  <span className="text-sm text-[#5C3D11]">{s}</span>
+                  <span className="text-sm text-[#5C3D11] flex-1">{s.label}</span>
+                  <span className="text-[10px] text-[#C9A84C] font-bold bg-[#C9A84C]/10 px-2 py-0.5 rounded-full flex-shrink-0">{s.duration}</span>
                 </div>
               ))}
             </div>
