@@ -700,27 +700,35 @@ function ShopTheLookPanel({
   );
 }
 
-// ===== PDF Export: دفتر التصميم الاحترافي (html2canvas approach for proper Arabic) =====
-// تحويل URL صورة إلى base64 data URL لتجنب مشاكل CORS في html2canvas
-async function imageUrlToBase64(url: string): Promise<string | null> {
-  if (!url) return null;
-  if (url.startsWith("data:")) return url; // already base64
-  try {
-    const response = await fetch(url, { mode: "cors", cache: "force-cache" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
+// ===== PDF Export: دفتر التصميم الاحترافي (Server-side via /api/export-pdf) =====
+// يعمل على iOS Safari وجميع المتصفحات بدون مشاكل CORS أو html2canvas
+async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
+  const response = await fetch("/api/export-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idea, spaceType }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${response.status}`);
   }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const fileName = `م_سارة_${idea.title.replace(/\s+/g, "_").substring(0, 30)}.pdf`;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return fileName;
 }
 
-async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
+// دالة قديمة — لم تعد مستخدمة (html2canvas)
+async function _legacyGenerateDesignBookPDF_UNUSED(idea: DesignIdea, spaceType?: string) {
   const { jsPDF } = await import("jspdf");
   const html2canvas = (await import("html2canvas")).default;
 
@@ -739,7 +747,22 @@ async function generateDesignBookPDF(idea: DesignIdea, spaceType?: string) {
   const today = new Date().toLocaleDateString("ar-AE");
 
   // تحويل صورة التصميم إلى base64 مسبقاً لتجنب CORS
-  const imageBase64 = idea.imageUrl ? await imageUrlToBase64(idea.imageUrl) : null;
+  async function _imageUrlToBase64(url: string): Promise<string | null> {
+    if (!url) return null;
+    if (url.startsWith("data:")) return url;
+    try {
+      const r = await fetch(url, { mode: "cors", cache: "force-cache" });
+      if (!r.ok) return null;
+      const blob = await r.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  }
+  const imageBase64 = idea.imageUrl ? await _imageUrlToBase64(idea.imageUrl) : null;
 
   // Helper: render HTML page to canvas and add to PDF
   async function addHtmlPage(html: string, isFirst = false) {

@@ -9,6 +9,7 @@ import { serveStatic, setupVite } from "./vite";
 import { notifyMousaPricing } from "../mousa";
 import { registerSSORoutes } from "./sso";
 import { registerInternalRoutes } from "../internal.routes";
+import { registerPDFRoutes } from "../pdf.routes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -131,6 +132,9 @@ async function startServer() {
   // ===== Webhook Receiver — استقبال أحداث mousa.ai (الرسمي) =====
   // ⚠️ يجب قبل express.json() لأن webhook يحتاج raw body
   registerInternalRoutes(app);
+
+  // ===== PDF Export Route =====
+  registerPDFRoutes(app);
 
   // tRPC API
   app.use(
