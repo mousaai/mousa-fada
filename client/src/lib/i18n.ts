@@ -356,12 +356,12 @@ export const translations: Record<Language, Translations> = {
 
   en: {
     // App & Navigation
-    "app.name": "Eng. Sarah",
+    "app.name": "Eng. Alyazia",
     "app.tagline": "Architectural & Environmental Design Expert",
     "app.subtitle": "Design any space with one touch",
     "nav.analyze": "Analyze",
     "nav.studio": "Studio",
-    "nav.sarah": "Eng. Sarah",
+    "nav.sarah": "Eng. Alyazia",
     "nav.projects": "My Projects",
     "nav.store": "Furniture Store",
     // Home
@@ -369,9 +369,9 @@ export const translations: Record<Language, Translations> = {
     "home.hero.subtitle": "Interior • Facades • Landscape • Pools",
     "home.hero.cta": "Analyze Now",
     "home.sections.analyze": "Quick Analysis",
-    "home.sections.analyze.desc": "Take a photo and Sarah analyzes it",
+    "home.sections.analyze.desc": "Take a photo and Alyazia analyzes it",
     "home.sections.studio": "Draw by Voice",
-    "home.sections.studio.desc": "Describe your space and Sarah designs it",
+    "home.sections.studio.desc": "Describe your space and Alyazia designs it",
     "home.sections.store": "Furniture Store",
     "home.sections.store.desc": "Real furniture from local stores",
     "home.recentProjects": "Recent Projects",
@@ -386,7 +386,7 @@ export const translations: Record<Language, Translations> = {
     "auth.profile": "Profile",
     // SmartCapture
     "smart.title": "Smart Analysis",
-    "smart.subtitle": "Capture any space and Sarah analyzes it instantly",
+    "smart.subtitle": "Capture any space and Alyazia analyzes it instantly",
     "smart.upload": "Upload Photo",
     "smart.uploadDesc": "Tap to upload or take a photo",
     "smart.analyze": "Analyze Photo",
@@ -430,7 +430,7 @@ export const translations: Record<Language, Translations> = {
     "ideas.area": "Area",
     // VoiceDesigner
     "voice.title": "Voice Drawing",
-    "voice.subtitle": "Describe your space and Sarah draws the floor plan",
+    "voice.subtitle": "Describe your space and Alyazia draws the floor plan",
     "voice.startDrawing": "Start Drawing",
     "voice.voiceInput": "Voice Input",
     "voice.listening": "Listening...",
@@ -513,22 +513,22 @@ export const translations: Record<Language, Translations> = {
     "common.beta": "Beta",
     "common.experimental": "Experimental",
     // Sarah AI
-    "sarah.title": "Eng. Sarah",
+    "sarah.title": "Eng. Alyazia",
     "sarah.subtitle": "Your architectural & environmental design expert",
-    "sarah.greeting": "Hello! I'm Eng. Sarah, your expert in interior design, facades, landscape & ornamental planting, pools, and urban design. How can I help you?",
-    "sarah.placeholder": "Ask Eng. Sarah about design...",
+    "sarah.greeting": "Hello! I'm Eng. Alyazia, your expert in interior design, facades, landscape & ornamental planting, pools, and urban design. How can I help you?",
+    "sarah.placeholder": "Ask Eng. Alyazia about design...",
     "sarah.send": "Send",
-    "sarah.thinking": "Eng. Sarah is thinking...",
+    "sarah.thinking": "Eng. Alyazia is thinking...",
   },
 
   ur: {
     // App & Navigation
-    "app.name": "م. سارہ",
+    "app.name": "م. الیازیہ",
     "app.tagline": "تعمیراتی ڈیزائن ماہر",
     "app.subtitle": "ایک لمس سے کوئی بھی جگہ ڈیزائن کریں",
     "nav.analyze": "تجزیہ",
     "nav.studio": "اسٹوڈیو",
-    "nav.sarah": "م. سارہ",
+    "nav.sarah": "م. الیازیہ",
     "nav.projects": "میرے منصوبے",
     "nav.store": "فرنیچر اسٹور",
     // Home
@@ -536,9 +536,9 @@ export const translations: Record<Language, Translations> = {
     "home.hero.subtitle": "اندرونی • عمارت کے اگلے حصے • لینڈسکیپ • تالاب",
     "home.hero.cta": "ابھی تجزیہ کریں",
     "home.sections.analyze": "فوری تجزیہ",
-    "home.sections.analyze.desc": "تصویر لیں اور سارہ تجزیہ کرے گی",
+    "home.sections.analyze.desc": "تصویر لیں اور الیازیہ تجزیہ کرے گی",
     "home.sections.studio": "آواز سے ڈرائنگ",
-    "home.sections.studio.desc": "اپنی جگہ بیان کریں اور سارہ ڈیزائن کرے گی",
+    "home.sections.studio.desc": "اپنی جگہ بیان کریں اور الیازیہ ڈیزائن کرے گی",
     "home.sections.store": "فرنیچر اسٹور",
     "home.sections.store.desc": "مقامی اسٹورز سے حقیقی فرنیچر",
     "home.recentProjects": "حالیہ منصوبے",
@@ -553,7 +553,7 @@ export const translations: Record<Language, Translations> = {
     "auth.profile": "پروفائل",
     // SmartCapture
     "smart.title": "ذہین تجزیہ",
-    "smart.subtitle": "کوئی بھی جگہ کیپچر کریں اور سارہ فوری تجزیہ کرے گی",
+    "smart.subtitle": "کوئی بھی جگہ کیپچر کریں اور الیازیہ فوری تجزیہ کرے گی",
     "smart.upload": "تصویر اپلوڈ کریں",
     "smart.uploadDesc": "تصویر اپلوڈ یا لینے کے لیے ٹیپ کریں",
     "smart.analyze": "تصویر کا تجزیہ کریں",
@@ -597,7 +597,7 @@ export const translations: Record<Language, Translations> = {
     "ideas.area": "رقبہ",
     // VoiceDesigner
     "voice.title": "آواز سے ڈرائنگ",
-    "voice.subtitle": "اپنی جگہ بیان کریں اور سارہ فلور پلان بنائے گی",
+    "voice.subtitle": "اپنی جگہ بیان کریں اور الیازیہ فلور پلان بنائے گی",
     "voice.startDrawing": "ڈرائنگ شروع کریں",
     "voice.voiceInput": "آواز سے ان پٹ",
     "voice.listening": "سن رہا ہے...",
@@ -680,22 +680,22 @@ export const translations: Record<Language, Translations> = {
     "common.beta": "بیٹا",
     "common.experimental": "تجرباتی",
     // Sarah AI
-    "sarah.title": "م. سارہ",
+    "sarah.title": "م. الیازیہ",
     "sarah.subtitle": "آپ کی اندرونی ڈیزائن معاون",
-    "sarah.greeting": "السلام علیکم! میں م. سارہ ہوں، آپ کی اندرونی ڈیزائن ماہر۔ میں آپ کی کیسے مدد کر سکتی ہوں؟",
-    "sarah.placeholder": "م. سارہ سے ڈیزائن کے بارے میں پوچھیں...",
+    "sarah.greeting": "السلام علیکم! میں م. الیازیہ ہوں، آپ کی اندرونی ڈیزائن ماہر۔ میں آپ کی کیسے مدد کر سکتی ہوں؟",
+    "sarah.placeholder": "م. الیازیہ سے ڈیزائن کے بارے میں پوچھیں...",
     "sarah.send": "بھیجیں",
-    "sarah.thinking": "م. سارہ سوچ رہی ہے...",
+    "sarah.thinking": "م. الیازیہ سوچ رہی ہے...",
   },
 
   fr: {
     // App & Navigation
-    "app.name": "Ing. Sarah",
+    "app.name": "Ing. Alyazia",
     "app.tagline": "Experte en Design Architectural & Environnemental",
     "app.subtitle": "Concevez n'importe quel espace en un seul toucher",
     "nav.analyze": "Analyser",
     "nav.studio": "Studio",
-    "nav.sarah": "Ing. Sarah",
+    "nav.sarah": "Ing. Alyazia",
     "nav.projects": "Mes Projets",
     "nav.store": "Boutique Meubles",
     // Home
@@ -703,9 +703,9 @@ export const translations: Record<Language, Translations> = {
     "home.hero.subtitle": "Intérieur • Façades • Paysage • Piscines",
     "home.hero.cta": "Analyser Maintenant",
     "home.sections.analyze": "Analyse Rapide",
-    "home.sections.analyze.desc": "Prenez une photo et Sarah l'analyse",
+    "home.sections.analyze.desc": "Prenez une photo et Alyazia l'analyse",
     "home.sections.studio": "Dessiner par Voix",
-    "home.sections.studio.desc": "Décrivez votre espace et Sarah le conçoit",
+    "home.sections.studio.desc": "Décrivez votre espace et Alyazia le conçoit",
     "home.sections.store": "Boutique Meubles",
     "home.sections.store.desc": "Vrais meubles de magasins locaux",
     "home.recentProjects": "Projets Récents",
@@ -720,7 +720,7 @@ export const translations: Record<Language, Translations> = {
     "auth.profile": "Profil",
     // SmartCapture
     "smart.title": "Analyse Intelligente",
-    "smart.subtitle": "Capturez n'importe quel espace et Sarah l'analyse instantanément",
+    "smart.subtitle": "Capturez n'importe quel espace et Alyazia l'analyse instantanément",
     "smart.upload": "Télécharger Photo",
     "smart.uploadDesc": "Appuyez pour télécharger ou prendre une photo",
     "smart.analyze": "Analyser la Photo",
@@ -764,7 +764,7 @@ export const translations: Record<Language, Translations> = {
     "ideas.area": "Surface",
     // VoiceDesigner
     "voice.title": "Dessin par Voix",
-    "voice.subtitle": "Décrivez votre espace et Sarah dessine le plan",
+    "voice.subtitle": "Décrivez votre espace et Alyazia dessine le plan",
     "voice.startDrawing": "Commencer à Dessiner",
     "voice.voiceInput": "Entrée Vocale",
     "voice.listening": "Écoute en cours...",
@@ -847,12 +847,12 @@ export const translations: Record<Language, Translations> = {
     "common.beta": "Bêta",
     "common.experimental": "Expérimental",
     // Sarah AI
-    "sarah.title": "Ing. Sarah",
+    "sarah.title": "Ing. Alyazia",
     "sarah.subtitle": "Votre experte en design architectural et environnemental",
-    "sarah.greeting": "Bonjour! Je suis Ing. Sarah, votre experte en design d'intérieur, façades, paysagisme, piscines et design urbain. Comment puis-je vous aider?",
-    "sarah.placeholder": "Demandez à Ing. Sarah sur le design...",
+    "sarah.greeting": "Bonjour! Je suis Ing. Alyazia, votre experte en design d'intérieur, façades, paysagisme, piscines et design urbain. Comment puis-je vous aider?",
+    "sarah.placeholder": "Demandez à Ing. Alyazia sur le design...",
     "sarah.send": "Envoyer",
-    "sarah.thinking": "Ing. Sarah réfléchit...",
+    "sarah.thinking": "Ing. Alyazia réfléchit...",
   },
 };
 
