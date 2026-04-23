@@ -3,8 +3,9 @@
  * كاميرا مباشرة + صور متعددة + بانوراما + فيديو
  * الإخراج بنفس صيغة الإدخال
  */
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import DesignChatModal from "@/components/DesignChatModal";
 import {
   Camera, ImagePlus, ChevronRight, Sparkles, Download, Share2,
   RotateCcw, Palette, Wand2, DollarSign, Sliders, Check,
@@ -19,29 +20,29 @@ import { useLanguage } from "@/contexts/LanguageContext";
 type DesignStyle = "modern" | "gulf" | "classic" | "minimal" | "japanese" | "scandinavian" | "moroccan" | "luxury";
 type CaptureMode = "single" | "multi" | "panorama" | "video";
 
-const STYLES: { id: DesignStyle; label: string; emoji: string }[] = [
-  { id: "modern", label: "عصري", emoji: "🏙️" },
-  { id: "gulf", label: "خليجي", emoji: "🕌" },
-  { id: "classic", label: "كلاسيكي", emoji: "🏛️" },
-  { id: "minimal", label: "مينيمال", emoji: "⬜" },
-  { id: "japanese", label: "ياباني", emoji: "⛩️" },
-  { id: "scandinavian", label: "سكندنافي", emoji: "🌿" },
-  { id: "moroccan", label: "مغربي", emoji: "🌙" },
-  { id: "luxury", label: "فاخر", emoji: "💎" },
+const STYLE_IDS: { id: DesignStyle; key: string; emoji: string }[] = [
+  { id: "modern", key: "quick.style.modern", emoji: "🏙️" },
+  { id: "gulf", key: "quick.style.gulf", emoji: "🕌" },
+  { id: "classic", key: "quick.style.classic", emoji: "🏛️" },
+  { id: "minimal", key: "quick.style.minimal", emoji: "⬜" },
+  { id: "japanese", key: "quick.style.japanese", emoji: "⛩️" },
+  { id: "scandinavian", key: "quick.style.scandinavian", emoji: "🌿" },
+  { id: "moroccan", key: "quick.style.moroccan", emoji: "🌙" },
+  { id: "luxury", key: "quick.style.luxury", emoji: "💎" },
 ];
 
-const BUDGET_PRESETS = [
-  { label: "اقتصادي", range: { min: 5000, max: 20000 } },
-  { label: "متوسط", range: { min: 20000, max: 60000 } },
-  { label: "فاخر", range: { min: 60000, max: 150000 } },
-  { label: "بريميوم", range: { min: 150000, max: 500000 } },
+const BUDGET_PRESET_KEYS = [
+  { key: "quick.budget.economy", range: { min: 5000, max: 20000 } },
+  { key: "quick.budget.medium", range: { min: 20000, max: 60000 } },
+  { key: "quick.style.luxury", range: { min: 60000, max: 150000 } },
+  { key: "quick.budget.premium", range: { min: 150000, max: 500000 } },
 ];
 
-const CAPTURE_MODES: { id: CaptureMode; label: string; desc: string; icon: React.ReactNode }[] = [
-  { id: "single", label: "صورة واحدة", desc: "صوّر الغرفة من زاوية واحدة", icon: <Camera className="w-6 h-6" /> },
-  { id: "multi", label: "صور متعددة", desc: "صوّر كل زوايا الغرفة (حتى 6 صور)", icon: <Images className="w-6 h-6" /> },
-  { id: "panorama", label: "بانوراما", desc: "صورة بانوراما للغرفة كاملة", icon: <ScanLine className="w-6 h-6" /> },
-  { id: "video", label: "فيديو", desc: "صوّر فيديو للغرفة (حتى 30 ثانية)", icon: <Video className="w-6 h-6" /> },
+const CAPTURE_MODE_KEYS: { id: CaptureMode; labelKey: string; descKey: string; icon: React.ReactNode }[] = [
+  { id: "single", labelKey: "quick.mode.single", descKey: "quick.mode.single.desc", icon: <Camera className="w-6 h-6" /> },
+  { id: "multi", labelKey: "quick.mode.multi", descKey: "quick.mode.multi.desc", icon: <Images className="w-6 h-6" /> },
+  { id: "panorama", labelKey: "quick.mode.panorama", descKey: "quick.mode.panorama.desc", icon: <ScanLine className="w-6 h-6" /> },
+  { id: "video", labelKey: "quick.mode.video", descKey: "quick.mode.video.desc", icon: <Video className="w-6 h-6" /> },
 ];
 
 interface QuickResult {
@@ -61,10 +62,10 @@ function ColorSwatch({
   color: { name: string; hex: string };
   onEdit: (newHex: string, newName: string) => void;
 }) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [tempHex, setTempHex] = useState(color.hex);
   const [tempName, setTempName] = useState(color.name);
-
   const save = () => {
     onEdit(tempHex, tempName);
     setEditing(false);
@@ -86,7 +87,7 @@ function ColorSwatch({
       {editing && (
         <div className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-2xl border border-[#e8d9c0] p-3 w-52">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#5C3D11]">تعديل اللون</span>
+            <span className="text-xs font-bold text-[#5C3D11]">{t("ui.editColor")}</span>
             <button onClick={() => setEditing(false)}><X className="w-4 h-4 text-[#8B6914]" /></button>
           </div>
           <input
@@ -99,12 +100,12 @@ function ColorSwatch({
             type="text"
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}
-            placeholder="اسم اللون"
+            placeholder={t("ui.colorName")}
             className="w-full text-xs border border-[#e8d9c0] rounded-lg px-2 py-1.5 text-[#5C3D11] mb-2 text-right"
           />
           <div className="flex gap-1">
-            <button onClick={save} className="flex-1 py-1.5 bg-[#C9A84C] text-white text-xs font-bold rounded-lg">حفظ</button>
-            <button onClick={() => setEditing(false)} className="flex-1 py-1.5 border border-[#e8d9c0] text-[#8B6914] text-xs rounded-lg">إلغاء</button>
+            <button onClick={save} className="flex-1 py-1.5 bg-[#C9A84C] text-white text-xs font-bold rounded-lg">{t("ui.save")}</button>
+            <button onClick={() => setEditing(false)} className="flex-1 py-1.5 border border-[#e8d9c0] text-[#8B6914] text-xs rounded-lg">{t("ui.cancel")}</button>
           </div>
         </div>
       )}
@@ -114,7 +115,7 @@ function ColorSwatch({
 
 // ===== Camera Component =====
 function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) => void; onClose: () => void }) {
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -139,7 +140,7 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
           };
         }
       } catch {
-        setError("لا يمكن الوصول للكاميرا. تأكد من منح الإذن.");
+        setError(t("quick.capture.cameraError"));
       }
     };
     startCamera();
@@ -169,7 +170,7 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
           className="p-2 rounded-full bg-white/20 text-white">
           <X className="w-5 h-5" />
         </button>
-        <span className="text-white font-bold text-sm">التقط صورة</span>
+        <span className="text-white font-bold text-sm">{t("quick.capture.title")}</span>
         <div className="w-9" />
       </div>
 
@@ -180,8 +181,8 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
           </div>
           <p className="text-white text-sm">{error}</p>
           <button onClick={onClose} className="px-6 py-2 bg-white text-[#5C3D11] rounded-xl font-bold text-sm">
-            استخدم المعرض بدلاً
-          </button>
+              {t("quick.capture.fromGallery")}
+            </button>
         </div>
       ) : (
         <>
@@ -222,7 +223,7 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (dataUrl: string) =>
 
 // ===== Video Capture Component =====
 function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, videoUrl: string) => void; onClose: () => void }) {
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -304,7 +305,7 @@ function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, vid
           <X className="w-5 h-5" />
         </button>
         <span className="text-white font-bold text-sm">
-          {recording ? `🔴 ${seconds}s / 30s` : "تسجيل فيديو"}
+          {recording ? `🔴 ${seconds}s / 30s` : t("quick.mode.video")}
         </span>
         <div className="w-9" />
       </div>
@@ -347,6 +348,9 @@ function VideoCapture({ onCapture, onClose }: { onCapture: (dataUrl: string, vid
 
 export default function QuickAnalyze() {
   const { t, dir } = useLanguage();
+  const STYLES = STYLE_IDS.map(s => ({ ...s, label: t(s.key as any) }));
+  const BUDGET_PRESETS = BUDGET_PRESET_KEYS.map(p => ({ ...p, label: t(p.key as any) }));
+  const CAPTURE_MODES = CAPTURE_MODE_KEYS.map(m => ({ ...m, label: t(m.labelKey as any), desc: t(m.descKey as any) }));
   const [, navigate] = useLocation();
 
   // Capture mode
@@ -364,6 +368,7 @@ export default function QuickAnalyze() {
   const [style, setStyle] = useState<DesignStyle>("modern");
   const [result, setResult] = useState<QuickResult | null>(null);
   const [step, setStep] = useState<"mode" | "capture" | "style" | "analyzing" | "result">("mode");
+  const [showDesignChat, setShowDesignChat] = useState(false);
   const [vizImage, setVizImage] = useState<string | null>(null);
   const [isGeneratingViz, setIsGeneratingViz] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
@@ -377,6 +382,7 @@ export default function QuickAnalyze() {
   const [customRequirements, setCustomRequirements] = useState("");
   const [showRequirementsInput, setShowRequirementsInput] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [userNote, setUserNote] = useState(""); // ملاحظة المستخدم الاختيارية
 
   const fileRef = useRef<HTMLInputElement>(null);
   const multiFileRef = useRef<HTMLInputElement>(null);
@@ -393,7 +399,7 @@ export default function QuickAnalyze() {
     onSuccess: (data: Partial<QuickResult>) => {
       const palette = data.palette?.slice(0, 5) || [];
       setResult({
-        overview: data.overview || "تحليل مكتمل",
+        overview: data.overview || t("quick.result.overview"),
         palette,
         topSuggestions: data.topSuggestions?.slice(0, 4) || [],
         estimatedCost: data.estimatedCost || "",
@@ -404,7 +410,7 @@ export default function QuickAnalyze() {
       setStep("result");
     },
     onError: () => {
-      toast.error("حدث خطأ، حاول مجدداً");
+      toast.error(t("common.error"));
       setStep("style");
     },
   });
@@ -413,14 +419,14 @@ export default function QuickAnalyze() {
     onSuccess: (data) => {
       if (data.imageUrl) {
         setVizImage(data.imageUrl);
-        toast.success("تم توليد الصورة التصورية!");
+        toast.success(t("quick.result.generate"));
       } else {
-        toast.error("فشل توليد الصورة، حاول مجدداً");
+        toast.error(t("common.error"));
       }
       setIsGeneratingViz(false);
     },
     onError: () => {
-      toast.error("فشل توليد الصورة");
+      toast.error(t("common.error"));
       setIsGeneratingViz(false);
     },
   });
@@ -438,10 +444,10 @@ export default function QuickAnalyze() {
       });
       setEditedPalette(palette);
       setIsReanalyzing(false);
-      toast.success("تم تحديث التحليل!");
+      toast.success(t("quick.result.reanalyze"));
     },
     onError: () => {
-      toast.error("فشل التحديث");
+      toast.error(t("common.error"));
       setIsReanalyzing(false);
     },
   });
@@ -454,7 +460,7 @@ export default function QuickAnalyze() {
       setImages([dataUrl]);
       setVideoUrl(null);
       setVideoThumb(null);
-      setStep("style");
+      // لا ننتقل لـ style تلقائياً — نبقى في capture ليظهر حقل الملاحظة
     };
     reader.readAsDataURL(file);
   };
@@ -470,7 +476,7 @@ export default function QuickAnalyze() {
         loaded++;
         if (loaded === total) {
           setImages(prev => [...prev, ...newImages].slice(0, 6));
-          if (step === "capture") setStep("style");
+          // لا ننتقل لـ style تلقائياً — نبقى في capture ليظهر حقل الملاحظة
         }
       };
       reader.readAsDataURL(files[i]);
@@ -490,7 +496,7 @@ export default function QuickAnalyze() {
       setVideoUrl(url);
       setVideoThumb(thumb);
       setImages([]);
-      setStep("style");
+      // لا ننتقل لـ style تلقائياً — نبقى في capture ليظهر حقل الملاحظة
     };
   };
 
@@ -502,6 +508,7 @@ export default function QuickAnalyze() {
       imageUrls: images.length > 1 ? images : undefined,
       captureMode: captureMode,
       designStyle: style,
+      userNote: userNote.trim() || undefined,
     });
   };
 
@@ -563,8 +570,8 @@ export default function QuickAnalyze() {
 
   // Proceed from capture step
   const proceedToStyle = () => {
-    if (captureMode === "video" && !videoThumb) { toast.error("سجّل فيديو أولاً"); return; }
-    if (captureMode !== "video" && images.length === 0) { toast.error("أضف صورة واحدة على الأقل"); return; }
+    if (captureMode === "video" && !videoThumb) { toast.error(t("quick.mode.video")); return; }
+    if (captureMode !== "video" && images.length === 0) { toast.error(t("quick.capture.noImage")); return; }
     setStep("style");
   };
 
@@ -615,12 +622,12 @@ export default function QuickAnalyze() {
           <ChevronRight className="w-6 h-6 text-[#8B6914]" />
         </button>
         <div>
-          <p className="font-bold text-[#5C3D11]">تحليل سريع</p>
+          <p className="font-bold text-[#5C3D11]">{t("quick.title")}</p>
           <p className="text-xs text-[#8B6914]/70">
-            {step === "mode" ? "اختر طريقة التصوير" :
-             step === "capture" ? "التقط صور الفضاء" :
-             step === "style" ? "اختر نمط التصميم" :
-             step === "analyzing" ? "م. اليازية تحلل..." : "نتيجة التحليل"}
+            {step === "mode" ? t("quick.mode.subtitle") :
+             step === "capture" ? t("quick.capture.title") :
+             step === "style" ? t("quick.style.title") :
+             step === "analyzing" ? t("quick.analyzing") : t("quick.result.overview")}
           </p>
         </div>
         {step !== "mode" && (
@@ -642,8 +649,8 @@ export default function QuickAnalyze() {
         {step === "mode" && (
           <div className="flex-1 flex flex-col gap-5">
             <div className="text-center mb-2">
-              <h2 className="text-2xl font-black text-[#5C3D11]">كيف تريد التصوير؟</h2>
-              <p className="text-sm text-[#8B6914]/70 mt-1">اختر طريقة التقاط الفضاء</p>
+              <h2 className="text-2xl font-black text-[#5C3D11]">{t("quick.mode.title")}</h2>
+              <p className="text-sm text-[#8B6914]/70 mt-1">{t("quick.mode.subtitle")}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -659,6 +666,7 @@ export default function QuickAnalyze() {
                   <div className="text-center">
                     <p className="font-bold text-[#5C3D11] text-sm">{mode.label}</p>
                     <p className="text-[10px] text-[#8B6914]/70 mt-0.5 leading-tight">{mode.desc}</p>
+
                   </div>
                 </button>
               ))}
@@ -666,7 +674,7 @@ export default function QuickAnalyze() {
 
             <div className="bg-[#C9A84C]/10 rounded-2xl p-4 border border-[#C9A84C]/20">
               <p className="text-xs text-[#8B6914] text-center leading-relaxed">
-                💡 <strong>نصيحة م. اليازية:</strong> كلما زادت الصور، كان التحليل أدق. صوّر الجدران والأرضية والسقف من زوايا مختلفة.
+                💡 <strong>{t("quick.tip.label")}:</strong> {t("smart.capture.upload")}
               </p>
             </div>
           </div>
@@ -677,13 +685,13 @@ export default function QuickAnalyze() {
           <div className="flex-1 flex flex-col gap-5">
             <div className="text-center">
               <h2 className="text-xl font-black text-[#5C3D11]">
-                {captureMode === "single" ? "التقط صورة الغرفة" :
-                 captureMode === "multi" ? "صوّر كل زوايا الغرفة" :
-                 captureMode === "panorama" ? "التقط صورة بانوراما" : "سجّل فيديو للغرفة"}
+                {captureMode === "single" ? t("quick.capture.title") :
+                 captureMode === "multi" ? t("quick.capture.multi.title") :
+                 captureMode === "panorama" ? t("quick.mode.panorama") : t("quick.mode.video")}
               </h2>
               <p className="text-xs text-[#8B6914]/70 mt-1">
-                {captureMode === "multi" ? `${images.length}/6 صور` :
-                 captureMode === "video" ? "حتى 30 ثانية" : ""}
+                {captureMode === "multi" ? `${images.length}/6 ${t("quick.mode.multi")}` :
+                 captureMode === "video" ? t("quick.mode.video.desc") : ""}
               </p>
             </div>
 
@@ -699,7 +707,7 @@ export default function QuickAnalyze() {
                       </div>
                     </div>
                     <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      🎥 فيديو
+                      🎥 {t("quick.mode.video")}
                     </div>
                     <button onClick={() => { setVideoThumb(null); setVideoUrl(null); }}
                       className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">
@@ -709,19 +717,19 @@ export default function QuickAnalyze() {
                 ) : (
                   <div className="h-52 rounded-2xl bg-[#1a1a2e] flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#C9A84C]/30">
                     <Video className="w-12 h-12 text-[#C9A84C]/50" />
-                    <p className="text-sm text-white/50">لم يتم تسجيل فيديو بعد</p>
+                    <p className="text-sm text-white/50">{t("quick.capture.noVideo")}</p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => setShowVideoCamera(true)}
                     className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] text-white active:scale-95 transition-transform">
                     <Video className="w-6 h-6" />
-                    <span className="text-sm font-bold">تسجيل فيديو</span>
+                    <span className="text-sm font-bold">{t("quick.mode.video")}</span>
                   </button>
                   <button onClick={() => videoFileRef.current?.click()}
                     className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-[#C9A84C] text-[#8B6914] active:scale-95 transition-transform">
                     <ImagePlus className="w-6 h-6" />
-                    <span className="text-sm font-bold">رفع فيديو</span>
+                    <span className="text-sm font-bold">{t("quick.capture.uploadVideo")}</span>
                   </button>
                 </div>
                 <input ref={videoFileRef} type="file" accept="video/*" className="hidden"
@@ -736,7 +744,7 @@ export default function QuickAnalyze() {
                   <div className="relative rounded-2xl overflow-hidden cursor-pointer" onClick={() => setLightboxImage(images[0])}>
                     <img src={images[0]} className={`w-full object-cover ${captureMode === "panorama" ? "h-36" : "h-52"}`} alt="preview" />
                     <div className="absolute top-2 right-2 bg-[#C9A84C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <ZoomIn className="w-3 h-3" /> عرض
+                      <ZoomIn className="w-3 h-3" /> {t("smart.capture.zoom")}
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); setImages([]); }}
                       className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">
@@ -747,7 +755,7 @@ export default function QuickAnalyze() {
                   <div className={`rounded-2xl bg-[#f0e8d8] flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#C9A84C]/40 ${captureMode === "panorama" ? "h-36" : "h-52"}`}>
                     {captureMode === "panorama" ? <ScanLine className="w-10 h-10 text-[#C9A84C]/50" /> : <Camera className="w-10 h-10 text-[#C9A84C]/50" />}
                     <p className="text-sm text-[#8B6914]/60">
-                      {captureMode === "panorama" ? "صورة بانوراما واسعة" : "لم تُضف صورة بعد"}
+                      {captureMode === "panorama" ? t("quick.mode.panorama") : t("quick.capture.noImage")}
                     </p>
                   </div>
                 )}
@@ -755,12 +763,12 @@ export default function QuickAnalyze() {
                   <button onClick={() => setShowCamera(true)}
                     className="flex flex-col items-center gap-2 py-4 rounded-2xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] text-white active:scale-95 transition-transform">
                     <Camera className="w-6 h-6" />
-                    <span className="text-sm font-bold">فتح الكاميرا</span>
+                    <span className="text-sm font-bold">{t("quick.capture.openCamera")}</span>
                   </button>
                   <button onClick={() => fileRef.current?.click()}
                     className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-[#C9A84C] text-[#8B6914] active:scale-95 transition-transform">
                     <ImagePlus className="w-6 h-6" />
-                    <span className="text-sm font-bold">من المعرض</span>
+                    <span className="text-sm font-bold">{t("quick.capture.fromGallery")}</span>
                   </button>
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden"
@@ -776,9 +784,9 @@ export default function QuickAnalyze() {
                   {images.map((img, i) => (
                     <div key={i} className="relative aspect-square rounded-xl overflow-hidden cursor-pointer"
                       onClick={() => setLightboxImage(img)}>
-                      <img src={img} className="w-full h-full object-cover" alt={`زاوية ${i + 1}`} />
+                      <img src={img} className="w-full h-full object-cover" alt={`${t("quick.capture.angle")} ${i + 1}`} />
                       <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5">
-                        زاوية {i + 1}
+                        {t("quick.capture.angle")} {i + 1}
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); removeImage(i); }}
                         className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
@@ -792,7 +800,7 @@ export default function QuickAnalyze() {
                       className="aspect-square rounded-xl border-2 border-dashed border-[#C9A84C]/40 bg-[#f0e8d8] flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
                     >
                       <Plus className="w-6 h-6 text-[#C9A84C]" />
-                      <span className="text-[10px] text-[#8B6914]">إضافة</span>
+                      <span className="text-[10px] text-[#8B6914]">{t("ui.add")}</span>
                     </button>
                   )}
                 </div>
@@ -801,12 +809,12 @@ export default function QuickAnalyze() {
                   <button onClick={() => setShowCamera(true)}
                     className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-br from-[#C9A84C] to-[#8B6914] text-white active:scale-95 transition-transform">
                     <Camera className="w-5 h-5" />
-                    <span className="text-sm font-bold">تصوير</span>
+                    <span className="text-sm font-bold">{t("quick.capture.openCamera")}</span>
                   </button>
                   <button onClick={() => multiFileRef.current?.click()}
                     className="flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-[#C9A84C] text-[#8B6914] active:scale-95 transition-transform">
                     <ImagePlus className="w-5 h-5" />
-                    <span className="text-sm font-bold">من المعرض</span>
+                    <span className="text-sm font-bold">{t("quick.capture.fromGallery")}</span>
                   </button>
                 </div>
                 <input ref={multiFileRef} type="file" accept="image/*" multiple className="hidden"
@@ -815,10 +823,30 @@ export default function QuickAnalyze() {
                 {images.length > 0 && (
                   <div className="bg-[#C9A84C]/10 rounded-xl p-3 border border-[#C9A84C]/20">
                     <p className="text-xs text-[#8B6914] text-center">
-                      ✅ {images.length} صورة جاهزة للتحليل
-                      {images.length < 3 && " · يُنصح بإضافة المزيد للدقة"}
+                      ✅ {images.length} {t("quick.mode.multi")}
+                      {images.length < 3 && ` · ${t("quick.tip.label")}`}
                     </p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* User Note - Optional */}
+            {(images.length > 0 || videoThumb) && (
+              <div className="bg-[#f0e8d8] rounded-2xl p-4 border border-[#C9A84C]/20">
+                <label className="block text-xs font-bold text-[#8B6914] mb-2">
+                  💬 {t("quick.capture.note.label")} <span className="font-normal text-[#8B6914]/60">{t("quick.capture.note.optional")}</span>
+                </label>
+                <textarea
+                  value={userNote}
+                  onChange={(e) => setUserNote(e.target.value)}
+                  placeholder={t("quick.capture.note.placeholder")}
+                  className="w-full text-sm text-[#5C3D11] bg-white border border-[#C9A84C]/30 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:border-[#C9A84C] text-right placeholder:text-[#8B6914]/40"
+                  rows={3}
+                  maxLength={500}
+                />
+                {userNote.length > 0 && (
+                  <p className="text-[10px] text-[#8B6914]/50 text-left mt-1">{userNote.length}/500</p>
                 )}
               </div>
             )}
@@ -830,7 +858,7 @@ export default function QuickAnalyze() {
                 style={{ boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}>
                 <span className="flex items-center justify-center gap-2">
                   <ChevronRight className="w-5 h-5 rotate-180" />
-                  التالي — اختر النمط
+                  {t("quick.capture.nextStyle")}
                 </span>
               </button>
             )}
@@ -844,15 +872,14 @@ export default function QuickAnalyze() {
             {captureMode === "multi" && images.length > 1 ? (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {images.map((img, i) => (
-                  <img key={i} src={img} onClick={() => setSelectedImageIndex(i)}
+                    <img src={img} onClick={() => setSelectedImageIndex(i)}
                     className={`h-20 w-28 flex-shrink-0 rounded-xl object-cover cursor-pointer border-2 transition-all ${selectedImageIndex === i ? "border-[#C9A84C]" : "border-transparent"}`}
-                    alt={`زاوية ${i + 1}`} />
+                      alt={`${t("quick.capture.angle")} ${i + 1}`} />
                 ))}
               </div>
             ) : primaryImage ? (
               <img src={primaryImage} className="w-full h-44 object-cover rounded-2xl" alt="preview" />
             ) : null}
-
             {captureMode === "video" && videoThumb && (
               <div className="relative rounded-2xl overflow-hidden">
                 <img src={videoThumb} className="w-full h-44 object-cover" alt="video" />
@@ -861,12 +888,11 @@ export default function QuickAnalyze() {
                     <Play className="w-5 h-5 text-[#5C3D11] mr-[-1px]" />
                   </div>
                 </div>
-                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🎥 فيديو</div>
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">🎥 {t("quick.mode.video")}</div>
               </div>
             )}
-
             <div>
-              <p className="font-bold text-[#5C3D11] mb-3">اختر نمط التصميم</p>
+              <p className="font-bold text-[#5C3D11] mb-3">{t("quick.style.title")}</p>
               <div className="grid grid-cols-4 gap-2">
                 {STYLES.map((s) => (
                   <button key={s.id} onClick={() => setStyle(s.id)}
@@ -883,7 +909,7 @@ export default function QuickAnalyze() {
               style={{ boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}>
               <span className="flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                تحليل الآن
+                {t("quick.analyze.btn")}
               </span>
             </button>
           </div>
@@ -900,7 +926,7 @@ export default function QuickAnalyze() {
                     <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-3">
                       <Sparkles className="w-8 h-8 text-[#C9A84C] animate-pulse" />
                     </div>
-                    <p className="font-bold text-lg">م. اليازية تحلل...</p>
+                    <p className="font-bold text-lg">{t("quick.analyzing")}</p>
                     {captureMode === "multi" && images.length > 1 && (
                       <p className="text-sm opacity-80">{images.length} صور</p>
                     )}
@@ -910,7 +936,7 @@ export default function QuickAnalyze() {
               </div>
             )}
             <div className="w-full space-y-3">
-              {["تحليل الفضاء والأبعاد", "اقتراح الألوان والمواد", "حساب التكاليف التقديرية"].map((s, i) => (
+              {[t("smart.capture.overview"), t("smart.capture.palette"), t("smart.capture.cost")].map((s, i) => (
                 <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-[#e8d9c0]">
                   <div className="w-6 h-6 rounded-full bg-[#C9A84C]/20 flex items-center justify-center flex-shrink-0">
                     <div className="w-3 h-3 rounded-full bg-[#C9A84C] animate-pulse" style={{ animationDelay: `${i * 0.3}s` }} />
@@ -932,7 +958,7 @@ export default function QuickAnalyze() {
                 {images.map((img, i) => (
                   <div key={i} className="relative flex-shrink-0">
                     <img src={img} onClick={() => setLightboxImage(img)}
-                      className="h-16 w-24 rounded-xl object-cover cursor-pointer border-2 border-[#C9A84C]/30" alt={`زاوية ${i + 1}`} />
+                      className="h-16 w-24 rounded-xl object-cover cursor-pointer border-2 border-[#C9A84C]/30" alt={`${t("quick.capture.angle")} ${i + 1}`} />
                     <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[9px] text-center py-0.5 rounded-b-xl">
                       {i + 1}
                     </div>
@@ -946,37 +972,37 @@ export default function QuickAnalyze() {
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <div className="flex items-center gap-2">
                   <Wand2 className="w-4 h-4 text-[#C9A84C]" />
-                  <span className="font-bold text-[#5C3D11] text-sm">الصورة التصورية</span>
+                  <span className="font-bold text-[#5C3D11] text-sm">{t("quick.result.generate")}</span>
                   {captureMode === "video" && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">🎥</span>}
                 </div>
                 <button onClick={handleGenerateViz} disabled={isGeneratingViz}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-xs font-bold active:scale-95 transition-transform disabled:opacity-60">
-                  {isGeneratingViz ? <><RefreshCw className="w-3 h-3 animate-spin" /> جاري التوليد...</> : <><Sparkles className="w-3 h-3" /> {vizImage ? "إعادة توليد" : "توليد صورة"}</>}
+                  {isGeneratingViz ? <><RefreshCw className="w-3 h-3 animate-spin" /> {t("quick.result.generating")}</> : <><Sparkles className="w-3 h-3" /> {vizImage ? t("smart.capture.regenerate") : t("quick.result.generate")}</>}
                 </button>
               </div>
 
               {vizImage ? (
                 <div className="relative cursor-pointer" onClick={() => setLightboxImage(vizImage)}>
                   <img src={vizImage} className="w-full h-56 object-cover" alt="visualization" />
-                  <div className="absolute top-2 right-2 bg-[#C9A84C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">✨ م. اليازية</div>
+                  <div className="absolute top-2 right-2 bg-[#C9A84C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">✨ {t("app.name")}</div>
                   <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <ZoomIn className="w-3 h-3" /> تكبير
-                  </div>
+                  <ZoomIn className="w-3 h-3" /> {t("smart.capture.zoom")}
+                </div>
                 </div>
               ) : isGeneratingViz ? (
                 <div className="h-48 flex flex-col items-center justify-center gap-3 bg-[#faf6f0]">
                   <div className="w-12 h-12 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
                     <Wand2 className="w-6 h-6 text-[#C9A84C] animate-pulse" />
                   </div>
-                  <p className="text-sm text-[#8B6914]">م. اليازية تولّد الصورة التصورية...</p>
-                  <p className="text-xs text-[#8B6914]/60">15-30 ثانية</p>
+                  <p className="text-sm text-[#8B6914]">{t("quick.analyzing.subtitle")}</p>
+                  <p className="text-xs text-[#8B6914]/60">{t("quick.analyzing.subtitle")}</p>
                 </div>
               ) : (
                 <div className="relative">
                   {primaryImage && <img src={primaryImage} className="w-full h-44 object-cover opacity-60" alt="preview" />}
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#5C3D11]/20">
                     <Wand2 className="w-8 h-8 text-[#C9A84C]" />
-                    <p className="text-sm font-bold text-[#5C3D11]">اضغط "توليد صورة" لرؤية تصورك</p>
+                    <p className="text-sm font-bold text-[#5C3D11]">{t("quick.result.generate")}</p>
                   </div>
                 </div>
               )}
@@ -986,7 +1012,7 @@ export default function QuickAnalyze() {
             <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0] shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-[#C9A84C]" />
-                <span className="font-bold text-[#5C3D11] text-sm">تقييم م. اليازية</span>
+                <span className="font-bold text-[#5C3D11] text-sm">{t("quick.tip.label")}</span>
               </div>
               <p className="text-sm text-[#6B4C1E] leading-relaxed">{result.overview}</p>
             </div>
@@ -996,9 +1022,9 @@ export default function QuickAnalyze() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Palette className="w-4 h-4 text-[#C9A84C]" />
-                  <span className="font-bold text-[#5C3D11] text-sm">لوحة الألوان</span>
+                  <span className="font-bold text-[#5C3D11] text-sm">{t("quick.result.palette")}</span>
                 </div>
-                <span className="text-[10px] text-[#8B6914]/60 bg-[#f0e8d8] px-2 py-0.5 rounded-full">اضغط لتعديل</span>
+                <span className="text-[10px] text-[#8B6914]/60 bg-[#f0e8d8] px-2 py-0.5 rounded-full">{t("ui.done")}</span>
               </div>
               <div className="flex gap-2 relative">
                 {(editedPalette.length > 0 ? editedPalette : result.palette).map((c, i) => (
@@ -1010,7 +1036,7 @@ export default function QuickAnalyze() {
                   <button onClick={handleReanalyze} disabled={isReanalyzing}
                     className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#C9A84C]/20 text-[#8B6914] text-xs font-bold rounded-xl border border-[#C9A84C]/30 active:scale-95 transition-transform">
                     <RefreshCw className={`w-3 h-3 ${isReanalyzing ? "animate-spin" : ""}`} />
-                    تحديث التحليل بالألوان الجديدة
+                    {t("quick.result.reanalyze")}
                   </button>
                 </div>
               )}
@@ -1022,7 +1048,7 @@ export default function QuickAnalyze() {
                 className="w-full flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-[#C9A84C]" />
-                  <span className="font-bold text-[#5C3D11] text-sm">تعديل النمط</span>
+                  <span className="font-bold text-[#5C3D11] text-sm">{t("quick.style.title")}</span>
                   <span className="text-xs text-[#8B6914] bg-[#f0e8d8] px-2 py-0.5 rounded-full">
                     {STYLES.find(s => s.id === style)?.emoji} {STYLES.find(s => s.id === style)?.label}
                   </span>
@@ -1043,7 +1069,7 @@ export default function QuickAnalyze() {
                   </div>
                   <button onClick={() => { setShowStyleEditor(false); handleReanalyze(); }} disabled={isReanalyzing}
                     className="w-full mt-3 py-2.5 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold rounded-xl active:scale-95 transition-transform disabled:opacity-60">
-                    {isReanalyzing ? "جاري التحديث..." : "تطبيق النمط الجديد"}
+                    {isReanalyzing ? t("quick.analyzing") : t("smart.capture.changeStyle")}
                   </button>
                 </div>
               )}
@@ -1055,7 +1081,7 @@ export default function QuickAnalyze() {
                 className="w-full flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-[#C9A84C]" />
-                  <span className="font-bold text-[#5C3D11] text-sm">تعديل الميزانية</span>
+                  <span className="font-bold text-[#5C3D11] text-sm">{t("quick.budget.title")}</span>
                   {currentBudgetLabel && <span className="text-xs text-[#8B6914] bg-[#f0e8d8] px-2 py-0.5 rounded-full">{currentBudgetLabel}</span>}
                 </div>
                 {showBudgetEditor ? <ChevronUp className="w-4 h-4 text-[#8B6914]" /> : <ChevronDown className="w-4 h-4 text-[#8B6914]" />}
@@ -1067,25 +1093,25 @@ export default function QuickAnalyze() {
                       <button key={preset.label}
                         onClick={() => { setSelectedBudget(preset.range); setCustomBudgetMin(""); setCustomBudgetMax(""); }}
                         className={`flex flex-col items-center gap-0.5 p-3 rounded-xl border-2 transition-all active:scale-95 ${selectedBudget?.min === preset.range.min ? "border-[#C9A84C] bg-[#C9A84C]/10" : "border-[#e8d9c0] bg-[#faf6f0]"}`}>
-                        <span className="text-xs font-bold text-[#5C3D11]">{preset.label}</span>
+                        <span className="text-xs font-bold text-[#5C3D11]">{t(preset.key as any)}</span>
                         <span className="text-[10px] text-[#8B6914]">{preset.range.min.toLocaleString()} - {preset.range.max.toLocaleString()} ر.س</span>
                       </button>
                     ))}
                   </div>
                   <div className="flex gap-2 items-center">
-                    <span className="text-xs text-[#8B6914] flex-shrink-0">أو:</span>
-                    <input type="number" placeholder="من" value={customBudgetMin}
+                    <span className="text-xs text-[#8B6914] flex-shrink-0">{t("common.or")}:</span>
+                    <input type="number" placeholder={t("common.from")} value={customBudgetMin}
                       onChange={(e) => { setCustomBudgetMin(e.target.value); setSelectedBudget(null); }}
                       className="flex-1 text-xs border border-[#e8d9c0] rounded-xl px-3 py-2 text-[#5C3D11] text-right" />
                     <span className="text-xs text-[#8B6914]">-</span>
-                    <input type="number" placeholder="إلى" value={customBudgetMax}
+                    <input type="number" placeholder={t("common.to")} value={customBudgetMax}
                       onChange={(e) => { setCustomBudgetMax(e.target.value); setSelectedBudget(null); }}
                       className="flex-1 text-xs border border-[#e8d9c0] rounded-xl px-3 py-2 text-[#5C3D11] text-right" />
-                    <span className="text-xs text-[#8B6914] flex-shrink-0">ر.س</span>
+                    <span className="text-xs text-[#8B6914] flex-shrink-0">{t("common.currency.sar")}</span>
                   </div>
                   <button onClick={() => { setShowBudgetEditor(false); handleReanalyze(); }} disabled={isReanalyzing}
                     className="w-full py-2.5 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold rounded-xl active:scale-95 transition-transform disabled:opacity-60">
-                    {isReanalyzing ? "جاري التحديث..." : "تطبيق الميزانية"}
+                    {isReanalyzing ? t("quick.analyzing") : t("quick.result.reanalyze")}
                   </button>
                 </div>
               )}
@@ -1096,7 +1122,7 @@ export default function QuickAnalyze() {
               onClick={() => setShowCostBreakdown(!showCostBreakdown)}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs opacity-80 mb-1">التكلفة التقديرية</p>
+                  <p className="text-xs opacity-80 mb-1">{t("quick.result.cost")}</p>
                   <p className="text-xl font-black">{result.estimatedCost}</p>
                 </div>
                 <div className="flex flex-col items-center gap-1">
@@ -1107,7 +1133,7 @@ export default function QuickAnalyze() {
               {showCostBreakdown && result.costBreakdown && (
                 <div className="mt-3 pt-3 border-t border-white/20 grid grid-cols-2 gap-2">
                   {Object.entries(result.costBreakdown).map(([key, value]) => {
-                    const labels: Record<string, string> = { furniture: "الأثاث", flooring: "الأرضيات", walls: "الجدران", lighting: "الإضاءة", accessories: "الإكسسوارات" };
+                    const labels: Record<string, string> = { furniture: t("voice.page.furniture"), flooring: t("scanner.floor"), walls: t("voice.page.walls"), lighting: t("smart.capture.materials"), accessories: t("smart.capture.materials") };
                     return (
                       <div key={key} className="bg-white/10 rounded-xl p-2">
                         <p className="text-[10px] opacity-70">{labels[key] || key}</p>
@@ -1122,7 +1148,7 @@ export default function QuickAnalyze() {
             {/* التوصيات */}
             {result.topSuggestions.length > 0 && (
               <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0] shadow-sm">
-                <p className="font-bold text-[#5C3D11] text-sm mb-3">توصيات م. اليازية</p>
+                <p className="font-bold text-[#5C3D11] text-sm mb-3">{t("quick.result.suggestions")}</p>
                 <div className="space-y-2">
                   {result.topSuggestions.map((s, i) => (
                     <div key={i} className="flex items-start gap-2">
@@ -1137,7 +1163,7 @@ export default function QuickAnalyze() {
             {/* المواد */}
             {result.materials && result.materials.length > 0 && (
               <div className="bg-white rounded-2xl p-4 border border-[#e8d9c0] shadow-sm">
-                <p className="font-bold text-[#5C3D11] text-sm mb-3">المواد المقترحة</p>
+                <p className="font-bold text-[#5C3D11] text-sm mb-3">{t("smart.capture.materials")}</p>
                 <div className="flex flex-wrap gap-2">
                   {result.materials.map((m, i) => (
                     <span key={i} className="text-xs bg-[#f0e8d8] text-[#8B6914] px-3 py-1.5 rounded-full font-medium">{m}</span>
@@ -1152,19 +1178,19 @@ export default function QuickAnalyze() {
                 className="w-full flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Edit3 className="w-4 h-4 text-[#C9A84C]" />
-                  <span className="font-bold text-[#5C3D11] text-sm">متطلبات مخصصة</span>
+                  <span className="font-bold text-[#5C3D11] text-sm">{t("quick.result.reanalyze")}</span>
                 </div>
                 {showRequirementsInput ? <ChevronUp className="w-4 h-4 text-[#8B6914]" /> : <ChevronDown className="w-4 h-4 text-[#8B6914]" />}
               </button>
               {showRequirementsInput && (
                 <div className="px-4 pb-4">
                   <textarea value={customRequirements} onChange={(e) => setCustomRequirements(e.target.value)}
-                    placeholder="مثال: أريد أرضية خشبية، وألوان هادئة، وإضاءة دافئة..."
+                    placeholder={t("quick.capture.note.placeholder")}
                     className="w-full text-sm border border-[#e8d9c0] rounded-xl px-3 py-2.5 text-[#5C3D11] text-right resize-none h-24" />
                   <button onClick={() => { setShowRequirementsInput(false); handleReanalyze(); }}
                     disabled={isReanalyzing || !customRequirements.trim()}
                     className="w-full mt-2 py-2.5 bg-gradient-to-r from-[#C9A84C] to-[#8B6914] text-white text-sm font-bold rounded-xl active:scale-95 transition-transform disabled:opacity-60">
-                    {isReanalyzing ? "جاري التحديث..." : "تطبيق المتطلبات"}
+                    {isReanalyzing ? t("quick.analyzing") : t("quick.result.reanalyze")}
                   </button>
                 </div>
               )}
@@ -1175,25 +1201,33 @@ export default function QuickAnalyze() {
               <button onClick={reset}
                 className="flex flex-col items-center gap-1 py-3 rounded-2xl border-2 border-[#e8d9c0] bg-white active:scale-95 transition-transform">
                 <RotateCcw className="w-4 h-4 text-[#8B6914]" />
-                <span className="text-xs text-[#5C3D11] font-medium">تحليل آخر</span>
+                <span className="text-xs text-[#5C3D11] font-medium">{t("quick.result.newAnalysis")}</span>
               </button>
-              <button onClick={() => toast.success("تم الحفظ في مشاريعك")}
+              <button onClick={() => toast.success(t("ui.save"))}
                 className="flex flex-col items-center gap-1 py-3 rounded-2xl border-2 border-[#e8d9c0] bg-white active:scale-95 transition-transform">
                 <Download className="w-4 h-4 text-[#8B6914]" />
-                <span className="text-xs text-[#5C3D11] font-medium">حفظ</span>
+                <span className="text-xs text-[#5C3D11] font-medium">{t("ui.save")}</span>
               </button>
               <button onClick={() => {
-                if (navigator.share) navigator.share({ title: "تحليل م. اليازية", text: result.overview });
-                else { toast.success("تم النسخ"); navigator.clipboard.writeText(result.overview); }
+                if (navigator.share) navigator.share({ title: t("quick.title"), text: result.overview });
+                else { toast.success(t("ui.save")); navigator.clipboard.writeText(result.overview); }
               }} className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#8B6914] active:scale-95 transition-transform">
                 <Share2 className="w-4 h-4 text-white" />
-                <span className="text-xs text-white font-medium">مشاركة</span>
+                <span className="text-xs text-white font-medium">{t("smart.capture.share")}</span>
               </button>
             </div>
 
+            {/* زر شات التعديل */}
+            <button
+              onClick={() => setShowDesignChat(true)}
+              className="w-full py-3.5 rounded-2xl bg-white border-2 border-[#C9A84C] text-[#8B6914] font-bold active:scale-95 transition-transform flex items-center justify-center gap-2">
+              <Wand2 className="w-4 h-4 text-[#C9A84C]" />
+              {t("quick.result.chat")}
+            </button>
+
             <button onClick={() => navigate("/design-studio")}
               className="w-full py-4 rounded-2xl bg-[#5C3D11] text-white font-bold active:scale-95 transition-transform">
-              تصميم كامل في الاستوديو ←
+              {t("studio.title")} ←
             </button>
 
             <button onClick={() => { if (primaryImage) saveImageForIdeas(primaryImage); navigate("/design-ideas"); }}
@@ -1201,12 +1235,35 @@ export default function QuickAnalyze() {
               style={{ boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}>
               <span className="flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                استعرض أفكاراً تصميمية متعددة ✨
+                {t("ideas.page.title")} ✨
               </span>
             </button>
           </div>
         )}
       </main>
+
+      {/* شات التعديل */}
+      {result && (
+        <DesignChatModal
+          isOpen={showDesignChat}
+          onClose={() => setShowDesignChat(false)}
+          design={{
+                  title: t("quick.title"),
+            style: style,
+            description: result.overview,
+            imageUrl: vizImage || primaryImage || undefined,
+            originalImageUrl: primaryImage || undefined,
+            materials: result.materials,
+            palette: result.palette,
+            estimatedCost: result.estimatedCost,
+          }}
+          onApplyChanges={(changes, newImageUrl) => {
+            if (newImageUrl) setVizImage(newImageUrl);
+            if (changes.palette && Array.isArray(changes.palette)) setEditedPalette(changes.palette as { name: string; hex: string }[]);
+            setShowDesignChat(false);
+          }}
+        />
+      )}
     </div>
   );
 }

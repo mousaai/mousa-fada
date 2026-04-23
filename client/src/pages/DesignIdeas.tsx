@@ -5,6 +5,7 @@
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import DesignChatModal from "@/components/DesignChatModal";
 import {
   ChevronRight, Sparkles, RefreshCw, Wand2, DollarSign,
   ChevronDown, ChevronUp, Palette, Sofa, Layers, Star,
@@ -72,11 +73,13 @@ function IdeaCard({
   onGenerateImage,
   onFavorite,
   isFavorited,
+  onChatEdit,
 }: {
   idea: DesignIdea;
   onGenerateImage: (id: string) => void;
   onFavorite: (id: string) => void;
   isFavorited: boolean;
+  onChatEdit?: (idea: DesignIdea) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showFurniture, setShowFurniture] = useState(false);
@@ -234,6 +237,15 @@ function IdeaCard({
           ))}
         </div>
 
+        {/* زر شات التعديل */}
+        <button
+          onClick={() => onChatEdit?.(idea)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border-2 border-[#C9A84C] text-[#8B6914] text-xs font-bold active:scale-95 transition-transform mb-2"
+        >
+          <Wand2 className="w-3.5 h-3.5 text-[#C9A84C]" />
+          عدّلي هذا التصميم عبر الشات
+        </button>
+
         {/* الأثاث — قابل للطي */}
         {idea.furniture.length > 0 && (
           <div>
@@ -288,6 +300,7 @@ export default function DesignIdeas() {
   const [ideas, setIdeas] = useState<DesignIdea[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [chatIdea, setChatIdea] = useState<DesignIdea | null>(null);
 
   // الصورة المرجعية (من QuickAnalyze)
   const [referenceImage] = useState<string | null>(() => {
@@ -662,6 +675,7 @@ export default function DesignIdeas() {
                 onGenerateImage={handleGenerateImage}
                 onFavorite={toggleFavorite}
                 isFavorited={favorites.has(idea.id)}
+                onChatEdit={(idea) => setChatIdea(idea)}
               />
             ))}
 
@@ -713,6 +727,38 @@ export default function DesignIdeas() {
           </div>
         )}
       </main>
+
+      {/* شات التعديل */}
+      {chatIdea && (
+        <DesignChatModal
+          isOpen={!!chatIdea}
+          onClose={() => setChatIdea(null)}
+          design={{
+            title: chatIdea.title,
+            style: chatIdea.style,
+            description: chatIdea.description,
+            imageUrl: chatIdea.imageUrl,
+            materials: chatIdea.materials,
+            palette: chatIdea.palette,
+            estimatedCost: chatIdea.estimatedCost,
+          }}
+          onApplyChanges={(changes, newImageUrl) => {
+            if (newImageUrl || changes.palette) {
+              setIdeas(prev => prev.map(i =>
+                i.id === chatIdea.id
+                  ? {
+                      ...i,
+                      imageUrl: newImageUrl || i.imageUrl,
+                      palette: Array.isArray(changes.palette) ? (changes.palette as { name: string; hex: string }[]) : i.palette,
+                      materials: Array.isArray(changes.materials) ? (changes.materials as string[]) : i.materials,
+                    }
+                  : i
+              ));
+            }
+            setChatIdea(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1249,6 +1249,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       imageUrls: z.array(z.string()).optional(), // صور متعددة
       captureMode: z.enum(["single", "multi", "panorama", "video"]).optional(),
       designStyle: z.string().default("modern"),
+      userNote: z.string().optional(), // ملاحظة المستخدم الاختيارية
     }))
     .mutation(async ({ input, ctx }) => {
       await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "analyzePhoto");
@@ -1263,6 +1264,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
       const modeNote = input.captureMode === "multi" ? `(${allImages.length} صور من زوايا مختلفة)` :
                        input.captureMode === "panorama" ? "(صورة بانوراما)" :
                        input.captureMode === "video" ? "(إطار من فيديو)" : "";
+      const userNoteSection = input.userNote?.trim() ? `\n\nملاحظة المستخدم: ${input.userNote.trim()}\nيجب مراعاة هذه الملاحظة في التحليل والتوصيات.` : "";
 
       // رفع base64 images لـ S3 أولاً للحصول على URLs حقيقية يقبلها Gemini
       const userId = ctx.user?.id || 0;
@@ -1278,7 +1280,7 @@ ${input.customNotes ? `- ملاحظات خاصة: ${input.customNotes}` : ''}
         messages: [
           { role: "system", content: "أنتِ م. اليازية خبيرة التصميم المعماري والبيئي العالمية (داخلي، واجهات، لاندسكيب وزراعة تجميلية، مسابح، تصميم حضري). تحللين الفضاءات بدقة عالية وتقدمين توصيات احترافية. ردودك بالعربية بصيغة JSON فقط." },
           { role: "user", content: [
-            { type: "text" as const, text: `حللي هذا الفضاء ${modeNote} بأسلوب ${styleName}. أعطيني JSON بهذا الشكل بالضبط:
+            { type: "text" as const, text: `حللي هذا الفضاء ${modeNote} بأسلوب ${styleName}.${userNoteSection} أعطيني JSON بهذا الشكل بالضبط:
 {
   "overview": "تقييم احترافي للفضاء في 2-3 جمل يصف الوضع الحالي ونقاط القوة والضعف",
   "palette": [
@@ -1650,7 +1652,7 @@ ${colorText}
 حددي الهدف الرئيسي للتصميم بذكاء من الصورة دون أن يطلب المستخدم:
 - إذا كانت الصورة داخل مبنى → الهدف: التصميم الداخلي للفضاء المرئي
 - إذا كانت الصورة لواجهة مبنى → الهدف: تطوير الواجهة المعمارية
-- إذا كانت الصورة لأرض فارغة → الهدف: تصميم المبنى المقترح على الأرض
+- إذا كانت الصورة لأرض فارغة أو قطعة أرض خارجية → الهدف: تصميم الزراعة التجميلية واللاندسكيب (نباتات + أشجار + ممرات + إضاءة + عناصر مائية) — لا تقترحي مبنى إلا إذا طلب المستخدم صراحةً
 - إذا كانت الصورة لشارع أو طريق → الهدف: تحسين الفضاء الحضري (رصيف + شجر + إضاءة + واجهات)
 - إذا كانت الصورة تشمل مبنى + شارع → الهدف المزدوج: تطوير الواجهة + الفضاء الحضري أمامها معاً
 - إذا كانت الصورة لحديقة أو فناء → الهدف: تصميم لاندسكيب
@@ -1669,7 +1671,7 @@ ${colorText}
 - لاندسكيب: حديقة، فناء، مسبح، سطح، شرفة، تراس → لاندسكيب: نباتات، ممرات، مياه، جلسات خارجية
 - فضاء حضري مستهدف: رصيف أمام المبنى، موقف سيارات خاص، ممر داخلي → تصميم حضري محدود النطاق
 - طريق عام (للتحليل فقط): شارع رئيسي، طريق عام → تحليل السياق فقط، لا تصميم مباشر
-- أرض فارغة: قطعة أرض فارغة، موقع بناء → اقتراح مبنى مناسب
+- أرض فارغة / خارجية: قطعة أرض، فناء، حديقة غير مصممة، أرض ترابية → تصميم زراعة تجميلية ولاندسكيب (نباتات + أشجار + ممرات + إضاءة + جلسات خارجية + عناصر مائية) — ⚠️ لا تقترحي أي مبنى أو إنشاء إلا بطلب صريح من المستخدم
 
 🚧 BOUNDARY INTELLIGENCE (ذكاء الحدود):
 - الطريق العام والأرصفة العامة: حللي وجودها كسياق، لكن لا تصمّميها كأنها ملك المالك
@@ -2078,7 +2080,8 @@ ${structuralAnalysisPrompt}
           const isExteriorFacade = /واجهة|خارجي|مدخل|مبنى|بوابة|facade|exterior|building|front|entrance/.test(spaceTypeStr);
           const isStreet = /شارع|طريق|ممشى|رصيف|حضري|عام|منطقة تجارية|سوق|موقف|street|road|walkway|sidewalk|alley|plaza|square|urban|commercial|parking|public/.test(spaceTypeStr);
           const isPool = /مسبح|pool|swimming/.test(spaceTypeStr);
-          const isLandscape = !isPool && /حديقة|لاندسكيب|جلسة خارجية|ممر|ساحة|فناء|سطح|شرفة|تراس|garden|landscape|outdoor|terrace|pathway|courtyard|rooftop|balcony/.test(spaceTypeStr);
+          const isEmptyLand = /أرض فارغة|أرض خارجية|أرض ترابية|قطعة أرض|empty_land|empty land|bare land|open land|vacant land/.test(spaceTypeStr) || String(spaceAnalysisData.spaceCategory || '').toLowerCase() === 'empty_land';
+          const isLandscape = !isPool && (isEmptyLand || /حديقة|لاندسكيب|جلسة خارجية|ممر|ساحة|فناء|سطح|شرفة|تراس|garden|landscape|outdoor|terrace|pathway|courtyard|rooftop|balcony/.test(spaceTypeStr));
           // الفضاءات التجارية والمتخصصة
           const isRestaurantCafe = /مطعم|كافيه|كافيتيريا|مقهى|restaurant|cafe|cafeteria|food court|dining hall/.test(spaceTypeStr);
           const isRetailShop = /محل|معرض|متجر|بوتيك|صالة عرض|shop|store|boutique|showroom|retail/.test(spaceTypeStr);
@@ -2102,8 +2105,11 @@ ${structuralAnalysisPrompt}
             // برومبت منطقة المسبح — يحافظ على الإنشاء ويطور المحيط فقط
             generatedPrompt = `Photorealistic swimming pool area redesign. ${cameraNote} ${roomNote} Apply ${styleName} style with MAXIMUM CREATIVITY on all NON-STRUCTURAL elements. ⚠️ ABSOLUTE POOL STRUCTURE RULE: KEEP the existing pool shape, size, depth, and structural walls EXACTLY as they are — DO NOT change the pool structure, boundaries, or water body in any way. ONLY enhance the surrounding environment. FULL CREATIVE FREEDOM on: 1) LANDSCAPING — tropical/ornamental plants, palm trees, flower beds, hedges, vertical gardens, planting pots; 2) POOL DECK FINISHES — deck tiles, stone paving, travertine, wood decking, anti-slip porcelain around the pool; 3) POOL FLOOR TILES — mosaic tiles, glass tiles, pebble finish inside the pool (color/pattern only, no structural change); 4) OUTDOOR FURNITURE — sun loungers, umbrellas, side tables, outdoor sofas, pergola, shade structures; 5) LIGHTING — underwater pool lights, path lights, spotlights on plants, string lights, wall sconces; 6) DECORATIVE ELEMENTS — water features beside pool, decorative pots, sculptures, privacy screens. New color palette: ${palette}. New materials: ${mats}. Transform the pool area into a LUXURY RESORT-STYLE OASIS — lush tropical planting, beautiful deck finishes, elegant furniture, ambient lighting. Make it look like a 5-STAR HOTEL POOL MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional architectural photography, no people, no text.`;
           } else if (isLandscape) {
-            // برومبت لاندسكيب وفضاءات خارجية
-            generatedPrompt = `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
+            // برومبت لاندسكيب وفضاءات خارجية (شامل الأراضي الفارغة والخارجية)
+            const isEmptyLandPrompt = isEmptyLand;
+            generatedPrompt = isEmptyLandPrompt
+              ? `Photorealistic ornamental landscape and garden design for an empty outdoor land plot. ${cameraNote} ${roomNote} TRANSFORM this bare/sandy land into a STUNNING ORNAMENTAL GARDEN — NO BUILDINGS, NO STRUCTURES, NO ARCHITECTURE. FOCUS EXCLUSIVELY ON: 1) ORNAMENTAL PLANTING — lush tropical trees (palms, ficus, bougainvillea), flowering shrubs, ornamental grasses, ground cover, hedges, vertical garden walls; 2) PATHWAYS & HARDSCAPE — natural stone paths, decorative gravel, stepping stones, brick edging; 3) WATER FEATURES — decorative fountain, small pond, stream, reflecting pool; 4) OUTDOOR SEATING — pergola with climbing plants, wooden benches, stone seating, shaded rest areas; 5) LIGHTING — solar path lights, uplighting on trees, string lights, lanterns; 6) DECORATIVE ELEMENTS — decorative pots, sculptures, bird baths, garden art. Apply ${styleName} style. New color palette: ${palette}. New materials: ${mats}. Transform the bare land into a LUSH PARADISE GARDEN — dense planting, beautiful pathways, ambient lighting, water features. ⚠️ ABSOLUTELY NO BUILDINGS, VILLAS, WALLS, OR STRUCTURES — PURE LANDSCAPE ONLY. Make it look like a LUXURY GARDEN MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text, no buildings.`
+              : `Photorealistic landscape and outdoor space redesign. ${cameraNote} ${roomNote} BOLD COMPLETE OUTDOOR TRANSFORMATION - Apply ${styleName} style with MAXIMUM CREATIVITY. FULL CREATIVE FREEDOM: plants and trees selection, paving materials (stone/wood/tiles/gravel), water features (fountain/pool/stream), outdoor furniture (seating/pergola/shade), lighting (path lights/spotlights/string lights), decorative elements. New color palette: ${palette}. New materials: ${mats}. Transform the outdoor space completely - lush planting, beautiful hardscape, ambient lighting, comfortable seating areas. Make it look like a LUXURY LANDSCAPE MAGAZINE COVER. Cinematic lighting, ultra-realistic textures, 8K resolution, professional landscape photography, no people, no text.`;
           } else if (isCommercialSpace) {
             // برومبت الفضاءات التجارية والمتخصصة
             const allowOpeningChanges = lockStructuralElements?.allowPlatformFreedom === true ||
@@ -3564,7 +3570,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
     // التحقق من الرصيد قبل تنفيذ عملية AI
     checkBalance: mousaProcedure
       .input(z.object({
-        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
+        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF", "designChat"]),
       }))
       .query(async ({ input, ctx }) => {
         try {
@@ -3592,7 +3598,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
     // خصم الكريدت بعد نجاح عملية AI
     deductCredits: mousaProcedure
       .input(z.object({
-        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF"]),
+        operation: z.enum(["analyzePhoto", "analyzeAndGenerate", "generateVisualization", "generateIdeas", "reAnalyze", "applyStyle", "refineDesign", "voiceDesign", "generateFloorPlan3D", "generate3D", "generatePlanDesign", "generatePDF", "designChat"]),
         description: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -3615,6 +3621,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
             generate3D: "رندر 3D من مسقط محمّل (30 كريدت)",
             generatePlanDesign: "بيانات تصميم كاملة من المسقط (25 كريدت)",
             generatePDF: "تصدير دفتر التصميم PDF (5 كريدت)",
+            designChat: "شات تعديل التصميم (20 كريدت)",
           };
           const description = input.description || operationLabels[input.operation];
           const result = await deductMousaCredits(mousaUserId, cost, description);
@@ -4433,6 +4440,172 @@ FINAL RESULT: A jaw-dropping interior that makes viewers say "I want to live her
         imageUrl: imageResult.url ?? "",
         creditsCost: CREDIT_COSTS["generatePlanDesign"],
         style: styleAr,
+      };
+    }),
+
+  // ===== designChat: شات تعديل التصميم عبر المحادثة النصية =====
+  designChat: mousaProcedure
+    .input(z.object({
+      // سجل المحادثة السابقة
+      messages: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+        imageUrl: z.string().optional(), // صورة مرفقة من المستخدم
+      })),
+      // الرسالة الجديدة من المستخدم
+      userMessage: z.string(),
+      userImageUrl: z.string().optional(), // صورة مرفقة من المستخدم في الرسالة الجديدة
+      // سياق التصميم الحالي
+      currentDesign: z.object({
+        title: z.string().optional(),
+        style: z.string().optional(),
+        styleLabel: z.string().optional(),
+        description: z.string().optional(),
+        imageUrl: z.string().optional(), // صورة التصميم الحالية
+        originalImageUrl: z.string().optional(), // صورة الغرفة الأصلية
+        materials: z.array(z.string()).optional(),
+        palette: z.array(z.object({ name: z.string(), hex: z.string() })).optional(),
+        estimatedCost: z.string().optional(),
+      }).optional(),
+      // هل يطلب توليد صورة جديدة
+      generateImage: z.boolean().optional().default(false),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await checkAndDeductCredits(ctx.user.id, ctx.mousaUserId, "designChat");
+
+      const { messages, userMessage, userImageUrl, currentDesign, generateImage: shouldGenerateImage } = input;
+
+      // بناء سياق التصميم الحالي
+      const designContext = currentDesign ? `
+سياق التصميم الحالي:
+- العنوان: ${currentDesign.title || 'غير محدد'}
+- النمط: ${currentDesign.styleLabel || currentDesign.style || 'غير محدد'}
+- الوصف: ${currentDesign.description || ''}
+- الخامات: ${(currentDesign.materials || []).join('، ')}
+- الألوان: ${(currentDesign.palette || []).map(c => `${c.name} (${c.hex})`).join('، ')}
+- التكلفة التقديرية: ${currentDesign.estimatedCost || ''}
+` : '';
+
+      // بناء رسائل LLM
+      const jsonSchemaExample = [
+        'JSON_CHANGES_START',
+        '{',
+        '  "changes": {',
+        '    "palette": [{"name": "\u0627\u0633\u0645 \u0627\u0644\u0644\u0648\u0646", "hex": "#XXXXXX"}],',
+        '    "materials": ["\u0645\u0627\u062f\u0629 1", "\u0645\u0627\u062f\u0629 2"],',
+        '    "furniture": [{"name": "\u0627\u0633\u0645 \u0627\u0644\u0642\u0637\u0639\u0629", "description": "\u0648\u0635\u0641", "priceRange": "\u0633\u0639\u0631"}],',
+        '    "openings": [{"action": "add", "type": "door", "location": "\u0627\u0644\u062c\u062f\u0627\u0631 \u0627\u0644\u0634\u0645\u0627\u0644\u064a", "size": "90x200\u0633\u0645"}],',
+        '    "style": "\u0646\u0645\u0637 \u062c\u062f\u064a\u062f \u0625\u0630\u0627 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645",',
+        '    "imagePrompt": "English prompt for image generation"',
+        '  },',
+        '  "summary": "\u0645\u0644\u062e\u0635 \u0627\u0644\u062a\u0639\u062f\u064a\u0644\u0627\u062a"',
+        '}',
+        'JSON_CHANGES_END',
+      ].join('\n');
+
+      const systemPrompt = [
+        '\u0623\u0646\u062a\u0650 \u0645. \u0627\u0644\u064a\u0627\u0632\u064a\u0629\u060c \u062e\u0628\u064a\u0631\u0629 \u0627\u0644\u062a\u0635\u0645\u064a\u0645 \u0627\u0644\u062f\u0627\u062e\u0644\u064a \u0648\u0627\u0644\u0645\u0639\u0645\u0627\u0631\u064a \u0627\u0644\u0639\u0627\u0644\u0645\u064a\u0629. \u0623\u0646\u062a\u0650 \u062a\u0633\u0627\u0639\u062f\u064a\u0646 \u0627\u0644\u0639\u0645\u064a\u0644 \u0639\u0644\u0649 \u062a\u0639\u062f\u064a\u0644 \u062a\u0635\u0645\u064a\u0645\u0647 \u0639\u0628\u0631 \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0629.',
+        '',
+        '\u0642\u062f\u0631\u0627\u062a\u0643\u0650:',
+        '- \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0623\u0644\u0648\u0627\u0646 \u0648\u0644\u0648\u062d\u0629 \u0627\u0644\u0623\u0644\u0648\u0627\u0646 \u0628\u0627\u0644\u0643\u0627\u0645\u0644',
+        '- \u0627\u0633\u062a\u0628\u062f\u0627\u0644 \u0627\u0644\u0623\u062b\u0627\u062b \u0648\u062a\u062d\u062f\u064a\u062f \u0627\u0644\u0645\u0648\u0627\u0635\u0641\u0627\u062a \u0648\u0627\u0644\u0623\u0633\u0639\u0627\u0631',
+        '- \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u062e\u0627\u0645\u0627\u062a (\u0631\u062e\u0627\u0645\u060c \u062e\u0634\u0628\u060c \u0645\u0639\u062f\u0646\u060c \u0632\u062c\u0627\u062c\u060c \u0628\u0644\u0627\u0637)',
+        '- \u0641\u062a\u062d \u0623\u0648 \u0625\u063a\u0644\u0627\u0642 \u0641\u062a\u062d\u0627\u062a \u0641\u064a \u0627\u0644\u062c\u062f\u0627\u0631 (\u0628\u0627\u0628\u060c \u0646\u0627\u0641\u0630\u0629\u060c \u0641\u062a\u062d\u0629)',
+        '- \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0646\u0645\u0637 \u0627\u0644\u0643\u0644\u064a',
+        '- \u0625\u0636\u0627\u0641\u0629 \u0623\u0648 \u062d\u0630\u0641 \u0639\u0646\u0627\u0635\u0631 \u062a\u0635\u0645\u064a\u0645\u064a\u0629',
+        '- \u062a\u062d\u0644\u064a\u0644 \u0635\u0648\u0631 \u0627\u0644\u0645\u0631\u0627\u062c\u0639 \u0627\u0644\u062a\u064a \u064a\u0631\u0641\u0639\u0647\u0627 \u0627\u0644\u0639\u0645\u064a\u0644',
+        '- \u062a\u0642\u062f\u064a\u0645 \u062a\u0648\u0635\u064a\u0627\u062a \u0645\u0648\u0627\u062f \u0645\u062d\u062f\u062f\u0629 \u0628\u0623\u0633\u0645\u0627\u0626\u0647\u0627 \u0648\u0623\u0633\u0639\u0627\u0631\u0647\u0627',
+        '',
+        '\u0642\u0648\u0627\u0639\u062f:',
+        '- \u0631\u062f\u0648\u062f\u0643\u0650 \u062f\u0627\u0626\u0645\u0627\u064b \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629',
+        '- \u0643\u0648\u0646\u064a \u0639\u0645\u0644\u064a\u0629 \u0648\u0645\u062d\u062f\u062f\u0629: \u0627\u0630\u0643\u0631\u064a \u0623\u0633\u0645\u0627\u0621 \u0627\u0644\u0645\u0648\u0627\u062f\u060c \u0623\u0628\u0639\u0627\u062f \u0627\u0644\u0623\u062b\u0627\u062b\u060c \u0631\u0645\u0648\u0632 \u0627\u0644\u0623\u0644\u0648\u0627\u0646',
+        '- \u0639\u0646\u062f\u0645\u0627 \u062a\u0642\u062a\u0631\u062d\u064a\u0646 \u062a\u063a\u064a\u064a\u0631\u0627\u062a\u060c \u0636\u0639\u064a JSON \u0628\u0647\u0630\u0627 \u0627\u0644\u0634\u0643\u0644:',
+        jsonSchemaExample,
+        '- \u0625\u0630\u0627 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645 \u062a\u0648\u0644\u064a\u062f \u0635\u0648\u0631\u0629\u060c \u0636\u0639\u064a imagePrompt \u0645\u0641\u0635\u0644\u0627\u064b \u0641\u064a JSON',
+        designContext,
+      ].join('\n');
+
+      // بناء سجل المحادثة للإرسال للنموذج
+      const llmMessages: Array<{ role: "system" | "user" | "assistant"; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [
+        { role: "system", content: systemPrompt },
+      ];
+
+      // إضافة سجل المحادثة السابقة
+      for (const msg of messages) {
+        if (msg.imageUrl) {
+          llmMessages.push({
+            role: msg.role,
+            content: [
+              { type: "text", text: msg.content },
+              { type: "image_url", image_url: { url: msg.imageUrl } },
+            ],
+          });
+        } else {
+          llmMessages.push({ role: msg.role, content: msg.content });
+        }
+      }
+
+      // إضافة الرسالة الجديدة
+      if (userImageUrl) {
+        llmMessages.push({
+          role: "user",
+          content: [
+            { type: "text", text: userMessage },
+            { type: "image_url", image_url: { url: userImageUrl } },
+          ],
+        });
+      } else {
+        llmMessages.push({ role: "user", content: userMessage });
+      }
+
+      // استدعاء النموذج
+      const llmResponse = await invokeLLM({ messages: llmMessages as Parameters<typeof invokeLLM>[0]["messages"] });
+      const rawContent = llmResponse.choices?.[0]?.message?.content || "";
+      const assistantText = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+
+      // استخراج JSON من الرد (JSON_CHANGES_START...JSON_CHANGES_END أو ```json...```)
+      let changes: Record<string, unknown> = {};
+      let generatedImageUrl: string | null = null;
+      try {
+        // محاولة JSON_CHANGES_START...JSON_CHANGES_END أولاً
+        const changesMatch = assistantText.match(/JSON_CHANGES_START\s*([\s\S]*?)\s*JSON_CHANGES_END/);
+        if (changesMatch) {
+          const parsed = JSON.parse(changesMatch[1].trim());
+          changes = parsed.changes || {};
+        } else {
+          // محاولة ```json...``` كبديل
+          const jsonMatch = assistantText.match(/```json\s*([\s\S]*?)```/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[1]);
+            changes = parsed.changes || {};
+          }
+        }
+      } catch { /* لا يوجد JSON في الرد */ }
+
+      // توليد صورة إذا طلب المستخدم أو إذا كان هناك imagePrompt في التغييرات
+      const imagePrompt = (changes.imagePrompt as string) || "";
+      if ((shouldGenerateImage || imagePrompt) && (currentDesign?.originalImageUrl || currentDesign?.imageUrl)) {
+        try {
+          const basePrompt = imagePrompt || `Photorealistic interior design. Apply changes: ${userMessage}. Keep same camera angle and room structure. ${currentDesign?.styleLabel || ''} style. Ultra-realistic, 8K quality.`;
+          const imgResult = await generateImage({
+            prompt: basePrompt,
+            originalImages: currentDesign?.originalImageUrl
+              ? [{ url: currentDesign.originalImageUrl, mimeType: "image/jpeg" as const }]
+              : currentDesign?.imageUrl
+              ? [{ url: currentDesign.imageUrl, mimeType: "image/jpeg" as const }]
+              : undefined,
+          });
+          generatedImageUrl = imgResult.url || null;
+        } catch (imgErr) {
+          console.error("[designChat] Image generation error:", imgErr);
+        }
+      }
+
+      return {
+        assistantMessage: assistantText.replace(/```json[\s\S]*?```/g, "").trim(),
+        changes,
+        generatedImageUrl,
+        creditsCost: CREDIT_COSTS["designChat"],
       };
     }),
 

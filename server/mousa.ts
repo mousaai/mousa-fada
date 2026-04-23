@@ -274,6 +274,7 @@ export const CREDIT_COSTS = {
   generate3D: 60,                // رندر 3D من مسقط محمّل — generateImage + originalImages
   generatePlanDesign: 50,        // بيانات تصميم كاملة من المسقط — LLM ضخم
   generatePDF: 10,               // تصدير PDF — معالجة frontend فقط
+  designChat: 20,                // شات تعديل التصميم — LLM + generateImage اختياري
 } as const;
 
 export type CreditOperation = keyof typeof CREDIT_COSTS;
