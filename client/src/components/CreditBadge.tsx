@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth as useMousaAuth } from "@/components/AuthGate";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Coins, RefreshCw, AlertCircle, ExternalLink } from "lucide-react";
 import {
   Tooltip,
@@ -20,6 +21,7 @@ interface CreditBadgeProps {
  */
 export function CreditBadge({ className = "", showLabel = false }: CreditBadgeProps) {
   const { user, refreshBalance } = useMousaAuth();
+  const { t, dir } = useLanguage();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -33,16 +35,12 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
 
   // مستخدم غير مرتبط بـ mousa.ai
   if (!user || user.isFreeMode || user.userId === 0) {
-    // تحديد نوع المستخدم: زائر حقيقي أم مستخدم بجلسة لكن غير مربوط
     const hasLocalSession = user && user.openId && user.openId !== "guest";
-    // استخدام origin فقط كـ return URL حتى يُعاد التوجيه لـ fada.mousa.ai/?token=...
     const returnUrl = encodeURIComponent(window.location.origin);
     const mousaLinkUrl = `https://www.mousa.ai/redirect?platform=fada&return=${returnUrl}`;
-    const buttonText = hasLocalSession ? "ربط حسابي" : "سجّل دخول";
-    const tooltipTitle = hasLocalSession ? "ربط حسابك بـ mousa.ai" : "سجّل دخولك عبر mousa.ai";
-    const tooltipDesc = hasLocalSession
-      ? "اضغط للانتقال إلى mousa.ai وستُربط تلقائياً"
-      : "للاستفادة من رصيد الكريدت الخاص بك";
+    const buttonText = hasLocalSession ? t("credit.link") : t("credit.login");
+    const tooltipTitle = hasLocalSession ? t("credit.linkTitle") : t("credit.loginTitle");
+    const tooltipDesc = hasLocalSession ? t("credit.linkDesc") : t("credit.loginDesc");
     return (
       <TooltipProvider>
         <Tooltip>
@@ -51,14 +49,14 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
               href={mousaLinkUrl}
               target="_self"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 ${className}`}
-              dir="rtl"
+              dir={dir}
             >
               <Coins className="w-4 h-4" />
               <span>{buttonText}</span>
               <ExternalLink className="w-3 h-3 opacity-50" />
             </a>
           </TooltipTrigger>
-          <TooltipContent dir="rtl">
+          <TooltipContent dir={dir}>
             <p className="font-bold">{tooltipTitle}</p>
             <p className="text-xs opacity-70">{tooltipDesc}</p>
           </TooltipContent>
@@ -85,28 +83,28 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
           <button
             onClick={handleRefresh}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${badgeStyle} ${className}`}
-            dir="rtl"
+            dir={dir}
           >
             {isEmpty ? (
               <AlertCircle className="w-4 h-4" />
             ) : (
               <Coins className="w-4 h-4" />
             )}
-            <span>{balance.toLocaleString("ar-AE")} كريدت</span>
+            <span>{balance.toLocaleString()} {t("credit.balance")}</span>
             {showLabel && <span className="text-xs opacity-70">💎</span>}
             <RefreshCw className={`w-3 h-3 opacity-50 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
         </TooltipTrigger>
-        <TooltipContent dir="rtl">
-          <p className="font-bold">رصيدك: {balance.toLocaleString("ar-AE")} كريدت</p>
-          {user.name && <p className="text-xs opacity-70">مرحباً {user.name}</p>}
+        <TooltipContent dir={dir}>
+          <p className="font-bold">{t("credit.yourBalance")}: {balance.toLocaleString()} {t("credit.balance")}</p>
+          {user.name && <p className="text-xs opacity-70">{t("credit.hello")} {user.name}</p>}
           {isLow && !isEmpty && (
-            <p className="text-xs text-orange-600 mt-1">⚠️ رصيد منخفض — يُنصح بالشحن</p>
+            <p className="text-xs text-orange-600 mt-1">{t("credit.low")}</p>
           )}
           {isEmpty && (
-            <p className="text-xs text-red-600 mt-1">❌ رصيد نفد — اشحن من mousa.ai</p>
+            <p className="text-xs text-red-600 mt-1">{t("credit.empty")}</p>
           )}
-          <p className="text-xs opacity-50 mt-1">اضغط للتحديث</p>
+          <p className="text-xs opacity-50 mt-1">{t("credit.refresh")}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -115,7 +113,6 @@ export function CreditBadge({ className = "", showLabel = false }: CreditBadgePr
 
 /**
  * useMousaCredit — Hook لإدارة الكريدت في الـ UI
- * يستخدم الرصيد الحقيقي من mousa.ai ويخصم بعد كل عملية ناجحة
  */
 export function useMousaCredit() {
   const { user, deductCredits } = useMousaAuth();
@@ -124,7 +121,6 @@ export function useMousaCredit() {
   const requiresMousa = !!(user && !user.isFreeMode && user.userId !== 0);
   const upgradeUrl = "https://www.mousa.ai/pricing?ref=fada";
 
-  // تكاليف العمليات بالكريدت (مطابقة لـ CREDIT_COSTS في server/mousa.ts)
   const CREDIT_COSTS: Record<string, number> = {
     analyzePhoto: 40,
     analyzeAndGenerate: 70,
@@ -140,9 +136,6 @@ export function useMousaCredit() {
     generatePDF: 10,
   };
 
-  /**
-   * خصم الكريدت بعد نجاح العملية
-   */
   const deduct = async (operation: string, description?: string): Promise<{ newBalance: number }> => {
     if (!requiresMousa) {
       return { newBalance: balance };
@@ -150,18 +143,12 @@ export function useMousaCredit() {
     return deductCredits(0, description ?? operation);
   };
 
-  /**
-   * التحقق من إمكانية تنفيذ العملية بناءً على الرصيد
-   */
   const canAfford = (operation: string): boolean => {
     if (!requiresMousa) return true;
     const cost = CREDIT_COSTS[operation] ?? 40;
     return balance >= cost;
   };
 
-  /**
-   * الحصول على تكلفة العملية بالكريدت
-   */
   const getCost = (operation: string): number => {
     return CREDIT_COSTS[operation] ?? 40;
   };

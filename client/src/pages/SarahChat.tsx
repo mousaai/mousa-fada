@@ -24,12 +24,7 @@ interface ChatMessage {
   images?: string[]; // صور مرفقة بالرسالة
 }
 
-const SESSION_TYPES = [
-  { key: "general", label: "استشارة عامة", icon: Sparkles, desc: "تحدث مع م. اليازية حول أي موضوع تصميمي" },
-  { key: "floor_plan", label: "تحليل مخطط", icon: Map, desc: "ارفع مخططك المعماري واليازية ستحلله" },
-  { key: "camera_scan", label: "مسح 360° لايف", icon: ScanLine, desc: "مسح لايف للفضاء — م. اليازية توجّهك خطوة بخطوة" },
-  { key: "element_design", label: "تصميم عنصر", icon: Layers, desc: "صمّم عنصراً محدداً بالتفصيل" },
-];
+// SESSION_TYPES defined inside component to use t()
 
 const QUICK_PROMPTS = [
   { text: "أريد تصميم غرفة معيشة بنمط خليجي فاخر", icon: Home },
@@ -43,7 +38,14 @@ const QUICK_PROMPTS = [
 export default function SarahChat() {
   const { } = useAuth();
   const isAuthenticated = true;
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
+
+  const SESSION_TYPES = [
+    { key: "general", label: t("chat.session.general"), icon: Sparkles, desc: t("chat.session.general.desc") },
+    { key: "floor_plan", label: t("chat.session.floorPlan"), icon: Map, desc: t("chat.session.floorPlan.desc") },
+    { key: "camera_scan", label: t("chat.session.scan360"), icon: ScanLine, desc: t("chat.session.scan360.desc") },
+    { key: "element_design", label: t("chat.session.element"), icon: Layers, desc: t("chat.session.element.desc") },
+  ];
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [sessionType, setSessionType] = useState("general");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -93,11 +95,11 @@ export default function SarahChat() {
         const result = await uploadMutation.mutateAsync({ base64, mimeType: file.type });
         setAttachedImage(result.url);
         setAttachedImagePreview(ev.target?.result as string);
-        toast.success("تم رفع الصورة");
+        toast.success(t("chat.imageUploaded"));
       };
       reader.readAsDataURL(file);
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error(t("chat.imageError"));
     } finally {
       setIsUploadingImage(false);
     }
@@ -144,7 +146,7 @@ export default function SarahChat() {
       if (!sessionId && result.sessionId) setSessionId(result.sessionId);
       setMessages(prev => [...prev, { role: "assistant", content: result.reply as string }]);
     } catch {
-      toast.error("حدث خطأ في التحليل");
+      toast.error(t("chat.analysisError"));
     } finally {
       setIsSending(false);
     }
@@ -181,7 +183,7 @@ export default function SarahChat() {
       if (!sessionId && result.sessionId) setSessionId(result.sessionId);
       setMessages(prev => [...prev, { role: "assistant", content: result.reply as string }]);
     } catch {
-      toast.error("حدث خطأ في الإرسال");
+      toast.error(t("chat.sendError"));
     } finally {
       setIsSending(false);
     }
@@ -201,9 +203,9 @@ export default function SarahChat() {
           <div className="w-16 h-16 bg-gold/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Bot className="w-8 h-8 text-gold" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">م. اليازية</h2>
-          <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للتحدث مع م. اليازية</p>
-          <Button className="btn-gold w-full">تسجيل الدخول</Button>
+          <h2 className="text-2xl font-bold mb-2">{t("app.name")}</h2>
+          <p className="text-muted-foreground mb-6">{t("chat.loginRequired")}</p>
+          <Button className="btn-gold w-full">{t("credit.login")}</Button>
         </Card>
       </div>
     );
@@ -228,8 +230,8 @@ export default function SarahChat() {
               <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-bold">م. اليازية</h1>
-              <p className="text-xs text-white/70">خبيرة التصميم المعماري والبيئي</p>
+              <h1 className="font-bold">{t("app.name")}</h1>
+              <p className="text-xs text-white/70">{t("chat.expert.title")}</p>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           </div>
@@ -240,10 +242,10 @@ export default function SarahChat() {
                 onValueChange={(v) => setSelectedProjectId(v === "none" ? null : Number(v))}
               >
                 <SelectTrigger className="bg-white/10 border-white/30 text-white w-36 h-8 text-xs">
-                  <SelectValue placeholder="ربط بمشروع" />
+                  <SelectValue placeholder={t("chat.linkProject")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">بدون مشروع</SelectItem>
+                  <SelectItem value="none">{t("chat.noProject")}</SelectItem>
                   {(projects as Array<{ id: number; name: string }>).map(p => (
                     <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                   ))}
@@ -267,9 +269,9 @@ export default function SarahChat() {
               <div className="w-20 h-20 bg-gradient-to-br from-gold to-[#C9A84C] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Bot className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">مرحباً! أنا م. اليازية</h2>
-              <p className="text-muted-foreground">خبيرة التصميم المعماري والبيئي بالذكاء الاصطناعي</p>
-              <p className="text-sm text-muted-foreground mt-1">كيف يمكنني مساعدتك اليوم؟</p>
+              <h2 className="text-2xl font-bold text-foreground mb-2">{t("chat.welcome.title")}</h2>
+              <p className="text-muted-foreground">{t("chat.expert.title")}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t("chat.welcome.subtitle")}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
@@ -315,7 +317,7 @@ export default function SarahChat() {
             </div>
 
             <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-3">أو ابدأ بسؤال سريع:</p>
+              <p className="text-xs text-muted-foreground mb-3">{t("chat.quickQuestion")}</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {QUICK_PROMPTS.slice(0, 3).map((p, i) => (
                   <button

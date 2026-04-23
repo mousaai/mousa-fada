@@ -4,29 +4,29 @@ import { useVoiceCommands, VoiceCommand } from "@/hooks/useVoiceCommands";
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const COMMAND_LABELS: Record<VoiceCommand, string> = {
-  analyze: "فتح التحليل...",
-  design: "فتح الاستوديو...",
-  chat: "فتح م. اليازية...",
-  projects: "فتح المشاريع...",
-  costs: "فتح التكاليف...",
-  moodboard: "فتح لوحة الإلهام...",
-  ar: "فتح مسح AR...",
-  stop: "إيقاف...",
-  help: "عرض المساعدة...",
-};
-
-const COMMAND_HINTS = [
-  "قل: «تحليل» لرفع صورة",
-  "قل: «صمم» للاستوديو",
-  "قل: «اليازية» للمحادثة",
-  "قل: «مشاريعي» لمشاريعك",
-  "قل: «تكاليف» للميزانية",
-];
-
 export function VoiceFAB() {
   const [, navigate] = useLocation();
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
+
+  const COMMAND_LABELS: Record<VoiceCommand, string> = {
+    analyze: t("voice.openAnalyze"),
+    design: t("voice.openStudio"),
+    chat: t("voice.openChat"),
+    projects: t("voice.openProjects"),
+    costs: t("voice.openCosts"),
+    moodboard: t("voice.openMoodboard"),
+    ar: t("voice.openAR"),
+    stop: t("voice.stop"),
+    help: t("voice.help"),
+  };
+
+  const COMMAND_HINTS = [
+    t("voice.hint1"),
+    t("voice.hint2"),
+    t("voice.hint3"),
+    t("voice.hint4"),
+    t("voice.hint5"),
+  ];
   const [showHints, setShowHints] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ export function VoiceFAB() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="font-bold text-[#5C3D11] text-lg">الأوامر الصوتية</span>
+              <span className="font-bold text-[#5C3D11] text-lg">{t("voice.commands.title")}</span>
               <button onClick={() => setShowHints(false)} className="p-1 rounded-full hover:bg-gray-100">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
@@ -88,9 +88,9 @@ export function VoiceFAB() {
       {(isListening || feedback || transcript) && (
         <div
           className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#5C3D11] text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-lg max-w-xs text-center"
-          dir="rtl"
+          dir={dir}
         >
-          {feedback || (isListening ? (transcript || "أستمع...") : "")}
+          {feedback || (isListening ? (transcript || t("voice.listening")) : "")}
         </div>
       )}
 
@@ -110,8 +110,8 @@ export function VoiceFAB() {
             : "bg-gradient-to-br from-[#C9A84C] to-[#8B6914] shadow-[#C9A84C]/40"
         }`}
         style={isListening ? { boxShadow: "0 0 0 8px rgba(239,68,68,0.2)" } : {}}
-        aria-label={isListening ? "إيقاف الاستماع" : "بدء الأوامر الصوتية"}
-        title="اضغط مطولاً لعرض الأوامر"
+        aria-label={isListening ? t("voice.stopListening") : t("voice.startListening")}
+        title={isListening ? t("voice.stopListening") : t("voice.startListening")}
       >
         {isListening ? (
           <MicOff className="w-6 h-6 text-white" />

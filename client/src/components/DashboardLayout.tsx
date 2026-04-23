@@ -28,6 +28,7 @@ import { Coins, LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Page 1", path: "/" },
@@ -84,6 +85,7 @@ function DashboardLayoutContent({
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -195,7 +197,7 @@ function DashboardLayoutContent({
                   <div className="group-data-[collapsible=icon]:hidden flex items-center justify-between px-1 py-1.5 rounded-lg bg-accent/30">
                     <div className="flex items-center gap-1.5">
                       <Coins className="h-3.5 w-3.5 text-amber-500" />
-                      <span className="text-xs text-muted-foreground">رصيدك</span>
+                      <span className="text-xs text-muted-foreground">{t("credit.yourBalance")}</span>
                     </div>
                     <Badge
                       variant={balanceData.balance < 20 ? "destructive" : "secondary"}
@@ -230,7 +232,7 @@ function DashboardLayoutContent({
                         <div className="flex items-center justify-between px-2 py-1.5">
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Coins className="h-3 w-3 text-amber-500" />
-                            رصيد الكريدت
+                            {t("credit.yourBalance")}
                           </span>
                           <span className="text-xs font-semibold">
                             {balanceData.balance.toLocaleString("ar-SA")}
@@ -242,7 +244,7 @@ function DashboardLayoutContent({
                             className="cursor-pointer text-amber-600 focus:text-amber-600 text-xs"
                           >
                             <Coins className="mr-2 h-3.5 w-3.5" />
-                            شراء كريدت إضافي
+                            {t("credit.buy")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -253,7 +255,7 @@ function DashboardLayoutContent({
                       className="cursor-pointer text-destructive focus:text-destructive"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>تسجيل الخروج</span>
+                      <span>{t("nav.logout")}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

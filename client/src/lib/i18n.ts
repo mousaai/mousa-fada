@@ -466,10 +466,135 @@ export type TranslationKey =
   | "ui.add"
   | "ui.colorName"
   | "ui.editColor"
+
+  | "chat.analysisError"
+  | "chat.expert.title"
+  | "chat.imageError"
+  | "chat.imageUploaded"
+  | "chat.linkProject"
+  | "chat.loginRequired"
+  | "chat.noProject"
+  | "chat.quickQuestion"
+  | "chat.sendError"
+  | "chat.session.element"
+  | "chat.session.element.desc"
+  | "chat.session.floorPlan"
+  | "chat.session.floorPlan.desc"
+  | "chat.session.general"
+  | "chat.session.general.desc"
+  | "chat.session.scan360"
+  | "chat.session.scan360.desc"
+  | "chat.welcome.subtitle"
+  | "chat.welcome.title"
+  | "credit.balance"
+  | "credit.buy"
+  | "credit.empty"
+  | "credit.hello"
+  | "credit.link"
+  | "credit.linkDesc"
+  | "credit.linkTitle"
+  | "credit.login"
+  | "credit.loginDesc"
+  | "credit.loginTitle"
+  | "credit.low"
+  | "credit.refresh"
+  | "credit.yourBalance"
+  | "voice.commands.title"
+  | "voice.help"
+  | "voice.hint1"
+  | "voice.hint2"
+  | "voice.hint3"
+  | "voice.hint4"
+  | "voice.hint5"
+  | "voice.openAR"
+  | "voice.openAnalyze"
+  | "voice.openChat"
+  | "voice.openCosts"
+  | "voice.openMoodboard"
+  | "voice.openProjects"
+  | "voice.openStudio"
+  | "voice.startListening"
+  | "voice.stop"
+  | "voice.stopListening"
+  | "ar.scanning"
+  | "costs.area"
+  | "costs.calculate"
+  | "costs.level"
+  | "costs.total"
+  | "ideas.category"
+  | "mood.create"
+  | "mood.title"
+  | "projects.name"
+  | "projects.new"
+  | "projects.start"
+  | "sc.benefit"
+  | "sc.direction"
+  | "sc.level"
+  | "sc.materials"
+  | "sc.perspective"
+  | "sc.reason"
+  | "sc.specialist"
+  | "sc.treatment"
+  | "sc.untouched"
+  | "ar.startScan"
+  | "ar.stopScan"
+  | "ar.scanSpace"
+  | "mood.addImage"
+  | "projects.confirmDelete"
+  | "projects.createdAt"
+  | "projects.roomType"
+  | "projects.updatedAt"
+  | "sc.analyzeFrame"
+  | "sc.colorPalette"
+  | "sc.currentDesign"
+  | "sc.currentMaterials"
+  | "sc.designFeatures"
+  | "sc.designImage"
+  | "sc.designLimits"
+  | "sc.noProducts"
+  | "sc.searchingBinyan"
+  | "sc.structuralSuggestions"
+  | "sc.zoom"
+  | "sc.alyaziaFeatures"
+  | "store.addToProject"
+  | "store.price"
+  | "store.vendor"
+  | "studio.budget"
+  | "studio.chooseRoom"
+  | "studio.chooseStyle"
+  | "studio.descPlaceholder"
+  | "studio.room"
+  | "ui.capturePhoto"
+  | "ui.chooseImage"
+  | "ui.copied"
+  | "ui.copy"
+  | "ui.delete"
+  | "ui.description"
+  | "ui.details"
+  | "ui.download"
+  | "ui.edit"
+  | "ui.errorOccurred"
+  | "ui.less"
+  | "ui.loading2"
+  | "ui.more"
+  | "ui.ok"
+  | "ui.prev"
+  | "ui.preview"
+  | "ui.reset"
+  | "ui.share"
+  | "ui.start"
+  | "ui.success"
+  | "ui.uploadImage"
+  | "ui.viewAll"
+  | "ui.wait"
+  | "voice.design.title"
+  | "voice.listening2"
+  | "voice.pressToSpeak"
+  | "home.planDesign.title"
+  | "home.planDesign.desc"
   ;
 
-type Translations = Record<TranslationKey, string>;
-
+type Translations = Record<TranslationKey, string>
 export const translations: Record<Language, Translations> = {
   ar: {
     // App & Navigation
@@ -916,7 +1041,132 @@ export const translations: Record<Language, Translations> = {
     "voice.page.walls": "الجدران",
     "voice.page.window": "نافذة",
     "voice.page.windows": "النوافذ",
-  },
+    "sc.analyzeFrame": "تحليل الإطار",
+    "sc.designImage": "صورة التصميم",
+    "sc.colorPalette": "لوحة الألوان",
+    "sc.materials": "المواد والتشطيبات المقترحة",
+    "sc.currentMaterials": "المواد الحالية",
+    "sc.structuralSuggestions": "مقترحات تحسين بنيوية",
+    "sc.noProducts": "لم يتم العثور على منتجات مطابقة حالياً",
+    "sc.designFeatures": "مزايا ومميزات التصميم",
+    "sc.alyaziaFeatures": "م. اليازية | مزايا التصميم",
+    "sc.searchingBinyan": "م. اليازية تبحث في متاجر بنيان...",
+    "sc.designLimits": "حدود التصميم:",
+    "sc.perspective": "المنظور:",
+    "sc.untouched": "لا يُمَس:",
+    "sc.benefit": "الفائدة:",
+    "sc.level": "المستوى:",
+    "sc.treatment": "المعالجة:",
+    "sc.reason": "السبب:",
+    "sc.specialist": "المختص:",
+    "sc.direction": "الاتجاه:",
+    "sc.zoom": "الزوم:",
+    "sc.currentDesign": "التصميم الحالي",
+    "projects.new": "مشروع جديد",
+    "projects.start": "ابدأ مشروعك الأول",
+    "ui.delete": "حذف",
+    "ui.edit": "تعديل",
+    "ui.download": "تحميل",
+    "ui.share": "مشاركة",
+    "ui.copy": "نسخ",
+    "ui.copied": "تم النسخ",
+    "ui.success": "نجاح",
+    "ui.loading2": "جاري التحميل",
+    "studio.chooseStyle": "اختر النمط",
+    "studio.room": "الغرفة",
+    "studio.chooseRoom": "اختر الغرفة",
+    "studio.budget": "الميزانية",
+    "studio.descPlaceholder": "أضف وصفاً للتصميم المطلوب",
+    "voice.design.title": "التصميم بالصوت",
+    "voice.pressToSpeak": "اضغط للتحدث",
+    "voice.listening2": "جاري الاستماع",
+    "ar.scanSpace": "مسح الفضاء",
+    "ar.startScan": "ابدأ المسح",
+    "ar.stopScan": "إيقاف المسح",
+    "ar.scanning": "جاري المسح",
+    "ideas.category": "الفئة",
+    "store.addToProject": "إضافة إلى المشروع",
+    "store.price": "السعر",
+    "store.vendor": "المتجر",
+    "mood.title": "لوحة الإلهام",
+    "mood.addImage": "إضافة صورة",
+    "mood.create": "إنشاء لوحة",
+    "costs.area": "المساحة",
+    "costs.level": "المستوى",
+    "costs.calculate": "احسب التكلفة",
+    "costs.total": "التكلفة الإجمالية",
+    "ui.wait": "الرجاء الانتظار",
+    "ui.errorOccurred": "حدث خطأ",
+    "ui.prev": "السابق",
+    "ui.viewAll": "عرض الكل",
+    "ui.more": "مزيد",
+    "ui.less": "أقل",
+    "ui.ok": "موافق",
+    "ui.start": "ابدأ",
+    "ui.reset": "إعادة",
+    "ui.uploadImage": "رفع صورة",
+    "ui.capturePhoto": "التقاط صورة",
+    "ui.chooseImage": "اختر صورة",
+    "ui.preview": "معاينة",
+    "ui.details": "تفاصيل",
+    "ui.description": "وصف",
+    "projects.name": "اسم المشروع",
+    "projects.roomType": "نوع الغرفة",
+    "projects.createdAt": "تاريخ الإنشاء",
+    "projects.updatedAt": "آخر تحديث",
+    "projects.confirmDelete": "تأكيد الحذف",
+    "home.planDesign.title": "صمّم من المخطط",
+    "home.planDesign.desc": "ارفع مخططك واحصل على تصميم كامل",
+    "chat.analysisError": "خطأ في تحليل الصورة",
+    "chat.expert.title": "م. اليازية - خبيرة التصميم",
+    "chat.imageError": "خطأ في رفع الصورة",
+    "chat.imageUploaded": "تم رفع الصورة بنجاح",
+    "chat.linkProject": "ربط بمشروع",
+    "chat.loginRequired": "يجب تسجيل الدخول أولاً",
+    "chat.noProject": "لا يوجد مشروع محدد",
+    "chat.quickQuestion": "سؤال سريع",
+    "chat.sendError": "خطأ في الإرسال",
+    "chat.session.element": "عنصر محدد",
+    "chat.session.element.desc": "ناقش عنصراً معيناً في التصميم",
+    "chat.session.floorPlan": "مسقط الطابق",
+    "chat.session.floorPlan.desc": "تحليل وتعديل المسقط المعماري",
+    "chat.session.general": "محادثة عامة",
+    "chat.session.general.desc": "استشارة تصميم عامة مع م. اليازية",
+    "chat.session.scan360": "مسح 360°",
+    "chat.session.scan360.desc": "تحليل مسح الغرفة الكامل",
+    "chat.welcome.subtitle": "اسألني عن أي شيء في التصميم الداخلي",
+    "chat.welcome.title": "مرحباً! أنا م. اليازية",
+    "credit.balance": "الرصيد",
+    "credit.buy": "شراء كريدت",
+    "credit.empty": "رصيدك فارغ",
+    "credit.hello": "مرحباً",
+    "credit.link": "ربط الحساب",
+    "credit.linkDesc": "اربط حسابك للحصول على كريدت مجاني",
+    "credit.linkTitle": "احصل على كريدت مجاني",
+    "credit.login": "تسجيل الدخول",
+    "credit.loginDesc": "سجّل دخولك للحصول على كريدت مجاني",
+    "credit.loginTitle": "سجّل دخولك",
+    "credit.low": "رصيد منخفض",
+    "credit.refresh": "تحديث الرصيد",
+    "credit.yourBalance": "رصيدك",
+    "voice.commands.title": "الأوامر الصوتية",
+    "voice.help": "مساعدة",
+    "voice.hint1": "قل «افتح التحليل» للذهاب للتحليل",
+    "voice.hint2": "قل «افتح الاستوديو» للذهاب للاستوديو",
+    "voice.hint3": "قل «افتح المشاريع» للذهاب للمشاريع",
+    "voice.hint4": "قل «افتح المحادثة» للذهاب للمحادثة",
+    "voice.hint5": "قل «افتح التكاليف» للذهاب للتكاليف",
+    "voice.openAR": "افتح المسح الثلاثي",
+    "voice.openAnalyze": "افتح التحليل",
+    "voice.openChat": "افتح المحادثة",
+    "voice.openCosts": "افتح التكاليف",
+    "voice.openMoodboard": "افتح لوحة الإلهام",
+    "voice.openProjects": "افتح المشاريع",
+    "voice.openStudio": "افتح الاستوديو",
+    "voice.startListening": "ابدأ الاستماع",
+    "voice.stop": "إيقاف",
+    "voice.stopListening": "إيقاف الاستماع"
+},
 
   en: {
     // App & Navigation
@@ -1363,7 +1613,132 @@ export const translations: Record<Language, Translations> = {
     "voice.page.walls": "Walls",
     "voice.page.window": "window",
     "voice.page.windows": "Windows",
-  },
+    "sc.analyzeFrame": "Analyze Frame",
+    "sc.designImage": "Design Image",
+    "sc.colorPalette": "Color Palette",
+    "sc.materials": "Suggested Materials & Finishes",
+    "sc.currentMaterials": "Current Materials",
+    "sc.structuralSuggestions": "Structural Improvement Suggestions",
+    "sc.noProducts": "No matching products found",
+    "sc.designFeatures": "Design Features & Benefits",
+    "sc.alyaziaFeatures": "Eng. Alyazia | Design Features",
+    "sc.searchingBinyan": "Eng. Alyazia is searching Binyan stores...",
+    "sc.designLimits": "Design Limits:",
+    "sc.perspective": "Perspective:",
+    "sc.untouched": "Untouched:",
+    "sc.benefit": "Benefit:",
+    "sc.level": "Level:",
+    "sc.treatment": "Treatment:",
+    "sc.reason": "Reason:",
+    "sc.specialist": "Specialist:",
+    "sc.direction": "Direction:",
+    "sc.zoom": "Zoom:",
+    "sc.currentDesign": "Current Design",
+    "projects.new": "New Project",
+    "projects.start": "Start your first project",
+    "ui.delete": "Delete",
+    "ui.edit": "Edit",
+    "ui.download": "Download",
+    "ui.share": "Share",
+    "ui.copy": "Copy",
+    "ui.copied": "Copied!",
+    "ui.success": "Success",
+    "ui.loading2": "Loading...",
+    "studio.chooseStyle": "Choose Style",
+    "studio.room": "Room",
+    "studio.chooseRoom": "Choose Room",
+    "studio.budget": "Budget",
+    "studio.descPlaceholder": "Add a description of the desired design",
+    "voice.design.title": "Voice Design",
+    "voice.pressToSpeak": "Press to speak",
+    "voice.listening2": "Listening...",
+    "ar.scanSpace": "Scan Space",
+    "ar.startScan": "Start Scan",
+    "ar.stopScan": "Stop Scan",
+    "ar.scanning": "Scanning...",
+    "ideas.category": "Category",
+    "store.addToProject": "Add to Project",
+    "store.price": "Price",
+    "store.vendor": "Store",
+    "mood.title": "Mood Board",
+    "mood.addImage": "Add Image",
+    "mood.create": "Create Board",
+    "costs.area": "Area",
+    "costs.level": "Level",
+    "costs.calculate": "Calculate Cost",
+    "costs.total": "Total Cost",
+    "ui.wait": "Please wait",
+    "ui.errorOccurred": "An error occurred",
+    "ui.prev": "Previous",
+    "ui.viewAll": "View All",
+    "ui.more": "More",
+    "ui.less": "Less",
+    "ui.ok": "OK",
+    "ui.start": "Start",
+    "ui.reset": "Reset",
+    "ui.uploadImage": "Upload Image",
+    "ui.capturePhoto": "Capture Photo",
+    "ui.chooseImage": "Choose Image",
+    "ui.preview": "Preview",
+    "ui.details": "Details",
+    "ui.description": "Description",
+    "projects.name": "Project Name",
+    "projects.roomType": "Room Type",
+    "projects.createdAt": "Created At",
+    "projects.updatedAt": "Last Updated",
+    "projects.confirmDelete": "Confirm Delete",
+    "home.planDesign.title": "Design from Plan",
+    "home.planDesign.desc": "Upload your plan and get a full design",
+    "chat.analysisError": "Image analysis error",
+    "chat.expert.title": "Eng. Alyazia - Design Expert",
+    "chat.imageError": "Image upload error",
+    "chat.imageUploaded": "Image uploaded successfully",
+    "chat.linkProject": "Link to project",
+    "chat.loginRequired": "Login required",
+    "chat.noProject": "No project selected",
+    "chat.quickQuestion": "Quick question",
+    "chat.sendError": "Send error",
+    "chat.session.element": "Specific element",
+    "chat.session.element.desc": "Discuss a specific design element",
+    "chat.session.floorPlan": "Floor Plan",
+    "chat.session.floorPlan.desc": "Analyze and modify the floor plan",
+    "chat.session.general": "General chat",
+    "chat.session.general.desc": "General design consultation with Eng. Alyazia",
+    "chat.session.scan360": "360° Scan",
+    "chat.session.scan360.desc": "Analyze full room scan",
+    "chat.welcome.subtitle": "Ask me anything about interior design",
+    "chat.welcome.title": "Hello! I'm Eng. Alyazia",
+    "credit.balance": "Balance",
+    "credit.buy": "Buy Credits",
+    "credit.empty": "Your balance is empty",
+    "credit.hello": "Hello",
+    "credit.link": "Link Account",
+    "credit.linkDesc": "Link your account to get free credits",
+    "credit.linkTitle": "Get Free Credits",
+    "credit.login": "Login",
+    "credit.loginDesc": "Login to get free credits",
+    "credit.loginTitle": "Login Now",
+    "credit.low": "Low balance",
+    "credit.refresh": "Refresh balance",
+    "credit.yourBalance": "Your balance",
+    "voice.commands.title": "Voice Commands",
+    "voice.help": "Help",
+    "voice.hint1": "Say open analysis to go to analysis",
+    "voice.hint2": "Say open studio to go to studio",
+    "voice.hint3": "Say open projects to go to projects",
+    "voice.hint4": "Say open chat to go to chat",
+    "voice.hint5": "Say open costs to go to costs",
+    "voice.openAR": "Open AR Scan",
+    "voice.openAnalyze": "Open Analysis",
+    "voice.openChat": "Open Chat",
+    "voice.openCosts": "Open Costs",
+    "voice.openMoodboard": "Open Mood Board",
+    "voice.openProjects": "Open Projects",
+    "voice.openStudio": "Open Studio",
+    "voice.startListening": "Start listening",
+    "voice.stop": "Stop",
+    "voice.stopListening": "Stop listening"
+},
 
   ur: {
     // App & Navigation
@@ -1810,7 +2185,132 @@ export const translations: Record<Language, Translations> = {
     "voice.page.walls": "دیواریں",
     "voice.page.window": "کھڑکی",
     "voice.page.windows": "کھڑکیاں",
-  },
+    "sc.analyzeFrame": "فریم تجزیہ",
+    "sc.designImage": "ڈیزائن تصویر",
+    "sc.colorPalette": "رنگ پیلیٹ",
+    "sc.materials": "تجویز کردہ مواد",
+    "sc.currentMaterials": "موجودہ مواد",
+    "sc.structuralSuggestions": "ساختی بہتری",
+    "sc.noProducts": "کوئی مصنوعات نہیں",
+    "sc.designFeatures": "ڈیزائن کی خصوصیات",
+    "sc.alyaziaFeatures": "م. الیازیہ | خصوصیات",
+    "sc.searchingBinyan": "بنیان اسٹورز میں تلاش",
+    "sc.designLimits": "ڈیزائن کی حدود:",
+    "sc.perspective": "نقطہ نظر:",
+    "sc.untouched": "بدون تبدیلی:",
+    "sc.benefit": "فائدہ:",
+    "sc.level": "سطح:",
+    "sc.treatment": "علاج:",
+    "sc.reason": "وجہ:",
+    "sc.specialist": "ماہر:",
+    "sc.direction": "سمت:",
+    "sc.zoom": "زوم:",
+    "sc.currentDesign": "موجودہ ڈیزائن",
+    "projects.new": "نیا پروجیکٹ",
+    "projects.start": "اپنا پہلا پروجیکٹ شروع کریں",
+    "ui.delete": "حذف کریں",
+    "ui.edit": "ترمیم",
+    "ui.download": "ڈاؤن لوڈ",
+    "ui.share": "شیئر کریں",
+    "ui.copy": "کاپی",
+    "ui.copied": "کاپی ہو گیا!",
+    "ui.success": "کامیابی",
+    "ui.loading2": "لوڈ ہو رہا ہے",
+    "studio.chooseStyle": "انداز منتخب کریں",
+    "studio.room": "کمرہ",
+    "studio.chooseRoom": "کمرہ منتخب کریں",
+    "studio.budget": "بجٹ",
+    "studio.descPlaceholder": "مطلوبہ ڈیزائن کی وضاحت",
+    "voice.design.title": "آواز سے ڈیزائن",
+    "voice.pressToSpeak": "بولنے کے لیے دبائیں",
+    "voice.listening2": "سن رہا ہے...",
+    "ar.scanSpace": "جگہ اسکین کریں",
+    "ar.startScan": "اسکین شروع کریں",
+    "ar.stopScan": "اسکین روکیں",
+    "ar.scanning": "اسکین ہو رہا ہے...",
+    "ideas.category": "زمرہ",
+    "store.addToProject": "پروجیکٹ میں شامل کریں",
+    "store.price": "قیمت",
+    "store.vendor": "اسٹور",
+    "mood.title": "موڈ بورڈ",
+    "mood.addImage": "تصویر شامل کریں",
+    "mood.create": "بورڈ بنائیں",
+    "costs.area": "رقبہ",
+    "costs.level": "سطح",
+    "costs.calculate": "لاگت حساب کریں",
+    "costs.total": "کل لاگت",
+    "ui.wait": "براہ کرم انتظار کریں",
+    "ui.errorOccurred": "ایک خطا ہوئی",
+    "ui.prev": "پچھلا",
+    "ui.viewAll": "سب دیکھیں",
+    "ui.more": "مزید",
+    "ui.less": "کم",
+    "ui.ok": "ٹھیک ہے",
+    "ui.start": "شروع کریں",
+    "ui.reset": "دوبارہ ترتیب",
+    "ui.uploadImage": "تصویر اپ لوڈ کریں",
+    "ui.capturePhoto": "تصویر کھینچیں",
+    "ui.chooseImage": "تصویر منتخب کریں",
+    "ui.preview": "پیش نظارہ",
+    "ui.details": "تفصیلات",
+    "ui.description": "وضاحت",
+    "projects.name": "پروجیکٹ کا نام",
+    "projects.roomType": "کمرے کی قسم",
+    "projects.createdAt": "بنانے کی تاریخ",
+    "projects.updatedAt": "آخری اپ ڈیٹ",
+    "projects.confirmDelete": "حذف کی تصدیق",
+    "home.planDesign.title": "پلان سے ڈیزائن",
+    "home.planDesign.desc": "اپنا پلان اپ لوڈ کریں",
+    "chat.analysisError": "تصویر تجزیہ خطا",
+    "chat.expert.title": "م. الیازیہ - ڈیزائن ماہر",
+    "chat.imageError": "تصویر اپ لوڈ خطا",
+    "chat.imageUploaded": "تصویر کامیابی سے اپ لوڈ ہوئی",
+    "chat.linkProject": "پروجیکٹ سے لنک کریں",
+    "chat.loginRequired": "لاگ ان ضروری ہے",
+    "chat.noProject": "کوئی پروجیکٹ منتخب نہیں",
+    "chat.quickQuestion": "فوری سوال",
+    "chat.sendError": "بھیجنے میں خطا",
+    "chat.session.element": "مخصوص عنصر",
+    "chat.session.element.desc": "ڈیزائن کے مخصوص عنصر پر بات کریں",
+    "chat.session.floorPlan": "فلور پلان",
+    "chat.session.floorPlan.desc": "فلور پلان کا تجزیہ اور ترمیم",
+    "chat.session.general": "عام گفتگو",
+    "chat.session.general.desc": "م. الیازیہ کے ساتھ عام ڈیزائن مشاورت",
+    "chat.session.scan360": "360° اسکین",
+    "chat.session.scan360.desc": "مکمل کمرے کا اسکین تجزیہ",
+    "chat.welcome.subtitle": "اندرونی ڈیزائن کے بارے میں کچھ بھی پوچھیں",
+    "chat.welcome.title": "ہیلو! میں م. الیازیہ ہوں",
+    "credit.balance": "بیلنس",
+    "credit.buy": "کریڈٹ خریدیں",
+    "credit.empty": "آپ کا بیلنس خالی ہے",
+    "credit.hello": "ہیلو",
+    "credit.link": "اکاؤنٹ لنک کریں",
+    "credit.linkDesc": "مفت کریڈٹ کے لیے اکاؤنٹ لنک کریں",
+    "credit.linkTitle": "مفت کریڈٹ حاصل کریں",
+    "credit.login": "لاگ ان",
+    "credit.loginDesc": "مفت کریڈٹ کے لیے لاگ ان کریں",
+    "credit.loginTitle": "ابھی لاگ ان کریں",
+    "credit.low": "کم بیلنس",
+    "credit.refresh": "بیلنس تازہ کریں",
+    "credit.yourBalance": "آپ کا بیلنس",
+    "voice.commands.title": "آواز کے احکامات",
+    "voice.help": "مدد",
+    "voice.hint1": "تجزیہ کھولنے کے لیے 'تجزیہ کھولیں' کہیں",
+    "voice.hint2": "اسٹوڈیو کھولنے کے لیے 'اسٹوڈیو کھولیں' کہیں",
+    "voice.hint3": "پروجیکٹس کھولنے کے لیے 'پروجیکٹس کھولیں' کہیں",
+    "voice.hint4": "چیٹ کھولنے کے لیے 'چیٹ کھولیں' کہیں",
+    "voice.hint5": "اخراجات کھولنے کے لیے 'اخراجات کھولیں' کہیں",
+    "voice.openAR": "AR اسکین کھولیں",
+    "voice.openAnalyze": "تجزیہ کھولیں",
+    "voice.openChat": "چیٹ کھولیں",
+    "voice.openCosts": "اخراجات کھولیں",
+    "voice.openMoodboard": "موڈ بورڈ کھولیں",
+    "voice.openProjects": "پروجیکٹس کھولیں",
+    "voice.openStudio": "اسٹوڈیو کھولیں",
+    "voice.startListening": "سننا شروع کریں",
+    "voice.stop": "روکیں",
+    "voice.stopListening": "سننا بند کریں"
+},
 
   fr: {
     // App & Navigation
@@ -2257,7 +2757,132 @@ export const translations: Record<Language, Translations> = {
     "voice.page.walls": "Murs",
     "voice.page.window": "fenêtre",
     "voice.page.windows": "Fenêtres",
-  },
+    "sc.analyzeFrame": "Analyser le cadre",
+    "sc.designImage": "Image de design",
+    "sc.colorPalette": "Palette de couleurs",
+    "sc.materials": "Matériaux suggérés",
+    "sc.currentMaterials": "Matériaux actuels",
+    "sc.structuralSuggestions": "Suggestions structurelles",
+    "sc.noProducts": "Aucun produit trouvé",
+    "sc.designFeatures": "Caractéristiques du design",
+    "sc.alyaziaFeatures": "Ing. Alyazia | Caractéristiques",
+    "sc.searchingBinyan": "Recherche dans les magasins Binyan...",
+    "sc.designLimits": "Limites du design:",
+    "sc.perspective": "Perspective:",
+    "sc.untouched": "Intouché:",
+    "sc.benefit": "Avantage:",
+    "sc.level": "Niveau:",
+    "sc.treatment": "Traitement:",
+    "sc.reason": "Raison:",
+    "sc.specialist": "Spécialiste:",
+    "sc.direction": "Direction:",
+    "sc.zoom": "Zoom:",
+    "sc.currentDesign": "Design actuel",
+    "projects.new": "Nouveau projet",
+    "projects.start": "Commencez votre premier projet",
+    "ui.delete": "Supprimer",
+    "ui.edit": "Modifier",
+    "ui.download": "Télécharger",
+    "ui.share": "Partager",
+    "ui.copy": "Copier",
+    "ui.copied": "Copié!",
+    "ui.success": "Succès",
+    "ui.loading2": "Chargement en cours",
+    "studio.chooseStyle": "Choisir le style",
+    "studio.room": "Pièce",
+    "studio.chooseRoom": "Choisir la pièce",
+    "studio.budget": "Budget",
+    "studio.descPlaceholder": "Ajoutez une description du design souhaité",
+    "voice.design.title": "Design vocal",
+    "voice.pressToSpeak": "Appuyez pour parler",
+    "voice.listening2": "Écoute en cours...",
+    "ar.scanSpace": "Scanner l'espace",
+    "ar.startScan": "Démarrer le scan",
+    "ar.stopScan": "Arrêter le scan",
+    "ar.scanning": "Scan en cours...",
+    "ideas.category": "Catégorie",
+    "store.addToProject": "Ajouter au projet",
+    "store.price": "Prix",
+    "store.vendor": "Magasin",
+    "mood.title": "Tableau d'humeur",
+    "mood.addImage": "Ajouter une image",
+    "mood.create": "Créer un tableau",
+    "costs.area": "Surface",
+    "costs.level": "Niveau",
+    "costs.calculate": "Calculer le coût",
+    "costs.total": "Coût total",
+    "ui.wait": "Veuillez patienter",
+    "ui.errorOccurred": "Une erreur s'est produite",
+    "ui.prev": "Précédent",
+    "ui.viewAll": "Voir tout",
+    "ui.more": "Plus",
+    "ui.less": "Moins",
+    "ui.ok": "OK",
+    "ui.start": "Commencer",
+    "ui.reset": "Réinitialiser",
+    "ui.uploadImage": "Télécharger une image",
+    "ui.capturePhoto": "Prendre une photo",
+    "ui.chooseImage": "Choisir une image",
+    "ui.preview": "Aperçu",
+    "ui.details": "Détails",
+    "ui.description": "Description",
+    "projects.name": "Nom du projet",
+    "projects.roomType": "Type de pièce",
+    "projects.createdAt": "Date de création",
+    "projects.updatedAt": "Dernière mise à jour",
+    "projects.confirmDelete": "Confirmer la suppression",
+    "home.planDesign.title": "Concevoir depuis le plan",
+    "home.planDesign.desc": "Téléchargez votre plan et obtenez un design",
+    "chat.analysisError": "Erreur d'analyse d'image",
+    "chat.expert.title": "Ing. Alyazia - Expert en design",
+    "chat.imageError": "Erreur de téléchargement d'image",
+    "chat.imageUploaded": "Image téléchargée avec succès",
+    "chat.linkProject": "Lier à un projet",
+    "chat.loginRequired": "Connexion requise",
+    "chat.noProject": "Aucun projet sélectionné",
+    "chat.quickQuestion": "Question rapide",
+    "chat.sendError": "Erreur d'envoi",
+    "chat.session.element": "Élément spécifique",
+    "chat.session.element.desc": "Discuter d'un élément de design spécifique",
+    "chat.session.floorPlan": "Plan d'étage",
+    "chat.session.floorPlan.desc": "Analyser et modifier le plan d'étage",
+    "chat.session.general": "Chat général",
+    "chat.session.general.desc": "Consultation générale avec Ing. Alyazia",
+    "chat.session.scan360": "Scan 360°",
+    "chat.session.scan360.desc": "Analyser le scan complet de la pièce",
+    "chat.welcome.subtitle": "Posez-moi des questions sur le design intérieur",
+    "chat.welcome.title": "Bonjour! Je suis Ing. Alyazia",
+    "credit.balance": "Solde",
+    "credit.buy": "Acheter des crédits",
+    "credit.empty": "Votre solde est vide",
+    "credit.hello": "Bonjour",
+    "credit.link": "Lier le compte",
+    "credit.linkDesc": "Liez votre compte pour obtenir des crédits gratuits",
+    "credit.linkTitle": "Obtenir des crédits gratuits",
+    "credit.login": "Connexion",
+    "credit.loginDesc": "Connectez-vous pour obtenir des crédits gratuits",
+    "credit.loginTitle": "Connectez-vous maintenant",
+    "credit.low": "Solde faible",
+    "credit.refresh": "Actualiser le solde",
+    "credit.yourBalance": "Votre solde",
+    "voice.commands.title": "Commandes vocales",
+    "voice.help": "Aide",
+    "voice.hint1": "Dites ouvrir l'analyse pour aller à l'analyse",
+    "voice.hint2": "Dites ouvrir le studio pour aller au studio",
+    "voice.hint3": "Dites ouvrir les projets pour aller aux projets",
+    "voice.hint4": "Dites ouvrir le chat pour aller au chat",
+    "voice.hint5": "Dites ouvrir les coûts pour aller aux coûts",
+    "voice.openAR": "Ouvrir le scan AR",
+    "voice.openAnalyze": "Ouvrir l'analyse",
+    "voice.openChat": "Ouvrir le chat",
+    "voice.openCosts": "Ouvrir les coûts",
+    "voice.openMoodboard": "Ouvrir le tableau d'humeur",
+    "voice.openProjects": "Ouvrir les projets",
+    "voice.openStudio": "Ouvrir le studio",
+    "voice.startListening": "Commencer à écouter",
+    "voice.stop": "Arrêter",
+    "voice.stopListening": "Arrêter d'écouter"
+},
 };
 
 export function t(lang: Language, key: TranslationKey): string {

@@ -187,11 +187,11 @@ export default function Home() {
         <div>
           <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B6914] flex items-center justify-center text-white font-bold text-sm">
-                {user?.name?.[0] || "م"}
+                {user?.name?.[0] || "M"}
               </div>
               <div>
                 <p className="text-xs text-[#8B6914]/70">{t("home.welcome")}</p>
-                <p className="text-sm font-bold text-[#5C3D11]">{user?.name?.split(" ")[0] || "زائر"}</p>
+                <p className="text-sm font-bold text-[#5C3D11]">{user?.name?.split(" ")[0] || "---"}</p>
               </div>
               <CreditBadge />
             </div>
@@ -272,8 +272,8 @@ export default function Home() {
               <FileText className="w-7 h-7 text-blue-700" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold text-blue-800">صمّم من المخطط</p>
-              <p className="text-[10px] text-blue-700/60 mt-0.5">ارفع مخططك واحصل على تصميم</p>
+              <p className="text-sm font-bold text-blue-800">{t("plan.title")}</p>
+              <p className="text-[10px] text-blue-700/60 mt-0.5">{t("plan.subtitle")}</p>
             </div>
           </button>
 
@@ -286,8 +286,8 @@ export default function Home() {
               <Map className="w-7 h-7 text-green-700" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold text-green-800">التصميم الحضري</p>
-              <p className="text-[10px] text-green-700/60 mt-0.5">أحياء، شوارع، مناطق عامة</p>
+              <p className="text-sm font-bold text-green-800">{t("urban.title")}</p>
+              <p className="text-[10px] text-green-700/60 mt-0.5">{t("urban.subtitle")}</p>
             </div>
           </button>
         </div>
