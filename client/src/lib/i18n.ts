@@ -592,6 +592,187 @@ export type TranslationKey =
   | "voice.pressToSpeak"
   | "home.planDesign.title"
   | "home.planDesign.desc"
+  | "studio.login_required"
+  | "studio.back_home"
+  | "studio.step_project"
+  | "studio.step_identity"
+  | "studio.step_floors"
+  | "studio.step_walls"
+  | "studio.step_ceilings"
+  | "studio.step_doors"
+  | "studio.step_lighting"
+  | "studio.step_furniture"
+  | "studio.step_perspective"
+  | "studio.style_modern"
+  | "studio.style_gulf"
+  | "studio.style_classic"
+  | "studio.style_minimal"
+  | "studio.style_japanese"
+  | "studio.style_scandinavian"
+  | "studio.style_mediterranean"
+  | "studio.style_industrial"
+  | "studio.style_moroccan"
+  | "studio.style_luxury"
+  | "studio.budget_economic"
+  | "studio.budget_medium"
+  | "studio.budget_luxury"
+  | "studio.budget_premium"
+  | "studio.select_project"
+  | "studio.new_project"
+  | "studio.select_room"
+  | "studio.design_element"
+  | "studio.generate_perspective"
+  | "studio.select_project_first"
+  | "studio.design_success"
+  | "studio.design_error"
+  | "studio.perspective_success"
+  | "studio.perspective_error"
+  | "studio.room_living"
+  | "studio.room_master"
+  | "studio.room_bedroom"
+  | "studio.room_kitchen"
+  | "studio.room_bathroom"
+  | "studio.room_office"
+  | "studio.room_dining"
+  | "studio.room_kids"
+  | "studio.room_majlis"
+  | "studio.room_entrance"
+  | "studio.visual_identity"
+  | "studio.select_style"
+  | "studio.select_budget"
+  | "studio.next"
+  | "studio.prev"
+  | "studio.designing"
+  | "studio.progress"
+  | "studio.completed"
+  | "studio.projects_link"
+  | "studio.chat_link"
+  | "voice.start"
+  | "voice.generating"
+  | "voice.result"
+  | "voice.try_again"
+  | "voice.save"
+  | "voice.saved"
+  | "voice.error_mic"
+  | "voice.error_process"
+  | "voice.placeholder"
+  | "voice.login_required"
+  | "sc.title"
+  | "sc.upload_photo"
+  | "sc.take_photo"
+  | "sc.analyzing"
+  | "sc.analysis_result"
+  | "sc.design_suggestion"
+  | "sc.save_result"
+  | "sc.new_analysis"
+  | "sc.no_image"
+  | "sc.error"
+  | "sc.scan_title"
+  | "sc.scan_subtitle"
+  | "sc.scan_start"
+  | "sc.scan_stop"
+  | "projects.empty_desc"
+  | "projects.type"
+  | "projects.delete_confirm"
+  | "projects.created"
+  | "projects.open"
+  | "projects.designs"
+  | "projects.last_updated"
+  | "projects.login_required"
+  | "projects.loading"
+  | "projects.error"
+  | "furniture.title"
+  | "furniture.subtitle"
+  | "furniture.search"
+  | "furniture.filter"
+  | "furniture.category"
+  | "furniture.price"
+  | "furniture.add_to_project"
+  | "furniture.view_details"
+  | "furniture.no_results"
+  | "furniture.loading"
+  | "furniture.beta_notice"
+  | "furniture.sofa"
+  | "furniture.bed"
+  | "furniture.table"
+  | "furniture.chair"
+  | "furniture.wardrobe"
+  | "mood.subtitle"
+  | "mood.add_image"
+  | "mood.add_color"
+  | "mood.save"
+  | "mood.clear"
+  | "mood.generate"
+  | "mood.empty"
+  | "mood.saved"
+  | "common.edit"
+  | "common.delete"
+  | "common.share"
+  | "common.download"
+  | "common.prev"
+  | "common.login"
+  | "common.logout"
+  | "common.profile"
+  | "common.settings"
+  | "common.guest"
+  | "common.free"
+  | "common.premium"
+  | "common.required"
+  | "common.optional"
+  | "common.success"
+  | "common.failed"
+  | "common.sar"
+  | "common.credits"
+  | "common.buy_credits"
+  | "common.insufficient_credits"
+  | "common.view_all"
+  | "common.see_more"
+  | "studio.consult"
+  | "studio.elements_done"
+  | "studio.choose_project"
+  | "studio.choose_project_desc"
+  | "studio.no_projects"
+  | "studio.create_project"
+  | "studio.room_area"
+  | "studio.area_m2"
+  | "studio.next_identity"
+  | "studio.visual_identity_desc"
+  | "studio.design_style"
+  | "studio.total_budget"
+  | "studio.identity_details"
+  | "studio.customized"
+  | "studio.reset_default"
+  | "studio.start_design"
+  | "studio.design_details"
+  | "studio.element_designed_success"
+  | "studio.overall_progress"
+  | "studio.room_hall"
+  | "studio.redesign"
+  | "studio.redesigning"
+  | "studio.design_me"
+  | "studio.perspective_generated"
+  | "studio.generate_new_perspective"
+  | "studio.generating_perspective"
+  | "studio.generate_full_perspective"
+  | "studio.perspective_generating"
+  | "studio.min_elements_warning"
+  | "studio.prev_step"
+  | "studio.next_step"
+  | "studio.designed_badge"
+  | "studio.sarah_tips"
+  | "studio.applied_identity"
+  | "studio.primary_color"
+  | "studio.secondary_color"
+  | "studio.accent_color"
+  | "studio.identity_warning"
+  | "studio.design_concept"
+  | "studio.harmony_note"
+  | "studio.cost_range"
+  | "studio.products"
+  | "studio.color_palette"
+  | "studio.installation_steps"
+  | "studio.professional_notes"
+  | "common.back_home"
   ;
 
 type Translations = Record<TranslationKey, string>
@@ -1165,9 +1346,189 @@ export const translations: Record<Language, Translations> = {
     "voice.openStudio": "افتح الاستوديو",
     "voice.startListening": "ابدأ الاستماع",
     "voice.stop": "إيقاف",
-    "voice.stopListening": "إيقاف الاستماع"
+    "voice.stopListening": "إيقاف الاستماع",
+    "studio.login_required": "يرجى تسجيل الدخول للوصول إلى استوديو التصميم",
+    "studio.back_home": "العودة للرئيسية",
+    "studio.step_project": "المشروع",
+    "studio.step_identity": "الهوية البصرية",
+    "studio.step_floors": "الأرضيات",
+    "studio.step_walls": "الجدران",
+    "studio.step_ceilings": "الأسقف",
+    "studio.step_doors": "الأبواب والنوافذ",
+    "studio.step_lighting": "الإضاءة",
+    "studio.step_furniture": "الأثاث",
+    "studio.step_perspective": "المنظور الكامل",
+    "studio.style_modern": "عصري حديث",
+    "studio.style_gulf": "خليجي أصيل",
+    "studio.style_classic": "كلاسيكي فاخر",
+    "studio.style_minimal": "مينيمال",
+    "studio.style_japanese": "ياباني زن",
+    "studio.style_scandinavian": "سكندنافي",
+    "studio.style_mediterranean": "متوسطي",
+    "studio.style_industrial": "صناعي",
+    "studio.style_moroccan": "مغربي",
+    "studio.style_luxury": "فاخر بريميوم",
+    "studio.budget_economic": "اقتصادي",
+    "studio.budget_medium": "متوسط",
+    "studio.budget_luxury": "فاخر",
+    "studio.budget_premium": "بريميوم",
+    "studio.select_project": "اختر مشروعاً",
+    "studio.new_project": "مشروع جديد",
+    "studio.select_room": "اختر الغرفة",
+    "studio.design_element": "صمّم هذا العنصر",
+    "studio.generate_perspective": "توليد المنظور الكامل",
+    "studio.select_project_first": "يرجى اختيار المشروع أولاً",
+    "studio.design_success": "تم التصميم بتناسق كامل!",
+    "studio.design_error": "حدث خطأ أثناء التصميم",
+    "studio.perspective_success": "تم توليد المنظور الكامل!",
+    "studio.perspective_error": "حدث خطأ أثناء توليد المنظور",
+    "studio.room_living": "غرفة المعيشة",
+    "studio.room_master": "غرفة النوم الرئيسية",
+    "studio.room_bedroom": "غرفة النوم",
+    "studio.room_kitchen": "المطبخ",
+    "studio.room_bathroom": "الحمام",
+    "studio.room_office": "المكتب",
+    "studio.room_dining": "غرفة الطعام",
+    "studio.room_kids": "غرفة الأطفال",
+    "studio.room_majlis": "المجلس",
+    "studio.room_entrance": "المدخل",
+    "studio.visual_identity": "الهوية البصرية",
+    "studio.select_style": "اختر النمط",
+    "studio.select_budget": "اختر الميزانية",
+    "studio.next": "التالي",
+    "studio.prev": "السابق",
+    "studio.designing": "جاري التصميم...",
+    "studio.progress": "التقدم",
+    "studio.completed": "مكتمل",
+    "studio.projects_link": "مشاريعي",
+    "studio.chat_link": "استشر م. الياز",
+    "voice.start": "ابدأ التسجيل",
+    "voice.generating": "جاري التصميم...",
+    "voice.result": "نتيجة التصميم",
+    "voice.try_again": "جرب مجدداً",
+    "voice.save": "حفظ التصميم",
+    "voice.saved": "تم الحفظ بنجاح",
+    "voice.error_mic": "تعذر الوصول إلى الميكروفون",
+    "voice.error_process": "حدث خطأ أثناء المعالجة",
+    "voice.placeholder": "اضغط على الميكروفون وصف مساحتك...",
+    "voice.login_required": "يرجى تسجيل الدخول للاستخدام",
+    "sc.title": "التحليل الذكي",
+    "sc.upload_photo": "ارفع صورة",
+    "sc.take_photo": "التقط صورة",
+    "sc.analyzing": "جاري التحليل...",
+    "sc.analysis_result": "نتيجة التحليل",
+    "sc.design_suggestion": "اقتراح التصميم",
+    "sc.save_result": "حفظ النتيجة",
+    "sc.new_analysis": "تحليل جديد",
+    "sc.no_image": "يرجى رفع صورة أولاً",
+    "sc.error": "حدث خطأ أثناء التحليل",
+    "sc.scan_title": "مسح AR",
+    "sc.scan_subtitle": "امسح المساحة بكاميرتك",
+    "sc.scan_start": "ابدأ المسح",
+    "sc.scan_stop": "أوقف المسح",
+    "projects.empty_desc": "ابدأ بإنشاء مشروعك الأول",
+    "projects.type": "نوع المشروع",
+    "projects.delete_confirm": "هل أنت متأكد من حذف هذا المشروع؟",
+    "projects.created": "تم إنشاء المشروع",
+    "projects.open": "فتح المشروع",
+    "projects.designs": "التصاميم",
+    "projects.last_updated": "آخر تحديث",
+    "projects.login_required": "يرجى تسجيل الدخول لعرض مشاريعك",
+    "projects.loading": "جاري تحميل المشاريع...",
+    "projects.error": "حدث خطأ في تحميل المشاريع",
+    "furniture.title": "متجر الأثاث",
+    "furniture.subtitle": "أثاث حقيقي من متاجر محلية",
+    "furniture.search": "ابحث عن أثاث...",
+    "furniture.filter": "تصفية",
+    "furniture.category": "الفئة",
+    "furniture.price": "السعر",
+    "furniture.add_to_project": "أضف للمشروع",
+    "furniture.view_details": "عرض التفاصيل",
+    "furniture.no_results": "لا توجد نتائج",
+    "furniture.loading": "جاري التحميل...",
+    "furniture.beta_notice": "هذه الميزة تجريبية",
+    "furniture.sofa": "أريكة",
+    "furniture.bed": "سرير",
+    "furniture.table": "طاولة",
+    "furniture.chair": "كرسي",
+    "furniture.wardrobe": "خزانة",
+    "mood.subtitle": "اجمع إلهامك في لوحة واحدة",
+    "mood.add_image": "أضف صورة",
+    "mood.add_color": "أضف لون",
+    "mood.save": "حفظ اللوحة",
+    "mood.clear": "مسح اللوحة",
+    "mood.generate": "توليد تصميم من اللوحة",
+    "mood.empty": "اللوحة فارغة",
+    "mood.saved": "تم حفظ اللوحة",
+    "common.edit": "تعديل",
+    "common.delete": "حذف",
+    "common.share": "مشاركة",
+    "common.download": "تحميل",
+    "common.prev": "السابق",
+    "common.login": "تسجيل الدخول",
+    "common.logout": "تسجيل الخروج",
+    "common.profile": "الملف الشخصي",
+    "common.settings": "الإعدادات",
+    "common.guest": "زائر",
+    "common.free": "مجاني",
+    "common.premium": "بريميوم",
+    "common.required": "مطلوب",
+    "common.optional": "اختياري",
+    "common.success": "تمت العملية بنجاح",
+    "common.failed": "فشلت العملية",
+    "common.sar": "ريال",
+    "common.credits": "كريدت",
+    "common.buy_credits": "شراء كريدت",
+    "common.insufficient_credits": "رصيد غير كافٍ",
+    "common.view_all": "عرض الكل",
+    "common.see_more": "عرض المزيد",
+    "common.back_home": "العودة للرئيسية",
+    "studio.consult": "استشر م. اليازية",
+    "studio.elements_done": "عنصر مكتمل",
+    "studio.choose_project": "اختر مشروعك",
+    "studio.choose_project_desc": "حدد المشروع والغرفة التي تريد تصميمها",
+    "studio.no_projects": "لا توجد مشاريع بعد",
+    "studio.create_project": "إنشاء مشروع جديد",
+    "studio.room_area": "الغرفة والمساحة",
+    "studio.area_m2": "المساحة (م²)",
+    "studio.next_identity": "التالي: تحديد الهوية البصرية",
+    "studio.visual_identity_desc": "هذه الهوية ستُطبَّق على جميع عناصر التصميم لضمان التناسق الكامل",
+    "studio.design_style": "نمط التصميم",
+    "studio.total_budget": "الميزانية الإجمالية",
+    "studio.identity_details": "تفاصيل الهوية البصرية",
+    "studio.customized": "مخصصة",
+    "studio.reset_default": "إعادة تعيين للافتراضي",
+    "studio.start_design": "ابدأ التصميم",
+    "studio.design_details": "تفاصيل التصميم",
+    "studio.element_designed_success": "تم التصميم بنجاح",
+    "studio.overall_progress": "تقدم التصميم الكلي",
+    "studio.room_hall": "الصالة",
+    "studio.redesign": "إعادة التصميم بهوية مختلفة",
+    "studio.redesigning": "جارٍ إعادة التصميم...",
+    "studio.design_me": "صمّمي يا م. اليازية",
+    "studio.perspective_generated": "تم توليد المنظور",
+    "studio.generate_new_perspective": "توليد منظور جديد",
+    "studio.generating_perspective": "جارٍ التوليد...",
+    "studio.generate_full_perspective": "ولّدي المنظور الكامل",
+    "studio.perspective_generating": "م. اليازية تولّد المنظور...",
+    "studio.min_elements_warning": "للحصول على أفضل نتيجة، صمّم على الأقل 3 عناصر أولاً",
+    "studio.prev_step": "← السابق",
+    "studio.next_step": "التالي →",
+    "studio.designed_badge": "✓ مصمّم",
+    "studio.sarah_tips": "نصائح م. اليازية",
+    "studio.applied_identity": "الهوية البصرية المطبقة على هذا العنصر",
+    "studio.primary_color": "الأساسي",
+    "studio.secondary_color": "الثانوي",
+    "studio.accent_color": "التمييز",
+    "studio.identity_warning": "لماذا الهوية البصرية مهمة؟",
+    "studio.design_concept": "مفهوم التصميم",
+    "studio.harmony_note": "التناسق",
+    "studio.cost_range": "نطاق التكلفة",
+    "studio.products": "المنتجات",
+    "studio.color_palette": "لوحة الألوان",
+    "studio.installation_steps": "خطوات التركيب",
+    "studio.professional_notes": "ملاحظات مهنية",
 },
-
   en: {
     // App & Navigation
     "app.name": "Eng. Alyazia",
@@ -1737,9 +2098,189 @@ export const translations: Record<Language, Translations> = {
     "voice.openStudio": "Open Studio",
     "voice.startListening": "Start listening",
     "voice.stop": "Stop",
-    "voice.stopListening": "Stop listening"
+    "voice.stopListening": "Stop listening",
+    "studio.login_required": "Please log in to access the Design Studio",
+    "studio.back_home": "Back to Home",
+    "studio.step_project": "Project",
+    "studio.step_identity": "Visual Identity",
+    "studio.step_floors": "Floors",
+    "studio.step_walls": "Walls",
+    "studio.step_ceilings": "Ceilings",
+    "studio.step_doors": "Doors & Windows",
+    "studio.step_lighting": "Lighting",
+    "studio.step_furniture": "Furniture",
+    "studio.step_perspective": "Full Perspective",
+    "studio.style_modern": "Modern",
+    "studio.style_gulf": "Gulf Classic",
+    "studio.style_classic": "Luxury Classic",
+    "studio.style_minimal": "Minimal",
+    "studio.style_japanese": "Japanese Zen",
+    "studio.style_scandinavian": "Scandinavian",
+    "studio.style_mediterranean": "Mediterranean",
+    "studio.style_industrial": "Industrial",
+    "studio.style_moroccan": "Moroccan",
+    "studio.style_luxury": "Premium Luxury",
+    "studio.budget_economic": "Economic",
+    "studio.budget_medium": "Medium",
+    "studio.budget_luxury": "Luxury",
+    "studio.budget_premium": "Premium",
+    "studio.select_project": "Select a Project",
+    "studio.new_project": "New Project",
+    "studio.select_room": "Select Room",
+    "studio.design_element": "Design This Element",
+    "studio.generate_perspective": "Generate Full Perspective",
+    "studio.select_project_first": "Please select a project first",
+    "studio.design_success": "Design completed with full harmony!",
+    "studio.design_error": "An error occurred during design",
+    "studio.perspective_success": "Full perspective generated!",
+    "studio.perspective_error": "Error generating perspective",
+    "studio.room_living": "Living Room",
+    "studio.room_master": "Master Bedroom",
+    "studio.room_bedroom": "Bedroom",
+    "studio.room_kitchen": "Kitchen",
+    "studio.room_bathroom": "Bathroom",
+    "studio.room_office": "Office",
+    "studio.room_dining": "Dining Room",
+    "studio.room_kids": "Kids Room",
+    "studio.room_majlis": "Majlis",
+    "studio.room_entrance": "Entrance",
+    "studio.visual_identity": "Visual Identity",
+    "studio.select_style": "Select Style",
+    "studio.select_budget": "Select Budget",
+    "studio.next": "Next",
+    "studio.prev": "Previous",
+    "studio.designing": "Designing...",
+    "studio.progress": "Progress",
+    "studio.completed": "Completed",
+    "studio.projects_link": "My Projects",
+    "studio.chat_link": "Consult Eng. Alyazia",
+    "voice.start": "Start Recording",
+    "voice.generating": "Generating design...",
+    "voice.result": "Design Result",
+    "voice.try_again": "Try Again",
+    "voice.save": "Save Design",
+    "voice.saved": "Saved successfully",
+    "voice.error_mic": "Could not access microphone",
+    "voice.error_process": "An error occurred during processing",
+    "voice.placeholder": "Press the microphone and describe your space...",
+    "voice.login_required": "Please log in to use this feature",
+    "sc.title": "Smart Analysis",
+    "sc.upload_photo": "Upload Photo",
+    "sc.take_photo": "Take Photo",
+    "sc.analyzing": "Analyzing...",
+    "sc.analysis_result": "Analysis Result",
+    "sc.design_suggestion": "Design Suggestion",
+    "sc.save_result": "Save Result",
+    "sc.new_analysis": "New Analysis",
+    "sc.no_image": "Please upload an image first",
+    "sc.error": "An error occurred during analysis",
+    "sc.scan_title": "AR Scan",
+    "sc.scan_subtitle": "Scan the space with your camera",
+    "sc.scan_start": "Start Scan",
+    "sc.scan_stop": "Stop Scan",
+    "projects.empty_desc": "Start by creating your first project",
+    "projects.type": "Project Type",
+    "projects.delete_confirm": "Are you sure you want to delete this project?",
+    "projects.created": "Project created",
+    "projects.open": "Open Project",
+    "projects.designs": "Designs",
+    "projects.last_updated": "Last Updated",
+    "projects.login_required": "Please log in to view your projects",
+    "projects.loading": "Loading projects...",
+    "projects.error": "Error loading projects",
+    "furniture.title": "Furniture Store",
+    "furniture.subtitle": "Real furniture from local stores",
+    "furniture.search": "Search for furniture...",
+    "furniture.filter": "Filter",
+    "furniture.category": "Category",
+    "furniture.price": "Price",
+    "furniture.add_to_project": "Add to Project",
+    "furniture.view_details": "View Details",
+    "furniture.no_results": "No results found",
+    "furniture.loading": "Loading...",
+    "furniture.beta_notice": "This feature is in beta",
+    "furniture.sofa": "Sofa",
+    "furniture.bed": "Bed",
+    "furniture.table": "Table",
+    "furniture.chair": "Chair",
+    "furniture.wardrobe": "Wardrobe",
+    "mood.subtitle": "Collect your inspiration in one board",
+    "mood.add_image": "Add Image",
+    "mood.add_color": "Add Color",
+    "mood.save": "Save Board",
+    "mood.clear": "Clear Board",
+    "mood.generate": "Generate Design from Board",
+    "mood.empty": "Board is empty",
+    "mood.saved": "Board saved",
+    "common.edit": "Edit",
+    "common.delete": "Delete",
+    "common.share": "Share",
+    "common.download": "Download",
+    "common.prev": "Previous",
+    "common.login": "Log In",
+    "common.logout": "Log Out",
+    "common.profile": "Profile",
+    "common.settings": "Settings",
+    "common.guest": "Guest",
+    "common.free": "Free",
+    "common.premium": "Premium",
+    "common.required": "Required",
+    "common.optional": "Optional",
+    "common.success": "Operation successful",
+    "common.failed": "Operation failed",
+    "common.sar": "SAR",
+    "common.credits": "Credits",
+    "common.buy_credits": "Buy Credits",
+    "common.insufficient_credits": "Insufficient credits",
+    "common.view_all": "View All",
+    "common.see_more": "See More",
+    "common.back_home": "Back to Home",
+    "studio.consult": "Consult Eng. Alyazia",
+    "studio.elements_done": "elements done",
+    "studio.choose_project": "Choose Your Project",
+    "studio.choose_project_desc": "Select the project and room you want to design",
+    "studio.no_projects": "No projects yet",
+    "studio.create_project": "Create New Project",
+    "studio.room_area": "Room & Area",
+    "studio.area_m2": "Area (m²)",
+    "studio.next_identity": "Next: Set Visual Identity",
+    "studio.visual_identity_desc": "This identity will be applied to all design elements to ensure full harmony",
+    "studio.design_style": "Design Style",
+    "studio.total_budget": "Total Budget",
+    "studio.identity_details": "Visual Identity Details",
+    "studio.customized": "Customized",
+    "studio.reset_default": "Reset to Default",
+    "studio.start_design": "Start Designing",
+    "studio.design_details": "Design Details",
+    "studio.element_designed_success": "Design completed successfully",
+    "studio.overall_progress": "Overall Design Progress",
+    "studio.room_hall": "Hall",
+    "studio.redesign": "Redesign with Different Identity",
+    "studio.redesigning": "Redesigning...",
+    "studio.design_me": "Design it, Eng. Alyazia",
+    "studio.perspective_generated": "Perspective generated",
+    "studio.generate_new_perspective": "Generate New Perspective",
+    "studio.generating_perspective": "Generating...",
+    "studio.generate_full_perspective": "Generate Full Perspective",
+    "studio.perspective_generating": "Eng. Alyazia is generating the perspective...",
+    "studio.min_elements_warning": "For best results, design at least 3 elements first",
+    "studio.prev_step": "← Previous",
+    "studio.next_step": "Next →",
+    "studio.designed_badge": "✓ Designed",
+    "studio.sarah_tips": "Eng. Alyazia's Tips",
+    "studio.applied_identity": "Visual identity applied to this element",
+    "studio.primary_color": "Primary",
+    "studio.secondary_color": "Secondary",
+    "studio.accent_color": "Accent",
+    "studio.identity_warning": "Why is visual identity important?",
+    "studio.design_concept": "Design Concept",
+    "studio.harmony_note": "Harmony",
+    "studio.cost_range": "Cost Range",
+    "studio.products": "Products",
+    "studio.color_palette": "Color Palette",
+    "studio.installation_steps": "Installation Steps",
+    "studio.professional_notes": "Professional Notes",
 },
-
   ur: {
     // App & Navigation
     "app.name": "م. الیازیہ",
@@ -2309,9 +2850,189 @@ export const translations: Record<Language, Translations> = {
     "voice.openStudio": "اسٹوڈیو کھولیں",
     "voice.startListening": "سننا شروع کریں",
     "voice.stop": "روکیں",
-    "voice.stopListening": "سننا بند کریں"
+    "voice.stopListening": "سننا بند کریں",
+    "studio.login_required": "ڈیزائن اسٹوڈیو تک رسائی کے لیے لاگ ان کریں",
+    "studio.back_home": "ہوم پر واپس",
+    "studio.step_project": "پروجیکٹ",
+    "studio.step_identity": "بصری شناخت",
+    "studio.step_floors": "فرش",
+    "studio.step_walls": "دیواریں",
+    "studio.step_ceilings": "چھتیں",
+    "studio.step_doors": "دروازے اور کھڑکیاں",
+    "studio.step_lighting": "روشنی",
+    "studio.step_furniture": "فرنیچر",
+    "studio.step_perspective": "مکمل منظر",
+    "studio.style_modern": "جدید",
+    "studio.style_gulf": "خلیجی کلاسک",
+    "studio.style_classic": "لگژری کلاسک",
+    "studio.style_minimal": "مینیمل",
+    "studio.style_japanese": "جاپانی زین",
+    "studio.style_scandinavian": "اسکینڈینیوین",
+    "studio.style_mediterranean": "بحیرہ روم",
+    "studio.style_industrial": "صنعتی",
+    "studio.style_moroccan": "مراکشی",
+    "studio.style_luxury": "پریمیم لگژری",
+    "studio.budget_economic": "اقتصادی",
+    "studio.budget_medium": "درمیانہ",
+    "studio.budget_luxury": "لگژری",
+    "studio.budget_premium": "پریمیم",
+    "studio.select_project": "پروجیکٹ منتخب کریں",
+    "studio.new_project": "نیا پروجیکٹ",
+    "studio.select_room": "کمرہ منتخب کریں",
+    "studio.design_element": "اس عنصر کو ڈیزائن کریں",
+    "studio.generate_perspective": "مکمل منظر بنائیں",
+    "studio.select_project_first": "پہلے پروجیکٹ منتخب کریں",
+    "studio.design_success": "مکمل ہم آہنگی سے ڈیزائن مکمل!",
+    "studio.design_error": "ڈیزائن کے دوران خطا",
+    "studio.perspective_success": "مکمل منظر بنایا گیا!",
+    "studio.perspective_error": "منظر بنانے میں خطا",
+    "studio.room_living": "لیونگ روم",
+    "studio.room_master": "ماسٹر بیڈروم",
+    "studio.room_bedroom": "بیڈروم",
+    "studio.room_kitchen": "باورچی خانہ",
+    "studio.room_bathroom": "باتھ روم",
+    "studio.room_office": "دفتر",
+    "studio.room_dining": "ڈائننگ روم",
+    "studio.room_kids": "بچوں کا کمرہ",
+    "studio.room_majlis": "مجلس",
+    "studio.room_entrance": "داخلہ",
+    "studio.visual_identity": "بصری شناخت",
+    "studio.select_style": "انداز منتخب کریں",
+    "studio.select_budget": "بجٹ منتخب کریں",
+    "studio.next": "اگلا",
+    "studio.prev": "پچھلا",
+    "studio.designing": "ڈیزائن ہو رہا ہے...",
+    "studio.progress": "پیشرفت",
+    "studio.completed": "مکمل",
+    "studio.projects_link": "میرے پروجیکٹس",
+    "studio.chat_link": "م. الیازیہ سے مشورہ",
+    "voice.start": "ریکارڈنگ شروع کریں",
+    "voice.generating": "ڈیزائن بن رہا ہے...",
+    "voice.result": "ڈیزائن نتیجہ",
+    "voice.try_again": "دوبارہ کوشش کریں",
+    "voice.save": "ڈیزائن محفوظ کریں",
+    "voice.saved": "کامیابی سے محفوظ",
+    "voice.error_mic": "مائیکروفون تک رسائی ناکام",
+    "voice.error_process": "پروسیسنگ کے دوران خطا",
+    "voice.placeholder": "مائیکروفون دبائیں اور اپنی جگہ بیان کریں...",
+    "voice.login_required": "استعمال کے لیے لاگ ان کریں",
+    "sc.title": "ذہین تجزیہ",
+    "sc.upload_photo": "تصویر اپلوڈ کریں",
+    "sc.take_photo": "تصویر لیں",
+    "sc.analyzing": "تجزیہ ہو رہا ہے...",
+    "sc.analysis_result": "تجزیہ کا نتیجہ",
+    "sc.design_suggestion": "ڈیزائن کی تجویز",
+    "sc.save_result": "نتیجہ محفوظ کریں",
+    "sc.new_analysis": "نیا تجزیہ",
+    "sc.no_image": "پہلے تصویر اپلوڈ کریں",
+    "sc.error": "تجزیہ کے دوران خطا",
+    "sc.scan_title": "AR اسکین",
+    "sc.scan_subtitle": "اپنے کیمرے سے جگہ اسکین کریں",
+    "sc.scan_start": "اسکین شروع کریں",
+    "sc.scan_stop": "اسکین روکیں",
+    "projects.empty_desc": "اپنا پہلا پروجیکٹ بنائیں",
+    "projects.type": "پروجیکٹ کی قسم",
+    "projects.delete_confirm": "کیا آپ واقعی حذف کرنا چاہتے ہیں؟",
+    "projects.created": "پروجیکٹ بنایا گیا",
+    "projects.open": "پروجیکٹ کھولیں",
+    "projects.designs": "ڈیزائنز",
+    "projects.last_updated": "آخری اپڈیٹ",
+    "projects.login_required": "اپنے پروجیکٹس دیکھنے کے لیے لاگ ان کریں",
+    "projects.loading": "پروجیکٹس لوڈ ہو رہے ہیں...",
+    "projects.error": "پروجیکٹس لوڈ کرنے میں خطا",
+    "furniture.title": "فرنیچر اسٹور",
+    "furniture.subtitle": "مقامی دکانوں سے حقیقی فرنیچر",
+    "furniture.search": "فرنیچر تلاش کریں...",
+    "furniture.filter": "فلٹر",
+    "furniture.category": "زمرہ",
+    "furniture.price": "قیمت",
+    "furniture.add_to_project": "پروجیکٹ میں شامل کریں",
+    "furniture.view_details": "تفصیلات دیکھیں",
+    "furniture.no_results": "کوئی نتیجہ نہیں",
+    "furniture.loading": "لوڈ ہو رہا ہے...",
+    "furniture.beta_notice": "یہ فیچر بیٹا میں ہے",
+    "furniture.sofa": "صوفہ",
+    "furniture.bed": "بستر",
+    "furniture.table": "میز",
+    "furniture.chair": "کرسی",
+    "furniture.wardrobe": "الماری",
+    "mood.subtitle": "اپنی تحریک ایک بورڈ میں جمع کریں",
+    "mood.add_image": "تصویر شامل کریں",
+    "mood.add_color": "رنگ شامل کریں",
+    "mood.save": "بورڈ محفوظ کریں",
+    "mood.clear": "بورڈ صاف کریں",
+    "mood.generate": "بورڈ سے ڈیزائن بنائیں",
+    "mood.empty": "بورڈ خالی ہے",
+    "mood.saved": "بورڈ محفوظ",
+    "common.edit": "ترمیم",
+    "common.delete": "حذف",
+    "common.share": "شیئر",
+    "common.download": "ڈاؤنلوڈ",
+    "common.prev": "پچھلا",
+    "common.login": "لاگ ان",
+    "common.logout": "لاگ آؤٹ",
+    "common.profile": "پروفائل",
+    "common.settings": "ترتیبات",
+    "common.guest": "مہمان",
+    "common.free": "مفت",
+    "common.premium": "پریمیم",
+    "common.required": "ضروری",
+    "common.optional": "اختیاری",
+    "common.success": "آپریشن کامیاب",
+    "common.failed": "آپریشن ناکام",
+    "common.sar": "ریال",
+    "common.credits": "کریڈٹ",
+    "common.buy_credits": "کریڈٹ خریدیں",
+    "common.insufficient_credits": "ناکافی کریڈٹ",
+    "common.view_all": "سب دیکھیں",
+    "common.see_more": "مزید دیکھیں",
+    "common.back_home": "ہوم پر واپس",
+    "studio.consult": "انج. الیازیہ سے مشورہ",
+    "studio.elements_done": "عناصر مکمل",
+    "studio.choose_project": "اپنا پروجیکٹ منتخب کریں",
+    "studio.choose_project_desc": "پروجیکٹ اور کمرہ منتخب کریں",
+    "studio.no_projects": "ابھی کوئی پروجیکٹ نہیں",
+    "studio.create_project": "نیا پروجیکٹ بنائیں",
+    "studio.room_area": "کمرہ اور رقبہ",
+    "studio.area_m2": "رقبہ (م²)",
+    "studio.next_identity": "اگلہ: بصری شناخت سیٹ کریں",
+    "studio.visual_identity_desc": "یہ شناخت تمام عناصر پر لاگو ہوگی",
+    "studio.design_style": "ڈیزائن سٹائل",
+    "studio.total_budget": "کل بجٹ",
+    "studio.identity_details": "بصری شناخت کی تفصیل",
+    "studio.customized": "کسٹمائزڈ",
+    "studio.reset_default": "ڈیفالٹ پر ریسیٹ",
+    "studio.start_design": "ڈیزائن شروع کریں",
+    "studio.design_details": "ڈیزائن کی تفصیل",
+    "studio.element_designed_success": "ڈیزائن کامیابی سے مکمل",
+    "studio.overall_progress": "ڈیزائن کی مجموعی پیشرفت",
+    "studio.room_hall": "ہال",
+    "studio.redesign": "نئی شناخت کے ساتھ ڈیزائن",
+    "studio.redesigning": "ڈیزائن ہو رہا ہے...",
+    "studio.design_me": "ڈیزائن کریں انج. الیازیہ",
+    "studio.perspective_generated": "منظر تیار ہو گیا",
+    "studio.generate_new_perspective": "نیا منظر بنائیں",
+    "studio.generating_perspective": "تیار ہو رہا ہے...",
+    "studio.generate_full_perspective": "مکمل منظر بنائیں",
+    "studio.perspective_generating": "انج. الیازیہ منظر بنا رہی ہیں...",
+    "studio.min_elements_warning": "بہتر نتیجے کے لیے پہلے کم از کم 3 عناصر ڈیزائن کریں",
+    "studio.prev_step": "← پچھلا",
+    "studio.next_step": "اگلہ →",
+    "studio.designed_badge": "✓ ڈیزائن",
+    "studio.sarah_tips": "انج. الیازیہ کے مشورے",
+    "studio.applied_identity": "اس عنصر پر لاگو بصری شناخت",
+    "studio.primary_color": "بنیادی",
+    "studio.secondary_color": "ثانوی",
+    "studio.accent_color": "ایکسینٹ",
+    "studio.identity_warning": "بصری شناخت کیوں ضروری ہے؟",
+    "studio.design_concept": "ڈیزائن ایڈییہ",
+    "studio.harmony_note": "ہماہنگی",
+    "studio.cost_range": "لاگت کی سیما",
+    "studio.products": "مصنوعات",
+    "studio.color_palette": "رنگ پیلیٹ",
+    "studio.installation_steps": "نصب کے مراحل",
+    "studio.professional_notes": "پیشہ ورانہ نوٹس",
 },
-
   fr: {
     // App & Navigation
     "app.name": "Ing. Alyazia",
@@ -2881,10 +3602,190 @@ export const translations: Record<Language, Translations> = {
     "voice.openStudio": "Ouvrir le studio",
     "voice.startListening": "Commencer à écouter",
     "voice.stop": "Arrêter",
-    "voice.stopListening": "Arrêter d'écouter"
+    "voice.stopListening": "Arrêter d'écouter",
+    "studio.login_required": "Veuillez vous connecter pour accéder au Studio de Design",
+    "studio.back_home": "Retour à l'accueil",
+    "studio.step_project": "Projet",
+    "studio.step_identity": "Identité Visuelle",
+    "studio.step_floors": "Sols",
+    "studio.step_walls": "Murs",
+    "studio.step_ceilings": "Plafonds",
+    "studio.step_doors": "Portes et Fenêtres",
+    "studio.step_lighting": "Éclairage",
+    "studio.step_furniture": "Mobilier",
+    "studio.step_perspective": "Perspective Complète",
+    "studio.style_modern": "Moderne",
+    "studio.style_gulf": "Classique du Golfe",
+    "studio.style_classic": "Classique Luxueux",
+    "studio.style_minimal": "Minimaliste",
+    "studio.style_japanese": "Zen Japonais",
+    "studio.style_scandinavian": "Scandinave",
+    "studio.style_mediterranean": "Méditerranéen",
+    "studio.style_industrial": "Industriel",
+    "studio.style_moroccan": "Marocain",
+    "studio.style_luxury": "Luxe Premium",
+    "studio.budget_economic": "Économique",
+    "studio.budget_medium": "Moyen",
+    "studio.budget_luxury": "Luxueux",
+    "studio.budget_premium": "Premium",
+    "studio.select_project": "Sélectionner un Projet",
+    "studio.new_project": "Nouveau Projet",
+    "studio.select_room": "Sélectionner la Pièce",
+    "studio.design_element": "Concevoir Cet Élément",
+    "studio.generate_perspective": "Générer la Perspective Complète",
+    "studio.select_project_first": "Veuillez d'abord sélectionner un projet",
+    "studio.design_success": "Design complété avec une harmonie complète!",
+    "studio.design_error": "Une erreur s'est produite lors du design",
+    "studio.perspective_success": "Perspective complète générée!",
+    "studio.perspective_error": "Erreur lors de la génération",
+    "studio.room_living": "Salon",
+    "studio.room_master": "Chambre Principale",
+    "studio.room_bedroom": "Chambre",
+    "studio.room_kitchen": "Cuisine",
+    "studio.room_bathroom": "Salle de Bain",
+    "studio.room_office": "Bureau",
+    "studio.room_dining": "Salle à Manger",
+    "studio.room_kids": "Chambre d'Enfants",
+    "studio.room_majlis": "Salon de Réception",
+    "studio.room_entrance": "Entrée",
+    "studio.visual_identity": "Identité Visuelle",
+    "studio.select_style": "Sélectionner le Style",
+    "studio.select_budget": "Sélectionner le Budget",
+    "studio.next": "Suivant",
+    "studio.prev": "Précédent",
+    "studio.designing": "Conception en cours...",
+    "studio.progress": "Progression",
+    "studio.completed": "Terminé",
+    "studio.projects_link": "Mes Projets",
+    "studio.chat_link": "Consulter Ing. Alyazia",
+    "voice.start": "Démarrer l'Enregistrement",
+    "voice.generating": "Génération du design...",
+    "voice.result": "Résultat du Design",
+    "voice.try_again": "Réessayer",
+    "voice.save": "Enregistrer le Design",
+    "voice.saved": "Enregistré avec succès",
+    "voice.error_mic": "Impossible d'accéder au microphone",
+    "voice.error_process": "Une erreur s'est produite lors du traitement",
+    "voice.placeholder": "Appuyez sur le microphone et décrivez votre espace...",
+    "voice.login_required": "Veuillez vous connecter pour utiliser cette fonctionnalité",
+    "sc.title": "Analyse Intelligente",
+    "sc.upload_photo": "Télécharger une Photo",
+    "sc.take_photo": "Prendre une Photo",
+    "sc.analyzing": "Analyse en cours...",
+    "sc.analysis_result": "Résultat de l'Analyse",
+    "sc.design_suggestion": "Suggestion de Design",
+    "sc.save_result": "Enregistrer le Résultat",
+    "sc.new_analysis": "Nouvelle Analyse",
+    "sc.no_image": "Veuillez d'abord télécharger une image",
+    "sc.error": "Une erreur s'est produite lors de l'analyse",
+    "sc.scan_title": "Scan AR",
+    "sc.scan_subtitle": "Scannez l'espace avec votre caméra",
+    "sc.scan_start": "Démarrer le Scan",
+    "sc.scan_stop": "Arrêter le Scan",
+    "projects.empty_desc": "Commencez par créer votre premier projet",
+    "projects.type": "Type de Projet",
+    "projects.delete_confirm": "Êtes-vous sûr de vouloir supprimer ce projet?",
+    "projects.created": "Projet créé",
+    "projects.open": "Ouvrir le Projet",
+    "projects.designs": "Designs",
+    "projects.last_updated": "Dernière Mise à Jour",
+    "projects.login_required": "Veuillez vous connecter pour voir vos projets",
+    "projects.loading": "Chargement des projets...",
+    "projects.error": "Erreur lors du chargement des projets",
+    "furniture.title": "Boutique Meubles",
+    "furniture.subtitle": "Vrais meubles de magasins locaux",
+    "furniture.search": "Rechercher des meubles...",
+    "furniture.filter": "Filtrer",
+    "furniture.category": "Catégorie",
+    "furniture.price": "Prix",
+    "furniture.add_to_project": "Ajouter au Projet",
+    "furniture.view_details": "Voir les Détails",
+    "furniture.no_results": "Aucun résultat trouvé",
+    "furniture.loading": "Chargement...",
+    "furniture.beta_notice": "Cette fonctionnalité est en bêta",
+    "furniture.sofa": "Canapé",
+    "furniture.bed": "Lit",
+    "furniture.table": "Table",
+    "furniture.chair": "Chaise",
+    "furniture.wardrobe": "Armoire",
+    "mood.subtitle": "Rassemblez votre inspiration sur un tableau",
+    "mood.add_image": "Ajouter une Image",
+    "mood.add_color": "Ajouter une Couleur",
+    "mood.save": "Enregistrer le Tableau",
+    "mood.clear": "Effacer le Tableau",
+    "mood.generate": "Générer un Design depuis le Tableau",
+    "mood.empty": "Le tableau est vide",
+    "mood.saved": "Tableau enregistré",
+    "common.edit": "Modifier",
+    "common.delete": "Supprimer",
+    "common.share": "Partager",
+    "common.download": "Télécharger",
+    "common.prev": "Précédent",
+    "common.login": "Se Connecter",
+    "common.logout": "Se Déconnecter",
+    "common.profile": "Profil",
+    "common.settings": "Paramètres",
+    "common.guest": "Invité",
+    "common.free": "Gratuit",
+    "common.premium": "Premium",
+    "common.required": "Requis",
+    "common.optional": "Optionnel",
+    "common.success": "Opération réussie",
+    "common.failed": "Opération échouée",
+    "common.sar": "SAR",
+    "common.credits": "Crédits",
+    "common.buy_credits": "Acheter des Crédits",
+    "common.insufficient_credits": "Crédits insuffisants",
+    "common.view_all": "Voir Tout",
+    "common.see_more": "Voir Plus",
+    "common.back_home": "Retour à l'accueil",
+    "studio.consult": "Consulter Ing. Alyazia",
+    "studio.elements_done": "éléments terminés",
+    "studio.choose_project": "Choisissez votre projet",
+    "studio.choose_project_desc": "Sélectionnez le projet et la pièce à concevoir",
+    "studio.no_projects": "Pas encore de projets",
+    "studio.create_project": "Créer un nouveau projet",
+    "studio.room_area": "Pièce et superficie",
+    "studio.area_m2": "Superficie (m²)",
+    "studio.next_identity": "Suivant: Définir l'identité visuelle",
+    "studio.visual_identity_desc": "Cette identité sera appliquée à tous les éléments de conception",
+    "studio.design_style": "Style de design",
+    "studio.total_budget": "Budget total",
+    "studio.identity_details": "Détails de l'identité visuelle",
+    "studio.customized": "Personnalisée",
+    "studio.reset_default": "Réinitialiser par défaut",
+    "studio.start_design": "Commencer la conception",
+    "studio.design_details": "Détails du design",
+    "studio.element_designed_success": "Conception terminée avec succès",
+    "studio.overall_progress": "Progression globale du design",
+    "studio.room_hall": "Hall",
+    "studio.redesign": "Reconcevoir avec une identité différente",
+    "studio.redesigning": "Reconception en cours...",
+    "studio.design_me": "Concevez, Ing. Alyazia",
+    "studio.perspective_generated": "Perspective générée",
+    "studio.generate_new_perspective": "Générer une nouvelle perspective",
+    "studio.generating_perspective": "Génération en cours...",
+    "studio.generate_full_perspective": "Générer la perspective complète",
+    "studio.perspective_generating": "Ing. Alyazia génère la perspective...",
+    "studio.min_elements_warning": "Pour de meilleurs résultats, concevez au moins 3 éléments d'abord",
+    "studio.prev_step": "← Précédent",
+    "studio.next_step": "Suivant →",
+    "studio.designed_badge": "✓ Conçu",
+    "studio.sarah_tips": "Conseils d'Ing. Alyazia",
+    "studio.applied_identity": "Identité visuelle appliquée à cet élément",
+    "studio.primary_color": "Primaire",
+    "studio.secondary_color": "Secondaire",
+    "studio.accent_color": "Accent",
+    "studio.identity_warning": "Pourquoi l'identité visuelle est-elle importante?",
+    "studio.design_concept": "Concept de design",
+    "studio.harmony_note": "Harmonie",
+    "studio.cost_range": "Fourchette de coût",
+    "studio.products": "Produits",
+    "studio.color_palette": "Palette de couleurs",
+    "studio.installation_steps": "Étapes d'installation",
+    "studio.professional_notes": "Notes professionnelles",
 },
 };
-
 export function t(lang: Language, key: TranslationKey): string {
   return translations[lang][key] ?? translations["ar"][key] ?? key;
 }

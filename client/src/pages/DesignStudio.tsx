@@ -21,41 +21,45 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 // ===== أنماط التصميم =====
 const DESIGN_STYLES = [
-  { key: "modern", label: "عصري حديث", emoji: "🏙️", colors: ["#F5F5F0", "#2C2C2C", "#C9A84C"], mood: "نظيف وعصري" },
-  { key: "gulf", label: "خليجي أصيل", emoji: "🕌", colors: ["#F8F0E3", "#8B6914", "#C9A84C"], mood: "فاخر وأصيل" },
-  { key: "classic", label: "كلاسيكي فاخر", emoji: "🏛️", colors: ["#F5EFE6", "#5C4033", "#D4AF37"], mood: "راقٍ وكلاسيكي" },
-  { key: "minimal", label: "مينيمال", emoji: "⬜", colors: ["#FFFFFF", "#E0E0E0", "#333333"], mood: "بسيط وهادئ" },
-  { key: "japanese", label: "ياباني زن", emoji: "🌸", colors: ["#F5F0E8", "#8B7355", "#4A7C59"], mood: "هادئ وطبيعي" },
-  { key: "scandinavian", label: "سكندنافي", emoji: "🌿", colors: ["#FAFAFA", "#D4C5B0", "#5C7A6B"], mood: "دافئ وبسيط" },
-  { key: "mediterranean", label: "متوسطي", emoji: "🌊", colors: ["#F0F4F8", "#2B6CB0", "#E8A838"], mood: "مشرق وحيوي" },
-  { key: "industrial", label: "صناعي", emoji: "🔩", colors: ["#3A3A3A", "#8B7355", "#C0C0C0"], mood: "خشن وعصري" },
-  { key: "moroccan", label: "مغربي", emoji: "🏮", colors: ["#F5E6D3", "#8B1A1A", "#DAA520"], mood: "ملون وزاهي" },
-  { key: "luxury", label: "فاخر بريميوم", emoji: "💎", colors: ["#1A1A2E", "#C9A84C", "#F5F5F0"], mood: "فاخر ومميز" },
+  { key: "modern", labelKey: "studio.style_modern", emoji: "🏙️", colors: ["#F5F5F0", "#2C2C2C", "#C9A84C"] },
+  { key: "gulf", labelKey: "studio.style_gulf", emoji: "🕌", colors: ["#F8F0E3", "#8B6914", "#C9A84C"] },
+  { key: "classic", labelKey: "studio.style_classic", emoji: "🏛️", colors: ["#F5EFE6", "#5C4033", "#D4AF37"] },
+  { key: "minimal", labelKey: "studio.style_minimal", emoji: "⬜", colors: ["#FFFFFF", "#E0E0E0", "#333333"] },
+  { key: "japanese", labelKey: "studio.style_japanese", emoji: "🌸", colors: ["#F5F0E8", "#8B7355", "#4A7C59"] },
+  { key: "scandinavian", labelKey: "studio.style_scandinavian", emoji: "🌿", colors: ["#FAFAFA", "#D4C5B0", "#5C7A6B"] },
+  { key: "mediterranean", labelKey: "studio.style_mediterranean", emoji: "🌊", colors: ["#F0F4F8", "#2B6CB0", "#E8A838"] },
+  { key: "industrial", labelKey: "studio.style_industrial", emoji: "🔩", colors: ["#3A3A3A", "#8B7355", "#C0C0C0"] },
+  { key: "moroccan", labelKey: "studio.style_moroccan", emoji: "🏮", colors: ["#F5E6D3", "#8B1A1A", "#DAA520"] },
+  { key: "luxury", labelKey: "studio.style_luxury", emoji: "💎", colors: ["#1A1A2E", "#C9A84C", "#F5F5F0"] },
 ];
 
 // ===== مستويات الميزانية =====
 const BUDGET_LEVELS = [
-  { key: "economic", label: "اقتصادي", range: "5k - 20k ريال", icon: "💰", color: "bg-green-100 text-green-800 border-green-300" },
-  { key: "medium", label: "متوسط", range: "20k - 60k ريال", icon: "💵", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  { key: "luxury", label: "فاخر", range: "60k - 150k ريال", icon: "💎", color: "bg-purple-100 text-purple-800 border-purple-300" },
-  { key: "premium", label: "بريميوم", range: "150k+ ريال", icon: "👑", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  { key: "economic", labelKey: "studio.budget_economic", range: "5k - 20k SAR", icon: "💰", color: "bg-green-100 text-green-800 border-green-300" },
+  { key: "medium", labelKey: "studio.budget_medium", range: "20k - 60k SAR", icon: "💵", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  { key: "luxury", labelKey: "studio.budget_luxury", range: "60k - 150k SAR", icon: "💎", color: "bg-purple-100 text-purple-800 border-purple-300" },
+  { key: "premium", labelKey: "studio.budget_premium", range: "150k+ SAR", icon: "👑", color: "bg-amber-100 text-amber-800 border-amber-300" },
 ];
 
 // ===== خطوات Wizard =====
 const WIZARD_STEPS = [
-  { id: 1, label: "المشروع", icon: Building2, description: "اختر مشروعاً أو أنشئ جديداً" },
-  { id: 2, label: "الهوية البصرية", icon: Palette, description: "النمط والألوان والمواد الموحدة" },
-  { id: 3, label: "الأرضيات", icon: Square, description: "تصميم الأرضيات المتناسق" },
-  { id: 4, label: "الجدران", icon: Layers, description: "تصميم الجدران المتناسق" },
-  { id: 5, label: "الأسقف", icon: Home, description: "تصميم الأسقف المتناسق" },
-  { id: 6, label: "الأبواب والنوافذ", icon: DoorOpen, description: "تصميم الفتحات المتناسق" },
-  { id: 7, label: "الإضاءة", icon: Lightbulb, description: "تصميم الإضاءة المتناسق" },
-  { id: 8, label: "الأثاث", icon: Sofa, description: "تصميم الأثاث المتناسق" },
-  { id: 9, label: "المنظور الكامل", icon: Eye, description: "صورة تصورية ثلاثية الأبعاد" },
+  { id: 1, labelKey: "studio.step_project", icon: Building2 },
+  { id: 2, labelKey: "studio.step_identity", icon: Palette },
+  { id: 3, labelKey: "studio.step_floors", icon: Square },
+  { id: 4, labelKey: "studio.step_walls", icon: Layers },
+  { id: 5, labelKey: "studio.step_ceilings", icon: Home },
+  { id: 6, labelKey: "studio.step_doors", icon: DoorOpen },
+  { id: 7, labelKey: "studio.step_lighting", icon: Lightbulb },
+  { id: 8, labelKey: "studio.step_furniture", icon: Sofa },
+  { id: 9, labelKey: "studio.step_perspective", icon: Eye },
 ];
 
-// ===== أنواع الغرف =====
-const ROOM_TYPES = ["غرفة المعيشة", "غرفة النوم الرئيسية", "غرفة النوم", "المطبخ", "الحمام", "المكتب", "غرفة الطعام", "الردهة", "الصالة", "غرفة الأطفال"];
+// ===== أنواع الغرف - تستخدم مفاتيح الترجمة =====
+const ROOM_TYPE_KEYS = [
+  "studio.room_living", "studio.room_master", "studio.room_bedroom",
+  "studio.room_kitchen", "studio.room_bathroom", "studio.room_office",
+  "studio.room_dining", "studio.room_entrance", "studio.room_hall", "studio.room_kids"
+];
 
 // ===== الهويات البصرية الجاهزة =====
 const PRESET_IDENTITIES: Record<string, {
@@ -106,7 +110,7 @@ export default function DesignStudio() {
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState("غرفة المعيشة");
+  const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [roomArea, setRoomArea] = useState(25);
   const [selectedStyle, setSelectedStyle] = useState("gulf");
   const [selectedBudget, setSelectedBudget] = useState<"economic" | "medium" | "luxury" | "premium">("medium");
@@ -238,9 +242,9 @@ export default function DesignStudio() {
       <div className="min-h-screen flex items-center justify-center" dir={dir}>
         <Card className="p-8 text-center max-w-md">
           <Sparkles className="w-12 h-12 text-gold mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">استوديو التصميم</h2>
-          <p className="text-muted-foreground mb-6">يرجى تسجيل الدخول للوصول إلى استوديو التصميم</p>
-          <Link href="/"><Button className="btn-gold">العودة للرئيسية</Button></Link>
+          <h2 className="text-2xl font-bold text-foreground mb-2">{t("studio.title")}</h2>
+          <p className="text-muted-foreground mb-6">{t("studio.login_required")}</p>
+          <Link href="/"><Button className="btn-gold">{t("common.back_home")}</Button></Link>
         </Card>
       </div>
     );
@@ -254,13 +258,13 @@ export default function DesignStudio() {
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
-              استوديو التصميم المتكامل
+              {t("studio.title")}
             </h1>
-            <p className="text-white/80 text-xs mt-0.5">هوية بصرية موحدة — كل عنصر يكمل الآخر</p>
+            <p className="text-white/80 text-xs mt-0.5">{t("studio.subtitle")}</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/projects"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">مشاريعي</Button></Link>
-            <Link href="/chat"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">استشر م. اليازية</Button></Link>
+            <Link href="/projects"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">{t("nav.projects")}</Button></Link>
+            <Link href="/chat"><Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs">{t("studio.consult")}</Button></Link>
           </div>
         </div>
       </div>
@@ -273,7 +277,7 @@ export default function DesignStudio() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-foreground">تقدم التصميم الكلي</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{completedCount}/{totalCount} عنصر مكتمل</span>
+                  <span className="text-xs text-muted-foreground">{completedCount}/{totalCount} {t("studio.elements_done")}</span>
                   <span className="text-xs font-bold text-gold">
                     {totalCostMin.toLocaleString()} - {totalCostMax.toLocaleString()} ريال
                   </span>
@@ -319,7 +323,7 @@ export default function DesignStudio() {
                     {hasDesign ? <CheckCircle className="w-4 h-4" /> : isLocked ? <Lock className="w-3 h-3" /> : <Icon className="w-3.5 h-3.5" />}
                   </div>
                   <span className={`text-[10px] font-medium text-center leading-tight ${isActive ? "text-gold" : "text-muted-foreground"}`}>
-                    {step.label}
+                    {t(step.labelKey as Parameters<typeof t>[0])}
                   </span>
                   {idx < WIZARD_STEPS.length - 1 && (
                     <ChevronRight className="w-3 h-3 text-muted-foreground absolute" style={{ right: -8 }} />
@@ -336,8 +340,8 @@ export default function DesignStudio() {
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-gold text-white flex items-center justify-center text-sm font-bold">1</div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">اختر مشروعك</h2>
-                <p className="text-xs text-muted-foreground">حدد المشروع والغرفة التي تريد تصميمها</p>
+                <h2 className="text-lg font-bold text-foreground">{t("studio.choose_project")}</h2>
+                <p className="text-xs text-muted-foreground">{t("studio.choose_project_desc")}</p>
               </div>
             </div>
 
@@ -346,12 +350,12 @@ export default function DesignStudio() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-gold" />
-                    المشروع
+                    {t("studio.step_project")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Select value={selectedProjectId?.toString() || ""} onValueChange={(v) => setSelectedProjectId(Number(v))}>
-                    <SelectTrigger><SelectValue placeholder="اختر مشروعاً..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("studio.select_project")} /></SelectTrigger>
                     <SelectContent>
                       {(projects as Array<{ id: number; name: string }> | undefined)?.map(p => (
                         <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
@@ -360,8 +364,8 @@ export default function DesignStudio() {
                   </Select>
                   {!projects?.length && (
                     <div className="text-center py-3 bg-muted/30 rounded-lg">
-                      <p className="text-xs text-muted-foreground mb-2">لا توجد مشاريع بعد</p>
-                      <Link href="/projects"><Button size="sm" className="btn-gold text-xs">إنشاء مشروع جديد</Button></Link>
+                      <p className="text-xs text-muted-foreground mb-2">{t("studio.no_projects")}</p>
+                      <Link href="/projects"><Button size="sm" className="btn-gold text-xs">{t("studio.create_project")}</Button></Link>
                     </div>
                   )}
                 </CardContent>
@@ -371,21 +375,21 @@ export default function DesignStudio() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Ruler className="w-4 h-4 text-gold" />
-                    الغرفة والمساحة
+                    {t("studio.room_area")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <Label className="text-xs">الغرفة</Label>
+                    <Label className="text-xs">{t("studio.room")}</Label>
                     <Select value={selectedRoom} onValueChange={setSelectedRoom}>
                       <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {ROOM_TYPES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                        {ROOM_TYPE_KEYS.map(k => <SelectItem key={k} value={t(k as Parameters<typeof t>[0])}>{t(k as Parameters<typeof t>[0])}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">المساحة (م²)</Label>
+                    <Label className="text-xs">{t("studio.area_m2")}</Label>
                     <Input type="number" value={roomArea} onChange={e => setRoomArea(Number(e.target.value))} min={5} max={500} className="mt-1" />
                   </div>
                 </CardContent>
@@ -397,7 +401,7 @@ export default function DesignStudio() {
               disabled={!selectedProjectId}
               onClick={() => setCurrentStep(2)}
             >
-              التالي: تحديد الهوية البصرية
+              {t("studio.next_identity")}
               <ArrowRight className="w-4 h-4 mr-2" />
             </Button>
           </div>
@@ -409,8 +413,8 @@ export default function DesignStudio() {
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-gold text-white flex items-center justify-center text-sm font-bold">2</div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">الهوية البصرية الموحدة</h2>
-                <p className="text-xs text-muted-foreground">هذه الهوية ستُطبَّق على جميع عناصر التصميم لضمان التناسق الكامل</p>
+                <h2 className="text-lg font-bold text-foreground">{t("studio.visual_identity")}</h2>
+                <p className="text-xs text-muted-foreground">{t("studio.visual_identity_desc")}</p>
               </div>
             </div>
 
@@ -427,7 +431,7 @@ export default function DesignStudio() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Star className="w-4 h-4 text-gold" />
-                  نمط التصميم
+                  {t("studio.design_style")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -441,7 +445,7 @@ export default function DesignStudio() {
                       }`}
                     >
                       <div className="text-xl mb-1">{style.emoji}</div>
-                      <div className="text-[11px] font-medium text-foreground">{style.label}</div>
+                      <div className="text-[11px] font-medium text-foreground">{t(style.labelKey as Parameters<typeof t>[0])}</div>
                       <div className="flex justify-center gap-0.5 mt-1">
                         {style.colors.map((c, i) => (
                           <div key={i} className="w-3 h-3 rounded-full border border-white/50" style={{ backgroundColor: c }} />
@@ -456,7 +460,7 @@ export default function DesignStudio() {
             {/* اختيار الميزانية */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">الميزانية الإجمالية</CardTitle>
+                <CardTitle className="text-sm">{t("studio.total_budget")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -469,7 +473,7 @@ export default function DesignStudio() {
                       }`}
                     >
                       <div className="text-xl mb-1">{b.icon}</div>
-                      <div className="text-xs font-bold text-foreground">{b.label}</div>
+                      <div className="text-xs font-bold text-foreground">{t(b.labelKey as Parameters<typeof t>[0])}</div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">{b.range}</div>
                     </button>
                   ))}
@@ -484,10 +488,10 @@ export default function DesignStudio() {
                   onClick={() => setShowIdentityDetails(!showIdentityDetails)}
                   className="flex items-center justify-between w-full text-right"
                 >
-                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
                     <Palette className="w-4 h-4 text-gold" />
-                    تفاصيل الهوية البصرية
-                    {isIdentityCustomized && <Badge variant="outline" className="text-[10px] border-gold text-gold">مخصصة</Badge>}
+                    {t("studio.identity_details")}
+                    {isIdentityCustomized && <Badge variant="outline" className="text-[10px] border-gold text-gold">{t("studio.customized")}</Badge>}
                   </CardTitle>
                   {showIdentityDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
@@ -545,7 +549,7 @@ export default function DesignStudio() {
                         setIsIdentityCustomized(false);
                       }}
                     >
-                      إعادة تعيين للافتراضي
+                      {t("studio.reset_default")}
                     </Button>
                   )}
                 </CardContent>
@@ -553,9 +557,9 @@ export default function DesignStudio() {
             </Card>
 
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 text-sm">رجوع</Button>
+              <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1 text-sm">{t("common.back")}</Button>
               <Button className="btn-gold flex-1 text-sm" onClick={() => setCurrentStep(3)}>
-                ابدأ التصميم
+                {t("studio.start_design")}
                 <ArrowRight className="w-4 h-4 mr-2" />
               </Button>
             </div>
@@ -591,7 +595,7 @@ export default function DesignStudio() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-gold" />
-                تفاصيل التصميم
+                {t("studio.design_details")}
               </DialogTitle>
             </DialogHeader>
             {currentDesign && <DesignResultView design={currentDesign} />}
@@ -620,6 +624,7 @@ function DesignStepContent({
   onPrev: () => void; onNext: () => void;
   onViewDesign: (design: DesignResult) => void;
 }) {
+  const { t } = useLanguage();
   const stepConfig: Record<number, { elementType: string; label: string; icon: React.ElementType; description: string; tips: string[] }> = {
     3: { elementType: "flooring", label: "الأرضيات", icon: Square, description: "تصميم أرضيات متناسقة مع الهوية البصرية للمشروع", tips: ["الأرضية هي الأساس البصري للغرفة", "يجب أن تتناسق مع ألوان الجدران والأسقف", "اختر مواد تتحمل الاستخدام اليومي"] },
     4: { elementType: "walls", label: "الجدران", icon: Layers, description: "تصميم جدران تكمل الأرضيات وتمهد للأسقف", tips: ["الجدران تربط الأرضية بالسقف بصرياً", "جدار مميز واحد يضيف عمقاً للمساحة", "الألوان الفاتحة تُوسّع المساحة بصرياً"] },
@@ -704,7 +709,7 @@ function DesignStepContent({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-green-600 mb-3">
                   <CheckCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">تم تصميم {config.label} بنجاح</span>
+              <span className="text-sm font-medium">{t("studio.element_designed_success")}</span>
                 </div>
                 {existingDesigns.map(el => (
                   <div key={el.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border">
@@ -716,10 +721,10 @@ function DesignStepContent({
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => onViewDesign(el.specifications)}>
-                        <Eye className="w-3 h-3 ml-1" /> تفاصيل
+                        <Eye className="w-3 h-3 ml-1" /> {t("ui.details")}
                       </Button>
                       <Button size="sm" variant="outline" className={`text-xs h-7 ${el.isCompleted ? "border-green-500 text-green-600" : ""}`} onClick={() => onMarkComplete(el.id, el.isCompleted)}>
-                        <CheckCircle className="w-3 h-3 ml-1" /> {el.isCompleted ? "مكتمل" : "تأكيد"}
+                        <CheckCircle className="w-3 h-3 ml-1" /> {el.isCompleted ? t("studio.completed") : t("ui.confirm")}
                       </Button>
                       <Button size="sm" variant="ghost" className="text-xs h-7 text-red-500 hover:text-red-600" onClick={() => onDelete(el.id)}>
                         <Trash2 className="w-3 h-3" />
@@ -728,7 +733,7 @@ function DesignStepContent({
                   </div>
                 ))}
                 <Button variant="outline" className="w-full text-sm border-gold/50 text-gold hover:bg-gold/10" onClick={() => onDesign(config.elementType)} disabled={isDesigning}>
-                  {isDesigning ? "جارٍ إعادة التصميم..." : "إعادة التصميم بهوية مختلفة"}
+                  {isDesigning ? t("studio.redesigning") : t("studio.redesign")}
                 </Button>
               </div>
             ) : (
@@ -741,12 +746,12 @@ function DesignStepContent({
                   {isDesigning ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      م. اليازية تصمم...
+                      {t("studio.designing")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      صمّمي {config.label} يا م. اليازية
+                      {t("studio.design_me")} {config.label}
                     </span>
                   )}
                 </Button>
@@ -761,7 +766,7 @@ function DesignStepContent({
             {stepPerspectives.length > 0 ? (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-green-600 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" /> تم توليد {stepPerspectives.length} منظور
+                  <CheckCircle className="w-4 h-4" /> {t("studio.perspective_generated")} ({stepPerspectives.length})
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {stepPerspectives.map(p => (
@@ -771,7 +776,7 @@ function DesignStepContent({
                   ))}
                 </div>
                 <Button variant="outline" className="w-full text-sm" onClick={onGeneratePerspective} disabled={isGeneratingPerspective}>
-                  {isGeneratingPerspective ? "جارٍ التوليد..." : "توليد منظور جديد"}
+                  {isGeneratingPerspective ? t("studio.generating_perspective") : t("studio.generate_new_perspective")}
                 </Button>
               </div>
             ) : (
@@ -783,19 +788,19 @@ function DesignStepContent({
                 {(elements?.length || 0) < 3 && (
                   <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
                     <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <p className="text-xs text-amber-700">للحصول على أفضل نتيجة، صمّم على الأقل 3 عناصر أولاً</p>
+                    <p className="text-xs text-amber-700">{t("studio.min_elements_warning")}</p>
                   </div>
                 )}
                 <Button className="btn-gold w-full" onClick={onGeneratePerspective} disabled={isGeneratingPerspective}>
                   {isGeneratingPerspective ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      م. اليازية تولّد المنظور...
+                      {t("studio.perspective_generating")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      ولّدي المنظور الكامل
+                      {t("studio.generate_full_perspective")}
                     </span>
                   )}
                 </Button>
@@ -808,11 +813,11 @@ function DesignStepContent({
       {/* أزرار التنقل */}
       <div className="flex gap-2 pt-2">
         <Button variant="outline" onClick={onPrev} className="flex-1 text-sm">
-          ← السابق
+          {t("studio.prev_step")}
         </Button>
         {step < 9 && (
           <Button className="btn-gold flex-1 text-sm" onClick={onNext}>
-            التالي →
+            {t("studio.next_step")}
           </Button>
         )}
       </div>
