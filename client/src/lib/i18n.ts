@@ -3784,7 +3784,7 @@ export const translations: Record<Language, Translations> = {
     "studio.color_palette": "Palette de couleurs",
     "studio.installation_steps": "Étapes d'installation",
     "studio.professional_notes": "Notes professionnelles",
-},
+  },
 };
 export function t(lang: Language, key: TranslationKey): string {
   return translations[lang][key] ?? translations["ar"][key] ?? key;
