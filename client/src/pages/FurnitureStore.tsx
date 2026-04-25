@@ -373,7 +373,7 @@ function ProductModal({ product, onClose }: { product: BonyanProduct; onClose: (
   const { dir } = useLanguage();
   const price = parseFloat(product.price);
   const priceFormatted = price.toLocaleString("ar-AE", { minimumFractionDigits: 0 });
-  const bonyanUrl = `https://bonyanpltf-gegfwhcg.manus.space/products/${product.slug || product.id}`;
+  const bonyanUrl = `https://bonyan.mousa.ai/products/${product.slug || product.id}`;
   const storeUrl = buildStoreUrl(product);
   const sourceName = product.sourceName || product.brand || "";
 
@@ -1144,7 +1144,7 @@ export default function FurnitureStore() {
           <p className="text-amber-200 text-sm">
             🏪 جميع المنتجات من متاجر حقيقية في الإمارات العربية المتحدة — مدعوم من{" "}
             <a
-              href="https://bonyanpltf-gegfwhcg.manus.space"
+              href="https://bonyan.mousa.ai"
               target="_blank"
               rel="noopener noreferrer"
               className="text-white underline"

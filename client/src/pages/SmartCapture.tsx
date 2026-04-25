@@ -573,7 +573,7 @@ function ShopTheLookPanel({
     await matchMutation.mutateAsync({ furniturePieces: extractMutation.data.furniturePieces.slice(0, 5) });
   };
 
-  const BONYAN_BASE = "https://bonyanpltf-gegfwhcg.manus.space";
+  const BONYAN_BASE = "https://bonyan.mousa.ai";
 
   const isLoading = extractMutation.isPending || matchMutation.isPending;
   // البيانات المعروضة: إما من تحليل الصورة أو من البحث المباشر

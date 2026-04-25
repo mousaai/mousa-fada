@@ -274,7 +274,7 @@ export default function PlanRenderResult({
   // Bonyan
   const [showBonyan, setShowBonyan] = useState(false);
   const bonyanMatchMutation = trpc.bonyan.matchFurnitureToProducts.useMutation();
-  const BONYAN_BASE = "https://bonyanpltf-gegfwhcg.manus.space";
+  const BONYAN_BASE = "https://bonyan.mousa.ai";
 
   // Mutations
   const refineMutation = trpc.refineDesign.useMutation();

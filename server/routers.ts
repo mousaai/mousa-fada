@@ -2636,7 +2636,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         sortBy: z.enum(["newest", "price_asc", "price_desc"]).default("newest"),
       }))
       .query(async ({ input }) => {
-        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const BONYAN_API = "https://bonyan.mousa.ai/api/trpc";
         const params = new URLSearchParams();
         const inputObj: Record<string, unknown> = {
           page: input.page,
@@ -2673,7 +2673,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         budgetMax: z.number().optional(), // الحد الأقصى للميزانية
       }))
       .mutation(async ({ input }) => {
-        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const BONYAN_API = "https://bonyan.mousa.ai/api/trpc";
 
         // تحديد كلمات البحث بناءً على نوع الفضاء والنمط
         const spaceKeywords: Record<string, string[]> = {
@@ -2843,7 +2843,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         pageSize: z.number().default(20),
       }))
       .query(async ({ input }) => {
-        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const BONYAN_API = "https://bonyan.mousa.ai/api/trpc";
 
         // ===== خريطة الكلمات المفتاحية =====
         // الأنماط → كلمات تظهر في أسماء المنتجات
@@ -3102,7 +3102,7 @@ QUALITY MANDATE: This image must look like it was shot for Architectural Digest,
         budgetMax: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
-        const BONYAN_API = "https://bonyanpltf-gegfwhcg.manus.space/api/trpc";
+        const BONYAN_API = "https://bonyan.mousa.ai/api/trpc";
         const results: Array<{
           piece: typeof input.furniturePieces[0];
           matches: BonyanProduct[];
